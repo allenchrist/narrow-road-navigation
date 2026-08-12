@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 56" width="40" height="56">
+  <defs>
+
+    <filter id="body-shadow" x="-40%" y="-30%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+    </filter>
+
+    <filter id="headlight-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="taillight-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Main body: dark steel blue, lighter at front (top) -->
+    <linearGradient id="body" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%"   stop-color="#2e6a9e"/>
+      <stop offset="25%"  stop-color="#1a4a72"/>
+      <stop offset="60%"  stop-color="#112f4e"/>
+      <stop offset="100%" stop-color="#0a1e30"/>
+    </linearGradient>
+
+    <!-- Roof: darker, glassy -->
+    <linearGradient id="roof" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%"   stop-color="#1e5a8a"/>
+      <stop offset="40%"  stop-color="#0f3558"/>
+      <stop offset="100%" stop-color="#081e33"/>
+    </linearGradient>
+
+    <!-- Windshield: icy blue glass -->
+    <linearGradient id="wind" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%"   stop-color="rgba(200,235,255,0.82)"/>
+      <stop offset="100%" stop-color="rgba(100,180,240,0.30)"/>
+    </linearGradient>
+
+    <!-- Rear glass -->
+    <linearGradient id="rear-glass" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%"   stop-color="rgba(80,150,210,0.40)"/>
+      <stop offset="100%" stop-color="rgba(180,220,255,0.60)"/>
+    </linearGradient>
+
+    <!-- Tyre -->
+    <radialGradient id="tyre" cx="40%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#333"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </radialGradient>
+
+    <!-- Rim -->
+    <radialGradient id="rim" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#8ab4cc"/>
+      <stop offset="60%"  stop-color="#3a6a88"/>
+      <stop offset="100%" stop-color="#1a3a50"/>
+    </radialGradient>
+
+    <!-- Hood specular highlight -->
+    <linearGradient id="hood-spec" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="50%"  stop-color="rgba(255,255,255,0.04)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+
+  </defs>
+
+  <!-- ═══════════════════════════════════
+       TYRES  (drawn first, behind body)
+  ═══════════════════════════════════ -->
+
+  <!-- Front-left -->
+  <rect x="2.5" y="8"  width="7" height="11" rx="2.2" fill="url(#tyre)"/>
+  <ellipse cx="6"   cy="13.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
+  <ellipse cx="6"   cy="13.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
+
+  <!-- Front-right -->
+  <rect x="30.5" y="8"  width="7" height="11" rx="2.2" fill="url(#tyre)"/>
+  <ellipse cx="34"  cy="13.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
+  <ellipse cx="34"  cy="13.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
+
+  <!-- Rear-left -->
+  <rect x="2.5" y="37" width="7" height="11" rx="2.2" fill="url(#tyre)"/>
+  <ellipse cx="6"   cy="42.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
+  <ellipse cx="6"   cy="42.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
+
+  <!-- Rear-right -->
+  <rect x="30.5" y="37" width="7" height="11" rx="2.2" fill="url(#tyre)"/>
+  <ellipse cx="34"  cy="42.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
+  <ellipse cx="34"  cy="42.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
+
+  <!-- ═══════════════════════════════════
+       MAIN BODY
+  ═══════════════════════════════════ -->
+  <path
+    d="M10,5 Q20,2 30,5 L33,14 L34,42 Q20,46 6,42 L7,14 Z"
+    fill="url(#body)"
+    filter="url(#body-shadow)"
+  />
+
+  <!-- Body edge highlight — left -->
+  <path d="M7,14 L8,41 Q7,41.5 6.5,41 L7,14Z" fill="rgba(255,255,255,0.09)"/>
+  <!-- Body edge highlight — right -->
+  <path d="M33,14 L32,41 Q33,41.5 33.5,41 L33,14Z" fill="rgba(255,255,255,0.09)"/>
+
+  <!-- Hood specular -->
+  <path
+    d="M13,6 Q20,3.5 27,6 L29,13 Q20,10 11,13 Z"
+    fill="url(#hood-spec)"
+  />
+
+  <!-- ═══════════════════════════════════
+       ROOF CABIN
+  ═══════════════════════════════════ -->
+  <path
+    d="M14,17 Q20,14.5 26,17 L27,36 Q20,38.5 13,36 Z"
+    fill="url(#roof)"
+  />
+
+  <!-- ═══════════════════════════════════
+       WINDSHIELD (front)
+  ═══════════════════════════════════ -->
+  <path
+    d="M13.5,16.5 Q20,13.5 26.5,16.5 L26,22 Q20,19.5 14,22 Z"
+    fill="url(#wind)"
+  />
+  <!-- Windshield glare streak -->
+  <path
+    d="M16,16.8 Q20,14.8 24,16.8 L23.5,19 Q20,17.2 16.5,19 Z"
+    fill="rgba(255,255,255,0.32)"
+  />
+
+  <!-- ═══════════════════════════════════
+       REAR WINDOW
+  ═══════════════════════════════════ -->
+  <path
+    d="M14,35 Q20,37.5 26,35 L26.5,31 Q20,33.5 13.5,31 Z"
+    fill="url(#rear-glass)"
+  />
+
+  <!-- ═══════════════════════════════════
+       DOOR LINE
+  ═══════════════════════════════════ -->
+  <line x1="9" y1="27" x2="31" y2="27" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
+
+  <!-- ═══════════════════════════════════
+       HEADLIGHTS
+  ═══════════════════════════════════ -->
+  <!-- Left headlight housing -->
+  <path d="M10,6 Q13,5 16,6.5 L15.5,10 Q12.5,9 10,9.5 Z" fill="#0a1e30"/>
+  <!-- Left DRL strip -->
+  <path d="M10.5,7 Q13,6.2 15.5,7.2 L15.2,8.5 Q13,7.8 10.8,8.2 Z"
+        fill="#e8f4ff" opacity="0.95" filter="url(#headlight-glow)"/>
+
+  <!-- Right headlight housing -->
+  <path d="M30,6 Q27,5 24,6.5 L24.5,10 Q27.5,9 30,9.5 Z" fill="#0a1e30"/>
+  <!-- Right DRL strip -->
+  <path d="M29.5,7 Q27,6.2 24.5,7.2 L24.8,8.5 Q27,7.8 29.2,8.2 Z"
+        fill="#e8f4ff" opacity="0.95" filter="url(#headlight-glow)"/>
+
+  <!-- ═══════════════════════════════════
+       TAIL LIGHTS
+  ═══════════════════════════════════ -->
+  <!-- Left tail housing -->
+  <path d="M10,43.5 Q13,44.5 16,43 L15.5,40 Q12.5,41 10,40.5 Z" fill="#0a1e30"/>
+  <!-- Left tail strip -->
+  <path d="M10.5,43 Q13,43.8 15.5,42.5 L15.2,41.2 Q13,42 10.8,41.5 Z"
+        fill="#ff3333" opacity="0.92" filter="url(#taillight-glow)"/>
+
+  <!-- Right tail housing -->
+  <path d="M30,43.5 Q27,44.5 24,43 L24.5,40 Q27.5,41 30,40.5 Z" fill="#0a1e30"/>
+  <!-- Right tail strip -->
+  <path d="M29.5,43 Q27,43.8 24.5,42.5 L24.8,41.2 Q27,42 29.2,41.5 Z"
+        fill="#ff3333" opacity="0.92" filter="url(#taillight-glow)"/>
+
+  <!-- ═══════════════════════════════════
+       CYAN ACCENT — waistline
+  ═══════════════════════════════════ -->
+  <path
+    d="M8.5,27 Q20,25.5 31.5,27"
+    stroke="#56c7ff" stroke-width="0.7" fill="none" opacity="0.5"
+    stroke-linecap="round"
+  />
+
+  <!-- ═══════════════════════════════════
+       FRONT DIRECTION ARROW
+  ═══════════════════════════════════ -->
+  <polygon
+    points="20,0.5 22.5,5 17.5,5"
+    fill="#56c7ff"
+    opacity="0.95"
+    filter="url(#headlight-glow)"
+  />
+
+</svg>

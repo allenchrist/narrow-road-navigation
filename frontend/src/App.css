@@ -1,0 +1,884 @@
+/* =========================================================
+   CONNECTED VEHICLE - APPLICATION STYLES
+   ========================================================= */
+
+.dashboard {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.app-header {
+  height: var(--header-height);
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 24px;
+
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+
+  background: var(--accent-soft);
+}
+
+.brand-text h1 {
+  margin: 0;
+
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand-text span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-status > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.system-status strong {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.system-status span:not(.status-indicator) {
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.status-indicator {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+}
+
+.status-indicator.online {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(67, 209, 122, 0.45);
+}
+
+.status-indicator.standby {
+  background: var(--warning);
+}
+
+.status-indicator.offline {
+  background: var(--danger);
+}
+
+.clock {
+  padding-left: 22px;
+  border-left: 1px solid var(--border);
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  text-align: right;
+}
+
+.clock strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock span {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.dashboard-body {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.vehicle-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+
+  padding: 22px;
+
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+
+  overflow-y: auto;
+}
+
+.section-heading,
+.health-header,
+.telemetry-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-label {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.vehicle-state,
+.live-badge,
+.connected-text,
+.healthy {
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.stale {
+  color: var(--warning);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.disconnected-label {
+  color: var(--danger);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.ego-identity {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 22px;
+}
+
+.ego-visual {
+  position: relative;
+
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  background: var(--bg-secondary);
+
+  font-size: 31px;
+}
+
+.ego-ring {
+  position: absolute;
+  inset: 7px;
+
+  border: 1px solid rgba(86, 199, 255, 0.2);
+  border-radius: 50%;
+}
+
+.ego-identity h2 {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.ego-identity p {
+  margin: 5px 0 0;
+
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sidebar-divider {
+  height: 1px;
+  margin: 22px 0;
+
+  background: var(--border-soft);
+}
+
+.telemetry-title {
+  margin-bottom: 14px;
+
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.telemetry-item {
+  min-width: 0;
+
+  padding: 12px;
+
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+
+.telemetry-item.full {
+  grid-column: span 2;
+}
+
+.telemetry-item span {
+  display: block;
+
+  color: var(--text-muted);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.telemetry-item strong {
+  display: block;
+
+  margin-top: 6px;
+
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sensor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 9px 0;
+
+  color: var(--text-secondary);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.sensor-row span:last-child {
+  color: var(--success);
+  font-size: 8px;
+}
+
+.vehicle-health {
+  padding: 13px;
+
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+}
+
+.health-header {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.health-bar {
+  height: 3px;
+  margin-top: 12px;
+
+  overflow: hidden;
+
+  background: #202b34;
+  border-radius: 4px;
+}
+
+.health-bar div {
+  height: 100%;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+.vehicle-health p {
+  margin: 9px 0 0;
+
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* =========================================================
+   MAIN MAP AREA
+   ========================================================= */
+
+.main-view {
+  position: relative;
+
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  background: #0a0f13;
+}
+
+/* =========================================================
+   LIVE VEHICLE MAP
+   ========================================================= */
+
+.map-container-wrapper {
+  position: absolute;
+  inset: 0;
+
+  overflow: hidden;
+
+  background: #0a0f13;
+}
+
+/*
+   React-Leaflet container
+*/
+
+.vehicle-map {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  z-index: 1;
+}
+
+/*
+   Make sure Leaflet itself fills the wrapper
+*/
+
+.vehicle-map.leaflet-container {
+  width: 100%;
+  height: 100%;
+
+  background: #0a0f13;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* =========================================================
+   DARK AUTOMOTIVE MAP TREATMENT
+   ========================================================= */
+
+.vehicle-map .leaflet-tile {
+  filter:
+    brightness(0.65)
+    saturate(0.65)
+    contrast(1.05);
+}
+
+.vehicle-map .leaflet-control-attribution {
+  background: rgba(8, 12, 16, 0.85);
+
+  color: #687581;
+
+  font-size: 8px;
+}
+
+.vehicle-map .leaflet-control-attribution a {
+  color: #8494a1;
+}
+
+/*
+   Remove default Leaflet zoom controls.
+   We use our own automotive controls.
+*/
+
+.vehicle-map .leaflet-control-zoom {
+  display: none;
+}
+
+/* =========================================================
+   EGO VEHICLE MARKER — 3D SVG CAR
+   ========================================================= */
+
+.vehicle-map-icon {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+/* Wrapper that rotates with heading */
+.ego-car-wrapper {
+  position: relative;
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 20px 28px;
+}
+
+/* Ground glow beneath the car */
+.ego-car-glow {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 10px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(86, 199, 255, 0.55) 0%,
+    rgba(86, 199, 255, 0) 70%
+  );
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.ego-car-img {
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 56px;
+  display: block;
+  filter:
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.8))
+    drop-shadow(0 0 8px rgba(86, 199, 255, 0.4));
+  pointer-events: none;
+  user-select: none;
+}
+
+/* =========================================================
+   MAP NO-GPS OVERLAY
+   ========================================================= */
+
+.map-no-gps {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.map-no-gps-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 26px;
+  background: rgba(8, 12, 16, 0.88);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.map-no-gps-icon {
+  font-size: 26px;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.map-no-gps-inner span {
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.map-no-gps-inner p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================
+   SENSOR VALUE BLOCKS (IMU)
+   ========================================================= */
+
+.sensor-block {
+  margin-bottom: 4px;
+}
+
+.sensor-values {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0 8px;
+}
+
+.sensor-values span {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.sensor-values strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   MAP CONTROLS
+   ========================================================= */
+
+.map-top-controls {
+  position: absolute;
+
+  top: 18px;
+  right: 18px;
+
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(13, 19, 25, 0.94);
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  z-index: 1000;
+}
+
+.map-top-controls button {
+  width: 38px;
+  height: 36px;
+
+  border: 0;
+  border-bottom: 1px solid var(--border);
+
+  background: transparent;
+  color: var(--text-secondary);
+
+  cursor: pointer;
+
+  font-size: 17px;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.map-top-controls button:last-child {
+  border-bottom: 0;
+}
+
+.map-top-controls button:hover {
+  background: var(--bg-panel-hover);
+  color: var(--text-primary);
+}
+
+.map-top-controls button:active {
+  background: var(--accent-soft);
+}
+
+/* =========================================================
+   MAP MODE SWITCH
+   ========================================================= */
+
+.map-mode {
+  position: absolute;
+
+  top: 18px;
+  left: 18px;
+
+  display: flex;
+
+  padding: 4px;
+
+  background: rgba(13, 19, 25, 0.94);
+
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  z-index: 1000;
+}
+
+.map-mode span {
+  padding: 7px 11px;
+
+  color: var(--text-muted);
+
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+}
+
+.map-mode span.active {
+  color: var(--text-primary);
+
+  background: var(--accent-soft);
+
+  border-radius: 5px;
+}
+
+/* =========================================================
+   MAP POPUP
+   ========================================================= */
+
+.vehicle-map .leaflet-popup-content-wrapper {
+  background: rgba(13, 19, 25, 0.97);
+
+  color: var(--text-primary);
+
+  border: 1px solid var(--border);
+  border-radius: 9px;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.vehicle-map .leaflet-popup-content {
+  margin: 12px 14px;
+
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.vehicle-map .leaflet-popup-tip {
+  background: rgba(13, 19, 25, 0.97);
+}
+
+.vehicle-map .leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+}
+
+.vehicle-map .leaflet-popup-close-button:hover {
+  color: var(--text-primary) !important;
+}
+
+/* =========================================================
+   SAFETY STATE
+   ========================================================= */
+
+.safety-state {
+  position: absolute;
+
+  left: 18px;
+  bottom: 18px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 12px 15px;
+
+  background: rgba(13, 19, 25, 0.95);
+
+  border: 1px solid var(--border);
+  border-radius: 9px;
+
+  z-index: 1000;
+}
+
+.safety-icon {
+  width: 25px;
+  height: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: rgba(67, 209, 122, 0.12);
+  color: var(--success);
+
+  font-size: 12px;
+}
+
+.safety-state div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.safety-state strong {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.safety-state span:last-child {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+/* =========================================================
+   STATUS BAR
+   ========================================================= */
+
+.status-bar {
+  height: var(--status-height);
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 20px;
+
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 0 18px;
+
+  border-right: 1px solid var(--border-soft);
+}
+
+.status-group:first-child {
+  padding-left: 0;
+}
+
+.status-group:last-child {
+  border-right: 0;
+}
+
+.status-label {
+  color: var(--text-muted);
+
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.status-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  color: var(--text-secondary);
+
+  font-size: 9px;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-dot {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+}
+
+.mini-dot.online {
+  background: var(--success);
+}
+
+.mini-dot.standby {
+  background: var(--warning);
+}
+
+.mini-dot.offline {
+  background: var(--danger);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .header-status .system-status:nth-child(2),
+  .header-status .system-status:nth-child(3) {
+    display: none;
+  }
+
+  .vehicle-sidebar {
+    width: 250px;
+  }
+
+  .status-group:nth-child(2),
+  .status-group:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .vehicle-sidebar {
+    display: none;
+  }
+
+  .clock {
+    display: none;
+  }
+
+  .brand-text span {
+    display: none;
+  }
+}
