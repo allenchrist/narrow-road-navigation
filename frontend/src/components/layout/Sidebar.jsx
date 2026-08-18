@@ -1,4 +1,5 @@
 import { useVehicle } from "../../context/VehicleContext";
+import VehicleList from "../vehicle/VehicleList";
 
 function fmt(val, decimals, suffix = "") {
   if (val === null || val === undefined) return "—";
@@ -6,57 +7,47 @@ function fmt(val, decimals, suffix = "") {
 }
 
 function Sidebar() {
-  const { vehicle } = useVehicle();
+  const { vehicle, myVehicleId } = useVehicle();
 
   const hasData = vehicle.lat !== null;
 
   const healthLabel = !vehicle.backendConnected
     ? "DISCONNECTED"
-    : !vehicle.androidConnected
+    : !vehicle.connected
     ? "NO SIGNAL"
     : !hasData
     ? "WAITING"
-    : vehicle.lastReceivedAt &&
-      Date.now() - vehicle.lastReceivedAt > 5000
+    : vehicle.lastReceivedAt && Date.now() - vehicle.lastReceivedAt > 5000
     ? "STALE"
     : "HEALTHY";
 
   const healthClass =
-    healthLabel === "HEALTHY"
-      ? "healthy"
-      : healthLabel === "STALE"
-      ? "stale"
-      : "disconnected-label";
+    healthLabel === "HEALTHY" ? "healthy"
+    : healthLabel === "STALE" ? "stale"
+    : "disconnected-label";
 
   const healthMsg =
-    healthLabel === "HEALTHY"
-      ? "Sensor stream receiving normally"
-      : healthLabel === "STALE"
-      ? "No update received recently"
-      : healthLabel === "WAITING"
-      ? "Awaiting first GPS fix"
-      : "Android sensor stream offline";
+    healthLabel === "HEALTHY" ? "Sensor stream receiving normally"
+    : healthLabel === "STALE" ? "No update received recently"
+    : healthLabel === "WAITING" ? "Awaiting first GPS fix"
+    : "Vehicle stream offline";
 
   const healthBarWidth =
-    healthLabel === "HEALTHY"
-      ? "100%"
-      : healthLabel === "STALE"
-      ? "50%"
-      : "15%";
+    healthLabel === "HEALTHY" ? "100%"
+    : healthLabel === "STALE" ? "50%"
+    : "15%";
 
   const healthBarColor =
-    healthLabel === "HEALTHY"
-      ? "var(--success)"
-      : healthLabel === "STALE"
-      ? "var(--warning)"
-      : "var(--danger)";
+    healthLabel === "HEALTHY" ? "var(--success)"
+    : healthLabel === "STALE" ? "var(--warning)"
+    : "var(--danger)";
 
   return (
     <aside className="vehicle-sidebar">
       <div className="section-heading">
         <span className="section-label">PRIMARY VEHICLE</span>
         <span className="vehicle-state">
-          {vehicle.androidConnected ? "ACTIVE" : "OFFLINE"}
+          {vehicle.connected ? "ACTIVE" : "OFFLINE"}
         </span>
       </div>
 
@@ -66,8 +57,8 @@ function Sidebar() {
           <span>🚗</span>
         </div>
         <div>
-          <h2>EGO VEHICLE</h2>
-          <p>Vehicle Node A</p>
+          <h2>{myVehicleId || "NO VEHICLE"}</h2>
+          <p>{myVehicleId ? "Session vehicle" : "Waiting for assignment"}</p>
         </div>
       </div>
 
@@ -79,18 +70,15 @@ function Sidebar() {
           <span>POSITION</span>
           <span className="live-badge">{hasData ? "LIVE" : "NO DATA"}</span>
         </div>
-
         <div className="telemetry-grid">
           <div className="telemetry-item">
             <span>LATITUDE</span>
             <strong>{fmt(vehicle.lat, 6)}</strong>
           </div>
-
           <div className="telemetry-item">
             <span>LONGITUDE</span>
             <strong>{fmt(vehicle.lon, 6)}</strong>
           </div>
-
           <div className="telemetry-item full">
             <span>HEADING</span>
             <strong>{fmt(vehicle.heading, 1, "°")}</strong>
@@ -105,15 +93,14 @@ function Sidebar() {
         <div className="telemetry-title">
           <span>IMU STATUS</span>
           <span className="connected-text">
-            {vehicle.androidConnected ? "CONNECTED" : "OFFLINE"}
+            {vehicle.connected ? "CONNECTED" : "OFFLINE"}
           </span>
         </div>
 
-        {/* Accelerometer */}
         <div className="sensor-block">
           <div className="sensor-row">
             <span>ACCELEROMETER</span>
-            <span style={{ color: vehicle.androidConnected ? "var(--success)" : "var(--danger)" }}>●</span>
+            <span style={{ color: vehicle.connected ? "var(--success)" : "var(--danger)" }}>●</span>
           </div>
           <div className="sensor-values">
             <span>X <strong>{fmt(vehicle.accelX, 2)}</strong></span>
@@ -122,11 +109,10 @@ function Sidebar() {
           </div>
         </div>
 
-        {/* Gyroscope */}
         <div className="sensor-block">
           <div className="sensor-row">
             <span>GYROSCOPE</span>
-            <span style={{ color: vehicle.androidConnected ? "var(--success)" : "var(--danger)" }}>●</span>
+            <span style={{ color: vehicle.connected ? "var(--success)" : "var(--danger)" }}>●</span>
           </div>
           <div className="sensor-values">
             <span>X <strong>{fmt(vehicle.gyroX, 2)}</strong></span>
@@ -144,13 +130,16 @@ function Sidebar() {
           <span>VEHICLE DATA</span>
           <span className={healthClass}>{healthLabel}</span>
         </div>
-
         <div className="health-bar">
           <div style={{ width: healthBarWidth, background: healthBarColor }}></div>
         </div>
-
         <p>{healthMsg}</p>
       </div>
+
+      <div className="sidebar-divider"></div>
+
+      {/* ── CONNECTED VEHICLES LIST ── */}
+      <VehicleList />
     </aside>
   );
 }

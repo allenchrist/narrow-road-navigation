@@ -1,30 +1,42 @@
 /**
- * Central in-memory vehicle state.
- * This is the single source of truth on the backend.
- * No database — this is real-time telemetry only.
+ * Multi-vehicle in-memory registry.
+ * Single source of truth for all connected vehicles.
+ * No database — real-time telemetry only.
  */
 
-let state = {
-  lat: null,
-  lon: null,
-  heading: null,
-  accelX: null,
-  accelY: null,
-  accelZ: null,
-  gyroX: null,
-  gyroY: null,
-  gyroZ: null,
-  androidConnected: false,
-  lastReceivedAt: null, // backend receive time — NOT an Android timestamp
-};
+// vehicles map: vehicleId → vehicle state object
+const vehicles = new Map();
 
-function getState() {
-  return { ...state };
+function registerVehicle(vehicleId) {
+  if (vehicles.has(vehicleId)) {
+    // Reconnect: preserve last known position, mark connected
+    const existing = vehicles.get(vehicleId);
+    vehicles.set(vehicleId, { ...existing, connected: true });
+    console.log(`[Vehicle Registry] ${vehicleId} reconnected`);
+  } else {
+    vehicles.set(vehicleId, {
+      vehicleId,
+      lat: null,
+      lon: null,
+      heading: null,
+      accelX: null,
+      accelY: null,
+      accelZ: null,
+      gyroX: null,
+      gyroY: null,
+      gyroZ: null,
+      connected: true,
+      lastReceivedAt: null, // backend receive time — NOT from Android
+    });
+    console.log(`[Vehicle Registry] ${vehicleId} registered`);
+  }
 }
 
-function updateTelemetry(data) {
-  state = {
-    ...state,
+function updateVehicleTelemetry(vehicleId, data) {
+  if (!vehicles.has(vehicleId)) return;
+  const existing = vehicles.get(vehicleId);
+  vehicles.set(vehicleId, {
+    ...existing,
     lat: data.lat,
     lon: data.lon,
     heading: data.heading,
@@ -35,11 +47,44 @@ function updateTelemetry(data) {
     gyroY: data.gyroY,
     gyroZ: data.gyroZ,
     lastReceivedAt: Date.now(),
-  };
+  });
 }
 
-function setAndroidConnected(connected) {
-  state = { ...state, androidConnected: connected };
+function setVehicleConnected(vehicleId, connected) {
+  if (!vehicles.has(vehicleId)) return;
+  const existing = vehicles.get(vehicleId);
+  vehicles.set(vehicleId, { ...existing, connected });
 }
 
-module.exports = { getState, updateTelemetry, setAndroidConnected };
+function removeVehicle(vehicleId) {
+  vehicles.delete(vehicleId);
+  console.log(`[Vehicle Registry] ${vehicleId} removed`);
+}
+
+function getVehicle(vehicleId) {
+  const v = vehicles.get(vehicleId);
+  return v ? { ...v } : null;
+}
+
+function getAllVehicles() {
+  return Array.from(vehicles.values()).map((v) => ({ ...v }));
+}
+
+function getVehicleCount() {
+  return vehicles.size;
+}
+
+function hasVehicle(vehicleId) {
+  return vehicles.has(vehicleId);
+}
+
+module.exports = {
+  registerVehicle,
+  updateVehicleTelemetry,
+  setVehicleConnected,
+  removeVehicle,
+  getVehicle,
+  getAllVehicles,
+  getVehicleCount,
+  hasVehicle,
+};

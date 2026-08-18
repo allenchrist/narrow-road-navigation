@@ -4,33 +4,39 @@ const express = require("express");
 const cors = require("cors");
 const config = require("./config/config");
 const { initSocketServer } = require("./socket/socketServer");
-const { startAndroidWebSocket } = require("./services/androidWebSocket");
-const { getState } = require("./services/vehicleState");
+const { initVehicleWebSocketServer } = require("./socket/vehicleWebSocketServer");
+const { getAllVehicles, getVehicleCount } = require("./services/vehicleState");
 
 const app = express();
 
 app.use(cors({ origin: config.corsOrigin, credentials: false }));
 app.use(express.json());
 
-// Health check — useful for verifying the backend is reachable.
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", vehicleState: getState() });
+  res.json({
+    status: "ok",
+    vehicleCount: getVehicleCount(),
+    vehicles: getAllVehicles(),
+  });
 });
 
 const httpServer = http.createServer(app);
 
+// 1. Socket.IO for React dashboards
 initSocketServer(httpServer);
-startAndroidWebSocket();
+
+// 2. WebSocket server for Android vehicle clients
+initVehicleWebSocketServer(httpServer, config.vehicleWsPath);
 
 httpServer.listen(config.port, () => {
-  console.log(`[Server] Listening on http://localhost:${config.port}`);
-  console.log(`[Server] Android WS target: ${config.androidWsUrl}`);
-  console.log(`[Server] CORS origin: ${config.corsOrigin}`);
+  console.log(`[Server] Listening on port ${config.port}`);
+  console.log(`[Server] Vehicle WS endpoint: ws://localhost:${config.port}${config.vehicleWsPath}`);
+  console.log(`[Server] CORS origins: ${config.corsOrigin}`);
 });
 
-// Graceful shutdown
 process.on("SIGINT", () => {
-  const { stopAndroidWebSocket } = require("./services/androidWebSocket");
-  stopAndroidWebSocket();
-  httpServer.close(() => process.exit(0));
+  httpServer.close(() => {
+    console.log("[Server] Shut down cleanly");
+    process.exit(0);
+  });
 });

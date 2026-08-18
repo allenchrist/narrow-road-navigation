@@ -2,42 +2,67 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { getVehicleSocket } from "../services/socket";
 
 const VehicleContext = createContext(null);
+
 const STALE_THRESHOLD_MS = 5000;
 
+const EMPTY_VEHICLE = {
+  lat: null,
+  lon: null,
+  heading: null,
+  accelX: null,
+  accelY: null,
+  accelZ: null,
+  gyroX: null,
+  gyroY: null,
+  gyroZ: null,
+  connected: false,
+  lastReceivedAt: null,
+};
+
+/**
+ * Read ?ego=VEHICLE_X from the URL.
+ * This lets a phone open the dashboard as:
+ *   http://localhost:5173?ego=VEHICLE_A
+ * and the dashboard will treat VEHICLE_A as its ego vehicle.
+ *
+ * If no param is present, myVehicleId stays null and the
+ * dashboard shows all vehicles without a designated ego.
+ */
+function getEgoFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ego = params.get("ego");
+    return ego ? ego.trim().toUpperCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function VehicleProvider({ children }) {
-  const [vehicle, setVehicle] = useState({
-    lat: null,
-    lon: null,
-    heading: null,
-    accelX: null,
-    accelY: null,
-    accelZ: null,
-    gyroX: null,
-    gyroY: null,
-    gyroZ: null,
-    androidConnected: false,
-    lastReceivedAt: null,
-    backendConnected: false,
-  });
+  const [vehicles, setVehicles] = useState({});
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState("DISCONNECTED");
 
-  const [gpsStatus, setGpsStatus] = useState("NO DATA");
-  const vehicleRef = useRef(vehicle);
-  vehicleRef.current = vehicle;
+  // myVehicleId: the ego vehicle for THIS dashboard session.
+  // Initialised from URL param; can be updated if backend sends session:assigned.
+  const [myVehicleId, setMyVehicleId] = useState(getEgoFromUrl);
 
+  const stateRef = useRef({ vehicles: {}, backendConnected: false, myVehicleId: null });
+  stateRef.current = { vehicles, backendConnected, myVehicleId };
+
+  // Recompute GPS status every second based on ego vehicle state
   useEffect(() => {
     const id = setInterval(() => {
-      const v = vehicleRef.current;
-      if (!v.backendConnected) {
-        setGpsStatus("DISCONNECTED");
-      } else if (!v.androidConnected) {
-        setGpsStatus("NO SIGNAL");
-      } else if (v.lat === null) {
-        setGpsStatus("WAITING");
-      } else if (v.lastReceivedAt && Date.now() - v.lastReceivedAt > STALE_THRESHOLD_MS) {
-        setGpsStatus("STALE");
-      } else {
-        setGpsStatus("ACTIVE");
+      const { vehicles: v, backendConnected: bc, myVehicleId: egoId } = stateRef.current;
+      if (!bc) { setGpsStatus("DISCONNECTED"); return; }
+      const ego = egoId ? v[egoId] : null;
+      if (!ego) { setGpsStatus("NO SIGNAL"); return; }
+      if (!ego.connected) { setGpsStatus("OFFLINE"); return; }
+      if (ego.lat === null) { setGpsStatus("WAITING"); return; }
+      if (ego.lastReceivedAt && Date.now() - ego.lastReceivedAt > STALE_THRESHOLD_MS) {
+        setGpsStatus("STALE"); return;
       }
+      setGpsStatus("ACTIVE");
     }, 1000);
     return () => clearInterval(id);
   }, []);
@@ -46,51 +71,75 @@ export function VehicleProvider({ children }) {
     const socket = getVehicleSocket();
 
     function onConnect() {
-      setVehicle((prev) => ({ ...prev, backendConnected: true }));
+      setBackendConnected(true);
     }
 
     function onDisconnect() {
-      setVehicle((prev) => ({
-        ...prev,
-        backendConnected: false,
-        androidConnected: false,
-      }));
-    }
-
-    function onVehicleUpdate(data) {
-      setVehicle({
-        lat: data.lat,
-        lon: data.lon,
-        heading: data.heading,
-        accelX: data.accelX,
-        accelY: data.accelY,
-        accelZ: data.accelZ,
-        gyroX: data.gyroX,
-        gyroY: data.gyroY,
-        gyroZ: data.gyroZ,
-        androidConnected: data.androidConnected,
-        lastReceivedAt: data.lastReceivedAt,
-        backendConnected: true,
+      setBackendConnected(false);
+      setVehicles((prev) => {
+        const updated = {};
+        for (const id of Object.keys(prev)) {
+          updated[id] = { ...prev[id], connected: false };
+        }
+        return updated;
       });
     }
 
-    if (socket.connected) {
-      setVehicle((prev) => ({ ...prev, backendConnected: true }));
+    function onVehiclesUpdate({ vehicles: list }) {
+      if (!Array.isArray(list)) return;
+      setVehicles(() => {
+        const map = {};
+        for (const v of list) {
+          map[v.vehicleId] = { ...v };
+        }
+        return map;
+      });
+      setBackendConnected(true);
     }
+
+    // Backend can push a session assignment to a specific dashboard
+    // (future: when phone and dashboard share a session token)
+    function onSessionAssigned({ vehicleId }) {
+      if (vehicleId) {
+        setMyVehicleId(vehicleId.trim().toUpperCase());
+      }
+    }
+
+    if (socket.connected) setBackendConnected(true);
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
-    socket.on("vehicle:update", onVehicleUpdate);
+    socket.on("vehicles:update", onVehiclesUpdate);
+    socket.on("session:assigned", onSessionAssigned);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.off("vehicle:update", onVehicleUpdate);
+      socket.off("vehicles:update", onVehiclesUpdate);
+      socket.off("session:assigned", onSessionAssigned);
     };
   }, []);
 
+  // Derived ego vehicle — uses myVehicleId if set, otherwise null
+  const egoVehicle = myVehicleId && vehicles[myVehicleId]
+    ? { ...vehicles[myVehicleId], backendConnected }
+    : { ...EMPTY_VEHICLE, backendConnected };
+
+  // Backward-compatible alias
+  const vehicle = egoVehicle;
+
   return (
-    <VehicleContext.Provider value={{ vehicle, gpsStatus }}>
+    <VehicleContext.Provider
+      value={{
+        vehicles,
+        vehicle,
+        egoVehicle,
+        myVehicleId,
+        setMyVehicleId,
+        backendConnected,
+        gpsStatus,
+      }}
+    >
       {children}
     </VehicleContext.Provider>
   );

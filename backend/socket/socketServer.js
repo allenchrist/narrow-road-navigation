@@ -1,6 +1,6 @@
 const { Server } = require("socket.io");
 const config = require("../config/config");
-const { getState } = require("../services/vehicleState");
+const { getAllVehicles } = require("../services/vehicleState");
 
 let io = null;
 
@@ -15,29 +15,23 @@ function initSocketServer(httpServer) {
   });
 
   io.on("connection", (socket) => {
-    console.log(`[Socket.IO] React client connected: ${socket.id}`);
+    console.log(`[Socket.IO] Dashboard connected: ${socket.id}`);
 
-    // Immediately send the latest known state so the dashboard
-    // doesn't wait for the next Android GPS update.
-    const current = getState();
-    if (current.lat !== null) {
-      socket.emit("vehicle:update", current);
-    } else {
-      socket.emit("vehicle:update", current);
-    }
+    // Send the full current fleet immediately on connect
+    socket.emit("vehicles:update", { vehicles: getAllVehicles() });
 
     socket.on("disconnect", () => {
-      console.log(`[Socket.IO] React client disconnected: ${socket.id}`);
+      console.log(`[Socket.IO] Dashboard disconnected: ${socket.id}`);
     });
   });
 
   return io;
 }
 
-function broadcastVehicleUpdate(state) {
-  if (io) {
-    io.emit("vehicle:update", state);
-  }
+// Broadcast full fleet to all connected dashboards
+function broadcastFleetUpdate() {
+  if (!io) return;
+  io.emit("vehicles:update", { vehicles: getAllVehicles() });
 }
 
-module.exports = { initSocketServer, broadcastVehicleUpdate };
+module.exports = { initSocketServer, broadcastFleetUpdate };

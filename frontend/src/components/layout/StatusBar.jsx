@@ -3,48 +3,40 @@ import { useState, useEffect } from "react";
 
 function useLastUpdateAge(lastReceivedAt) {
   const [age, setAge] = useState(null);
-
   useEffect(() => {
-    if (!lastReceivedAt) {
-      setAge(null);
-      return;
-    }
+    if (!lastReceivedAt) { setAge(null); return; }
     const id = setInterval(() => {
-      const secs = Math.floor((Date.now() - lastReceivedAt) / 1000);
-      setAge(secs);
+      setAge(Math.floor((Date.now() - lastReceivedAt) / 1000));
     }, 1000);
     return () => clearInterval(id);
   }, [lastReceivedAt]);
-
   return age;
 }
 
 function StatusBar() {
-  const { vehicle, gpsStatus } = useVehicle();
+  const { vehicle, gpsStatus, vehicles } = useVehicle();
   const age = useLastUpdateAge(vehicle.lastReceivedAt);
 
   const hasGps = vehicle.lat !== null;
+  const vehicleCount = Object.keys(vehicles).length;
 
   const gpsDotClass =
-    gpsStatus === "ACTIVE"
-      ? "online"
-      : gpsStatus === "STALE"
-      ? "standby"
-      : "offline";
+    gpsStatus === "ACTIVE" ? "online"
+    : gpsStatus === "STALE" ? "standby"
+    : "offline";
 
   const positionText = hasGps
     ? `${vehicle.lat.toFixed(6)}, ${vehicle.lon.toFixed(6)}`
     : "—";
 
-  const headingText =
-    vehicle.heading !== null ? `${vehicle.heading.toFixed(1)}°` : "—";
+  const headingText = vehicle.heading !== null
+    ? `${vehicle.heading.toFixed(1)}°`
+    : "—";
 
   const lastUpdateText =
-    age === null
-      ? "—"
-      : age === 0
-      ? "just now"
-      : `${age}s ago`;
+    age === null ? "—"
+    : age === 0 ? "just now"
+    : `${age}s ago`;
 
   return (
     <footer className="status-bar">
@@ -64,6 +56,14 @@ function StatusBar() {
       <div className="status-group">
         <span className="status-label">HEADING</span>
         <span className="status-value">{headingText}</span>
+      </div>
+
+      <div className="status-group">
+        <span className="status-label">VEHICLES</span>
+        <span className="status-value">
+          <i className={`mini-dot ${vehicleCount > 0 ? "online" : "offline"}`}></i>
+          {vehicleCount > 0 ? vehicleCount : "—"}
+        </span>
       </div>
 
       <div className="status-group">
