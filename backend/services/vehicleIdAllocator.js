@@ -1,62 +1,52 @@
 /**
  * Vehicle ID Allocator
  *
- * Strategy: reuse the lowest available slot.
- * VEHICLE_A is always the first connection, VEHICLE_B the second, etc.
- * When a vehicle disconnects its slot is released and can be reused
- * by the next incoming connection.
+ * Allocates a new vehicle ID for a device that has never been seen before.
+ * Once allocated, a vehicle ID is PERMANENTLY reserved for that device.
+ * It is NEVER released back to the pool, even when the device disconnects.
  *
- * This is a SESSION identity only — not persistent ownership.
+ * This is the key difference from the old session-only allocator:
+ *
+ *   OLD: releaseVehicleId() returned the slot to the pool on disconnect.
+ *        A reconnecting device could get a different ID.
+ *
+ *   NEW: reserveVehicleId() permanently marks the slot.
+ *        Only brand-new devices consume a new slot.
+ *        Reconnecting devices are handled by deviceRegistry, not here.
+ *
+ * Format: VEHICLE_001, VEHICLE_002, ... VEHICLE_999, VEHICLE_1000, ...
+ * Numeric format chosen over letters to support arbitrary scale cleanly.
  */
 
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// Set of permanently reserved vehicle IDs (never cleared)
+const reservedIds = new Set();
 
-// Set of currently active (allocated) vehicle IDs
-const activeIds = new Set();
+let nextCounter = 1;
 
 /**
- * Allocate the next available vehicle ID.
- * Returns a string like "VEHICLE_A", "VEHICLE_B", etc.
- * Supports up to 26 simultaneous vehicles (A–Z).
- * Beyond that, uses two-letter suffixes: AA, AB, ...
+ * Allocate and permanently reserve the next available vehicle ID.
+ * Call this ONLY for a device that has never been seen before.
+ * Returns a string like "VEHICLE_001".
  */
 function allocateVehicleId() {
-  // Find the first unused single-letter slot
-  for (const letter of LETTERS) {
-    const id = `VEHICLE_${letter}`;
-    if (!activeIds.has(id)) {
-      activeIds.add(id);
-      return id;
-    }
-  }
-
-  // Overflow: two-letter slots (VEHICLE_AA, VEHICLE_AB, ...)
-  for (const l1 of LETTERS) {
-    for (const l2 of LETTERS) {
-      const id = `VEHICLE_${l1}${l2}`;
-      if (!activeIds.has(id)) {
-        activeIds.add(id);
-        return id;
-      }
-    }
-  }
-
-  // Should never reach here in practice
-  throw new Error("[Vehicle Allocator] No available vehicle IDs");
+  const id = `VEHICLE_${String(nextCounter).padStart(3, "0")}`;
+  nextCounter++;
+  reservedIds.add(id);
+  return id;
 }
 
 /**
- * Release a vehicle ID back to the pool when its session ends.
+ * Check if a vehicle ID has been permanently reserved.
  */
-function releaseVehicleId(vehicleId) {
-  activeIds.delete(vehicleId);
+function isVehicleIdReserved(vehicleId) {
+  return reservedIds.has(vehicleId);
 }
 
 /**
- * Check if a vehicle ID is currently active.
+ * Returns the count of permanently allocated vehicle IDs.
  */
-function isVehicleIdActive(vehicleId) {
-  return activeIds.has(vehicleId);
+function getAllocatedCount() {
+  return reservedIds.size;
 }
 
-module.exports = { allocateVehicleId, releaseVehicleId, isVehicleIdActive };
+module.exports = { allocateVehicleId, isVehicleIdReserved, getAllocatedCount };

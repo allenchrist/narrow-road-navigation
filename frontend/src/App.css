@@ -1070,3 +1070,124 @@
     display: none;
   }
 }
+
+/* =========================================================
+   PROXIMITY ALERT PANEL
+   ========================================================= */
+
+.alert-panel {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  z-index: 1000;
+  width: 260px;
+  background: rgba(13, 19, 25, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.alert-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  background: rgba(255, 92, 99, 0.1);
+  border-bottom: 1px solid rgba(255, 92, 99, 0.2);
+}
+
+.alert-panel-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--danger);
+}
+
+.alert-count {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--danger);
+  background: rgba(255, 92, 99, 0.15);
+  border: 1px solid rgba(255, 92, 99, 0.3);
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.alert-item:last-child {
+  border-bottom: 0;
+}
+
+.alert-item--critical {
+  background: rgba(255, 92, 99, 0.06);
+}
+
+.alert-item--warning {
+  background: rgba(242, 184, 75, 0.05);
+}
+
+.alert-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.alert-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-vehicles {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-distance {
+  font-size: 8px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.alert-level-badge {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.alert-level-badge--critical {
+  color: var(--danger);
+  background: rgba(255, 92, 99, 0.15);
+  border: 1px solid rgba(255, 92, 99, 0.3);
+}
+
+.alert-level-badge--warning {
+  color: var(--warning);
+  background: rgba(242, 184, 75, 0.12);
+  border: 1px solid rgba(242, 184, 75, 0.3);
+}

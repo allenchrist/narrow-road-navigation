@@ -20,13 +20,18 @@ const EMPTY_VEHICLE = {
 };
 
 /**
- * Read ?ego=VEHICLE_X from the URL.
- * This lets a phone open the dashboard as:
- *   http://localhost:5173?ego=VEHICLE_A
- * and the dashboard will treat VEHICLE_A as its ego vehicle.
+ * TEMPORARY TESTING CONVENIENCE — NOT the final identity mechanism.
  *
- * If no param is present, myVehicleId stays null and the
- * dashboard shows all vehicles without a designated ego.
+ * ?ego=VEHICLE_001 lets a developer open the dashboard and designate
+ * which vehicle is "theirs" for testing purposes.
+ *
+ * Final identity flow (Owner Model — future phase):
+ *   User logs in → backend resolves USER → DEVICE → VEHICLE
+ *   Backend pushes { type: "session:assigned", vehicleId } via Socket.IO
+ *   setMyVehicleId() is called from the onSessionAssigned handler below
+ *
+ * The dashboard is NOT a vehicle client. It never connects to /vehicle.
+ * Vehicle identity comes from the Android device, not the browser.
  */
 function getEgoFromUrl() {
   try {
@@ -43,8 +48,15 @@ export function VehicleProvider({ children }) {
   const [backendConnected, setBackendConnected] = useState(false);
   const [gpsStatus, setGpsStatus] = useState("DISCONNECTED");
 
-  // myVehicleId: the ego vehicle for THIS dashboard session.
-  // Initialised from URL param; can be updated if backend sends session:assigned.
+  /**
+   * myVehicleId — the ego vehicle for this dashboard session.
+   *
+   * Current source: ?ego=VEHICLE_001 URL param (testing only).
+   * Future source:  session:assigned event from backend (Owner Model).
+   *
+   * null means no ego vehicle is designated — dashboard shows all vehicles
+   * without highlighting one as "mine".
+   */
   const [myVehicleId, setMyVehicleId] = useState(getEgoFromUrl);
 
   const stateRef = useRef({ vehicles: {}, backendConnected: false, myVehicleId: null });
@@ -97,8 +109,11 @@ export function VehicleProvider({ children }) {
       setBackendConnected(true);
     }
 
-    // Backend can push a session assignment to a specific dashboard
-    // (future: when phone and dashboard share a session token)
+    /**
+     * Owner Model hook point (future phase).
+     * When a user logs in, the backend will push their assigned vehicleId here.
+     * For now this event is never emitted — the URL param is used instead.
+     */
     function onSessionAssigned({ vehicleId }) {
       if (vehicleId) {
         setMyVehicleId(vehicleId.trim().toUpperCase());
@@ -120,12 +135,12 @@ export function VehicleProvider({ children }) {
     };
   }, []);
 
-  // Derived ego vehicle — uses myVehicleId if set, otherwise null
+  // Derived ego vehicle — uses myVehicleId if set, otherwise empty placeholder
   const egoVehicle = myVehicleId && vehicles[myVehicleId]
     ? { ...vehicles[myVehicleId], backendConnected }
     : { ...EMPTY_VEHICLE, backendConnected };
 
-  // Backward-compatible alias
+  // Backward-compatible alias used by Sidebar / StatusBar
   const vehicle = egoVehicle;
 
   return (

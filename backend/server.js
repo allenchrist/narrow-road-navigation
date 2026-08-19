@@ -6,6 +6,7 @@ const config = require("./config/config");
 const { initSocketServer } = require("./socket/socketServer");
 const { initVehicleWebSocketServer } = require("./socket/vehicleWebSocketServer");
 const { getAllVehicles, getVehicleCount } = require("./services/vehicleState");
+const { getDeviceCount } = require("./services/deviceRegistry");
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
+    deviceCount: getDeviceCount(),
     vehicleCount: getVehicleCount(),
     vehicles: getAllVehicles(),
   });

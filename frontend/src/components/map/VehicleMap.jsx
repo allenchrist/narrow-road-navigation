@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { useVehicle } from "../../context/VehicleContext";
 import { haversineDistance } from "../../utils/haversine";
 import VehicleMarker from "./VehicleMarker";
+import AlertPanel from "../alerts/AlertPanel";
 
 function FlyToEgo({ lat, lon }) {
   const map = useMap();
@@ -100,6 +101,8 @@ function VehicleMap() {
         <span className={mapMode === "map" ? "active" : ""} onClick={() => setMapMode("map")}>MAP</span>
         <span className={mapMode === "satellite" ? "active" : ""} onClick={() => setMapMode("satellite")}>SATELLITE</span>
       </div>
+
+      <AlertPanel />
 
       <div className="map-top-controls">
         <button type="button" onClick={zoomIn} aria-label="Zoom in">+</button>
