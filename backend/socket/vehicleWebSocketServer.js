@@ -157,25 +157,35 @@ function initVehicleWebSocketServer(httpServer, path) {
     });
 
     // ── DISCONNECT ───────────────────────────────────────────────────────────
-    ws.on("close", () => {
+    ws.on("close", (code, reason) => {
       clearTimeout(registrationTimeout);
 
+      console.log(
+        `[Vehicle WS] CLOSE event — device=${deviceId ?? remoteAddr}, ` +
+        `code=${code}, reason="${reason.toString()}"`
+      );
+
       if (!registered || !deviceId) {
-        console.log(`[Vehicle WS] Unregistered connection from ${remoteAddr} closed`);
+        console.log(
+          `[Vehicle WS] Unregistered connection from ${remoteAddr} closed`
+        );
         return;
       }
 
-      // Only update state if this ws is still the active connection for the device
-      // (avoids clobbering state when a duplicate connection replaced this one)
       const currentWs = getConnection(deviceId);
+
       if (currentWs === ws || currentWs === null) {
         removeConnection(deviceId);
         setVehicleConnected(vehicleId, false);
         broadcastFleetUpdate();
-        console.log(`[Vehicle WS] ${deviceId} (${vehicleId}) disconnected`);
+
+        console.log(
+          `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected`
+        );
       } else {
-        // This was the old connection that got replaced — state already updated
-        console.log(`[Vehicle WS] Replaced connection for ${deviceId} closed (no state change)`);
+        console.log(
+          `[Vehicle WS] Replaced connection for ${deviceId} closed (no state change)`
+        );
       }
     });
 
