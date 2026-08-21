@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 const config = require("../config/config");
 const { getAllVehicles } = require("../services/vehicleState");
-const { getVehicleForDevice } = require("../services/deviceRegistry");
+const { getPairing } = require("../services/pairingService");
 
 let io = null;
 
@@ -16,60 +16,108 @@ function initSocketServer(httpServer) {
   });
 
   io.on("connection", (socket) => {
-    console.log(`[Socket.IO] Dashboard connected: ${socket.id}`);
+    console.log(
+      `[Socket.IO] Dashboard connected: ${socket.id}`
+    );
 
-    // Send the full current fleet immediately on connect
+    // --------------------------------------------------
+    // Send current fleet immediately
+    // --------------------------------------------------
+
     socket.emit("vehicles:update", {
       vehicles: getAllVehicles(),
     });
 
     // --------------------------------------------------
-    // Dashboard → Backend identity pairing
+    // Dashboard → Backend pairing
+    //
+    // Dashboard sends:
+    // {
+    //   pairingCode: "967503"
+    // }
     // --------------------------------------------------
-    socket.on("session:identify", ({ deviceId }) => {
-      if (!deviceId || typeof deviceId !== "string") {
+
+    socket.on("session:pair", ({ pairingCode }) => {
+
+      if (
+        !pairingCode ||
+        typeof pairingCode !== "string"
+      ) {
+
         socket.emit("session:error", {
-          message: "Invalid deviceId",
+          message: "Invalid pairing code",
         });
+
         return;
       }
 
-      const normalizedDeviceId = deviceId.trim();
+      const normalizedCode =
+        pairingCode.trim();
 
-      const vehicleId = getVehicleForDevice(normalizedDeviceId);
+      // --------------------------------------------------
+      // Look up pairing code
+      // --------------------------------------------------
 
-      if (!vehicleId) {
+      const pairing =
+        getPairing(normalizedCode);
+
+      if (!pairing) {
+
         console.warn(
-          `[Socket.IO] Unknown device ${normalizedDeviceId} requested pairing`
+          `[Socket.IO] Invalid pairing code ${normalizedCode}`
         );
 
         socket.emit("session:error", {
-          message: "Device not registered",
+          message: "Invalid or expired pairing code",
         });
 
         return;
       }
 
+      const {
+        deviceId,
+        vehicleId,
+      } = pairing;
+
+      // --------------------------------------------------
+      // Pair this dashboard session
+      // --------------------------------------------------
+
       console.log(
-        `[Socket.IO] Dashboard ${socket.id} paired with ${vehicleId} via device ${normalizedDeviceId}`
+        `[Socket.IO] Dashboard ${socket.id} paired with ${vehicleId} via code ${normalizedCode}`
       );
 
+      // --------------------------------------------------
+      // Tell this dashboard which vehicle is YOU
+      // --------------------------------------------------
+
       socket.emit("session:assigned", {
-        deviceId: normalizedDeviceId,
+        deviceId,
         vehicleId,
       });
     });
 
+    // --------------------------------------------------
+    // Disconnect
+    // --------------------------------------------------
+
     socket.on("disconnect", () => {
-      console.log(`[Socket.IO] Dashboard disconnected: ${socket.id}`);
+
+      console.log(
+        `[Socket.IO] Dashboard disconnected: ${socket.id}`
+      );
     });
   });
 
   return io;
 }
 
-// Broadcast full fleet to all connected dashboards
+// --------------------------------------------------
+// Broadcast full fleet to all dashboards
+// --------------------------------------------------
+
 function broadcastFleetUpdate() {
+
   if (!io) return;
 
   io.emit("vehicles:update", {
