@@ -42,6 +42,8 @@ const {
   removeConnection,
 } = require("../services/deviceRegistry");
 
+const { createPairing } = require("../services/pairingService");
+
 // All currently connected Android vehicle WebSockets
 const connectedVehicles = new Map();
 
@@ -139,8 +141,28 @@ function initVehicleWebSocketServer(httpServer, path) {
         // Track this Android connection
         connectedVehicles.set(deviceId, ws);
 
-        // Respond with both deviceId and vehicleId
-        ws.send(JSON.stringify({ type: "registered", deviceId, vehicleId }));
+        // --------------------------------------------------
+        // Generate temporary pairing code
+        // --------------------------------------------------
+
+        const pairingCode = createPairing(
+          deviceId,
+          vehicleId
+        );
+
+        console.log(
+          `[Vehicle WS] Pairing code for ${vehicleId}: ${pairingCode}`
+        );
+
+        // Respond with deviceId, vehicleId and pairing code
+        ws.send(
+          JSON.stringify({
+            type: "registered",
+            deviceId,
+            vehicleId,
+            pairingCode,
+          })
+        );
 
         broadcastFleetUpdate();
         broadcastFleetToVehicles();
