@@ -30,9 +30,13 @@ initSocketServer(httpServer);
 // 2. WebSocket server for Android vehicle clients
 initVehicleWebSocketServer(httpServer, config.vehicleWsPath);
 
-httpServer.listen(config.port, () => {
-  console.log(`[Server] Listening on port ${config.port}`);
-  console.log(`[Server] Vehicle WS endpoint: ws://localhost:${config.port}${config.vehicleWsPath}`);
+const PORT = process.env.PORT || config.port;
+
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`[Server] Listening on port ${PORT}`);
+  console.log(
+    `[Server] Vehicle WS endpoint: ws://0.0.0.0:${PORT}${config.vehicleWsPath}`
+  );
   console.log(`[Server] CORS origins: ${config.corsOrigin}`);
 });
 

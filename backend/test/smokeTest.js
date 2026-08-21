@@ -22,8 +22,8 @@
 const WebSocket = require("ws");
 const http = require("http");
 
-const WS_URL = process.env.BACKEND_WS_URL || "ws://localhost:5000/vehicle";
-const HEALTH_URL = process.env.HEALTH_URL || "http://localhost:5000/health";
+const WS_URL = "ws://127.0.0.1:5000/vehicle";
+const HEALTH_URL = process.env.HEALTH_URL || "http://127.0.0.1:5000/health";
 
 let passed = 0;
 let failed = 0;
