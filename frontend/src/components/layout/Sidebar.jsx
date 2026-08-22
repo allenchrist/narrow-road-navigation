@@ -1,6 +1,7 @@
 import { useVehicle } from "../../context/VehicleContext";
 import VehicleList from "../vehicle/VehicleList";
 
+
 function fmt(val, decimals, suffix = "") {
   if (val === null || val === undefined) return "—";
   return val.toFixed(decimals) + suffix;
