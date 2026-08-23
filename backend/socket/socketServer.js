@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const config = require("../config/config");
 const { getAllVehicles } = require("../services/vehicleState");
+const { getVehicleForDevice } = require("../services/deviceRegistry");
 const { getPairing } = require("../services/pairingService");
 
 let io = null;
@@ -29,21 +30,67 @@ function initSocketServer(httpServer) {
     });
 
     // --------------------------------------------------
-    // Dashboard → Backend pairing
-    //
-    // Dashboard sends:
-    // {
-    //   pairingCode: "967503"
-    // }
+    // AUTOMATIC DEVICE → VEHICLE IDENTIFICATION
+    // --------------------------------------------------
+
+    socket.on("session:identify", ({ deviceId }) => {
+      console.log(
+        `[Socket.IO] session:identify received from ${socket.id}:`,
+        deviceId
+      );
+
+      if (!deviceId || typeof deviceId !== "string") {
+        socket.emit("session:error", {
+          message: "Invalid device ID",
+        });
+
+        return;
+      }
+
+      const normalizedDeviceId = deviceId.trim();
+
+      const vehicleId =
+        getVehicleForDevice(normalizedDeviceId);
+
+      console.log(
+        `[Socket.IO] Device lookup: ${normalizedDeviceId} → ${
+          vehicleId || "NOT FOUND"
+        }`
+      );
+
+      if (!vehicleId) {
+        console.warn(
+          `[Socket.IO] Device not registered: ${normalizedDeviceId}`
+        );
+
+        socket.emit("session:error", {
+          message: "Device not registered",
+        });
+
+        return;
+      }
+
+      console.log(
+        `[Socket.IO] Dashboard ${socket.id} identified as ${vehicleId}`
+      );
+
+      // Tell ONLY this dashboard which vehicle is its ego
+      socket.emit("session:assigned", {
+        deviceId: normalizedDeviceId,
+        vehicleId,
+      });
+    });
+
+    // --------------------------------------------------
+    // OPTIONAL MANUAL PAIRING
+    // Keep this for future QR/code pairing if needed.
     // --------------------------------------------------
 
     socket.on("session:pair", ({ pairingCode }) => {
-
       if (
         !pairingCode ||
         typeof pairingCode !== "string"
       ) {
-
         socket.emit("session:error", {
           message: "Invalid pairing code",
         });
@@ -51,18 +98,11 @@ function initSocketServer(httpServer) {
         return;
       }
 
-      const normalizedCode =
-        pairingCode.trim();
+      const normalizedCode = pairingCode.trim();
 
-      // --------------------------------------------------
-      // Look up pairing code
-      // --------------------------------------------------
-
-      const pairing =
-        getPairing(normalizedCode);
+      const pairing = getPairing(normalizedCode);
 
       if (!pairing) {
-
         console.warn(
           `[Socket.IO] Invalid pairing code ${normalizedCode}`
         );
@@ -79,17 +119,9 @@ function initSocketServer(httpServer) {
         vehicleId,
       } = pairing;
 
-      // --------------------------------------------------
-      // Pair this dashboard session
-      // --------------------------------------------------
-
       console.log(
         `[Socket.IO] Dashboard ${socket.id} paired with ${vehicleId} via code ${normalizedCode}`
       );
-
-      // --------------------------------------------------
-      // Tell this dashboard which vehicle is YOU
-      // --------------------------------------------------
 
       socket.emit("session:assigned", {
         deviceId,
@@ -98,11 +130,10 @@ function initSocketServer(httpServer) {
     });
 
     // --------------------------------------------------
-    // Disconnect
+    // DISCONNECT
     // --------------------------------------------------
 
     socket.on("disconnect", () => {
-
       console.log(
         `[Socket.IO] Dashboard disconnected: ${socket.id}`
       );
@@ -117,7 +148,6 @@ function initSocketServer(httpServer) {
 // --------------------------------------------------
 
 function broadcastFleetUpdate() {
-
   if (!io) return;
 
   io.emit("vehicles:update", {

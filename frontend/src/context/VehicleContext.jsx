@@ -29,15 +29,18 @@ const EMPTY_VEHICLE = {
 
 export function VehicleProvider({ children }) {
   const [vehicles, setVehicles] = useState({});
-  const [backendConnected, setBackendConnected] = useState(false);
-  const [gpsStatus, setGpsStatus] = useState("DISCONNECTED");
+  const [backendConnected, setBackendConnected] =
+    useState(false);
 
-  // Vehicle assigned to this dashboard session
-  const [myVehicleId, setMyVehicleId] = useState(null);
+  const [gpsStatus, setGpsStatus] =
+    useState("DISCONNECTED");
 
-  // Pairing state
-  const [pairingStatus, setPairingStatus] = useState("IDLE");
-  const [pairingError, setPairingError] = useState("");
+  // --------------------------------------------------
+  // Ego vehicle assigned to THIS dashboard
+  // --------------------------------------------------
+
+  const [myVehicleId, setMyVehicleId] =
+    useState(null);
 
   const stateRef = useRef({
     vehicles: {},
@@ -56,19 +59,24 @@ export function VehicleProvider({ children }) {
   // --------------------------------------------------
 
   useEffect(() => {
-    const id = setInterval(() => {
+    const interval = setInterval(() => {
       const {
-        vehicles: v,
-        backendConnected: bc,
+        vehicles: vehicleMap,
+        backendConnected: connected,
         myVehicleId: egoId,
       } = stateRef.current;
 
-      if (!bc) {
+      if (!connected) {
         setGpsStatus("DISCONNECTED");
         return;
       }
 
-      const ego = egoId ? v[egoId] : null;
+      if (!egoId) {
+        setGpsStatus("NO VEHICLE");
+        return;
+      }
+
+      const ego = vehicleMap[egoId];
 
       if (!ego) {
         setGpsStatus("NO SIGNAL");
@@ -80,14 +88,15 @@ export function VehicleProvider({ children }) {
         return;
       }
 
-      if (ego.lat === null) {
+      if (ego.lat === null || ego.lon === null) {
         setGpsStatus("WAITING");
         return;
       }
 
       if (
         ego.lastReceivedAt &&
-        Date.now() - ego.lastReceivedAt > STALE_THRESHOLD_MS
+        Date.now() - ego.lastReceivedAt >
+          STALE_THRESHOLD_MS
       ) {
         setGpsStatus("STALE");
         return;
@@ -96,7 +105,7 @@ export function VehicleProvider({ children }) {
       setGpsStatus("ACTIVE");
     }, 1000);
 
-    return () => clearInterval(id);
+    return () => clearInterval(interval);
   }, []);
 
   // --------------------------------------------------
@@ -107,25 +116,29 @@ export function VehicleProvider({ children }) {
     const socket = getVehicleSocket();
 
     function onConnect() {
-      console.log("[VehicleContext] Backend connected");
+      console.log(
+        "[VehicleContext] Backend connected"
+      );
 
       setBackendConnected(true);
     }
 
     function onDisconnect() {
-      console.log("[VehicleContext] Backend disconnected");
+      console.log(
+        "[VehicleContext] Backend disconnected"
+      );
 
       setBackendConnected(false);
 
-      setVehicles((prev) => {
+      setVehicles((previous) => {
         const updated = {};
 
-        for (const id of Object.keys(prev)) {
+        Object.keys(previous).forEach((id) => {
           updated[id] = {
-            ...prev[id],
+            ...previous[id],
             connected: false,
           };
-        }
+        });
 
         return updated;
       });
@@ -138,23 +151,20 @@ export function VehicleProvider({ children }) {
     function onVehiclesUpdate({ vehicles: list }) {
       if (!Array.isArray(list)) return;
 
-      setVehicles(() => {
-        const map = {};
+      const vehicleMap = {};
 
-        for (const v of list) {
-          map[v.vehicleId] = {
-            ...v,
-          };
-        }
-
-        return map;
+      list.forEach((vehicle) => {
+        vehicleMap[vehicle.vehicleId] = {
+          ...vehicle,
+        };
       });
 
+      setVehicles(vehicleMap);
       setBackendConnected(true);
     }
 
     // --------------------------------------------------
-    // Pairing successful
+    // Dashboard → Vehicle assignment
     // --------------------------------------------------
 
     function onSessionAssigned({
@@ -162,13 +172,17 @@ export function VehicleProvider({ children }) {
       vehicleId,
     }) {
       console.log(
-        "[VehicleContext] Session assigned:",
-        vehicleId
+        "[VehicleContext] SESSION ASSIGNED"
       );
 
       console.log(
         "[VehicleContext] Device:",
         deviceId
+      );
+
+      console.log(
+        "[VehicleContext] Vehicle:",
+        vehicleId
       );
 
       if (!vehicleId) return;
@@ -177,26 +191,19 @@ export function VehicleProvider({ children }) {
         vehicleId.trim().toUpperCase();
 
       setMyVehicleId(normalizedVehicleId);
-
-      setPairingStatus("PAIRED");
-      setPairingError("");
     }
 
     // --------------------------------------------------
-    // Pairing error
+    // Identity error
     // --------------------------------------------------
 
     function onSessionError({ message }) {
       console.error(
-        "[VehicleContext] Pairing error:",
+        "[VehicleContext] SESSION ERROR:",
         message
       );
 
-      setPairingStatus("ERROR");
-
-      setPairingError(
-        message || "Pairing failed"
-      );
+      setMyVehicleId(null);
     }
 
     if (socket.connected) {
@@ -204,7 +211,11 @@ export function VehicleProvider({ children }) {
     }
 
     socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
+
+    socket.on(
+      "disconnect",
+      onDisconnect
+    );
 
     socket.on(
       "vehicles:update",
@@ -223,7 +234,11 @@ export function VehicleProvider({ children }) {
 
     return () => {
       socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
+
+      socket.off(
+        "disconnect",
+        onDisconnect
+      );
 
       socket.off(
         "vehicles:update",
@@ -243,52 +258,12 @@ export function VehicleProvider({ children }) {
   }, []);
 
   // --------------------------------------------------
-  // PAIR VEHICLE
-  // --------------------------------------------------
-
-  function pairVehicle(pairingCode) {
-    const socket = getVehicleSocket();
-
-    if (!socket.connected) {
-      setPairingStatus("ERROR");
-      setPairingError(
-        "Backend is not connected"
-      );
-      return;
-    }
-
-    const normalizedCode =
-      String(pairingCode)
-        .trim()
-        .replace(/\s/g, "");
-
-    if (!/^\d{6}$/.test(normalizedCode)) {
-      setPairingStatus("ERROR");
-      setPairingError(
-        "Enter a valid 6-digit pairing code"
-      );
-      return;
-    }
-
-    console.log(
-      "[VehicleContext] Pairing with code:",
-      normalizedCode
-    );
-
-    setPairingStatus("PAIRING");
-    setPairingError("");
-
-    socket.emit("session:pair", {
-      pairingCode: normalizedCode,
-    });
-  }
-
-  // --------------------------------------------------
   // Derived ego vehicle
   // --------------------------------------------------
 
   const egoVehicle =
-    myVehicleId && vehicles[myVehicleId]
+    myVehicleId &&
+    vehicles[myVehicleId]
       ? {
           ...vehicles[myVehicleId],
           backendConnected,
@@ -298,7 +273,7 @@ export function VehicleProvider({ children }) {
           backendConnected,
         };
 
-  // Backward-compatible alias
+  // Existing components use this alias
   const vehicle = egoVehicle;
 
   return (
@@ -317,11 +292,6 @@ export function VehicleProvider({ children }) {
         backendConnected,
 
         gpsStatus,
-
-        // Pairing
-        pairVehicle,
-        pairingStatus,
-        pairingError,
       }}
     >
       {children}

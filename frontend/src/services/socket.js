@@ -3,21 +3,19 @@ import { io } from "socket.io-client";
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-console.log("[Socket.IO] Backend URL:", BACKEND_URL);
-
 // --------------------------------------------------
-// Read Android device ID from dashboard URL
+// Dashboard device identity
 // Example:
 // http://localhost:5173/?device=bdb8a5d7-...
 // --------------------------------------------------
 
-function getDeviceIdFromUrl() {
+function getDashboardDeviceId() {
   try {
     const params = new URLSearchParams(window.location.search);
     const deviceId = params.get("device");
 
     if (!deviceId) {
-      console.log("[Socket.IO] No device ID provided");
+      console.log("[Socket.IO] No dashboard device ID");
       return null;
     }
 
@@ -31,7 +29,7 @@ function getDeviceIdFromUrl() {
     return normalized;
   } catch (error) {
     console.error(
-      "[Socket.IO] Failed to read device ID:",
+      "[Socket.IO] Failed to read dashboard device ID:",
       error
     );
 
@@ -39,7 +37,9 @@ function getDeviceIdFromUrl() {
   }
 }
 
-const dashboardDeviceId = getDeviceIdFromUrl();
+const dashboardDeviceId = getDashboardDeviceId();
+
+console.log("[Socket.IO] Backend URL:", BACKEND_URL);
 
 const socket = io(BACKEND_URL, {
   path: "/socket.io",
@@ -70,7 +70,7 @@ socket.on("connect", () => {
     socket.id
   );
 
-  // Identify this dashboard
+  // Automatically identify this dashboard
   if (dashboardDeviceId) {
     console.log(
       "[Socket.IO] Identifying dashboard device:",
@@ -80,6 +80,10 @@ socket.on("connect", () => {
     socket.emit("session:identify", {
       deviceId: dashboardDeviceId,
     });
+  } else {
+    console.warn(
+      "[Socket.IO] Dashboard has no device identity"
+    );
   }
 });
 
@@ -118,11 +122,6 @@ socket.on("connect_error", (error) => {
   console.error(
     "[Socket.IO] CONNECTION ERROR:",
     error.message
-  );
-
-  console.error(
-    "[Socket.IO] Full error:",
-    error
   );
 });
 
