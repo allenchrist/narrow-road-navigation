@@ -104,15 +104,17 @@ function VehicleMap() {
   /*
    * Ego GPS availability
    */
-  const hasEgoGps =
-    egoVehicle.lat !== null &&
-    egoVehicle.lon !== null;
+ const hasEgoGps =
+  egoVehicle.lat !== null &&
+  egoVehicle.lon !== null;
 
-  /*
-   * Complete fleet
-   */
-  const vehicleList =
-    Object.values(vehicles);
+// Ego vehicle is always kept visible.
+// Other vehicles are visible only when connected.
+const vehicleList = Object.values(vehicles).filter(
+  (v) =>
+    v.vehicleId === myVehicleId ||
+    v.connected === true
+);
 
   /*
    * Map reference
