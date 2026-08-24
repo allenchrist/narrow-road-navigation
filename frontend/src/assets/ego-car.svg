@@ -1,194 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 56" width="40" height="56">
-  <defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="1024" viewBox="0 0 512 1024">
+<defs>
+<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".28" stop-color="#f5f7fa"/><stop offset=".55" stop-color="#d9dee4"/><stop offset=".8" stop-color="#aeb7c0"/><stop offset="1" stop-color="#707a84"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40566a"/><stop offset=".3" stop-color="#172635"/><stop offset=".7" stop-color="#08121c"/><stop offset="1" stop-color="#02070c"/></linearGradient>
+<linearGradient id="wheel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3a4650"/><stop offset=".5" stop-color="#111820"/><stop offset="1" stop-color="#030507"/></linearGradient>
+<linearGradient id="light" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".5" stop-color="#b9f0ff"/><stop offset="1" stop-color="#54c9ff"/></linearGradient>
+<linearGradient id="tail" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ff7777"/><stop offset=".55" stop-color="#f02035"/><stop offset="1" stop-color="#8b0717"/></linearGradient>
+<filter id="shadow" x="-40%" y="-20%" width="180%" height="150%"><feGaussianBlur stdDeviation="12"/></filter>
+<filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="10"/></filter>
+</defs>
 
-    <filter id="body-shadow" x="-40%" y="-30%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
-    </filter>
+<ellipse cx="256" cy="515" rx="165" ry="485" fill="#dff7ff" opacity=".16" filter="url(#glow)"/>
+<path d="M256 78C174 78 126 145 111 245L84 450C76 516 78 602 94 674L126 864C142 947 188 982 256 990C324 982 370 947 386 864L418 674C434 602 436 516 428 450L401 245C386 145 338 78 256 78Z" fill="#000" opacity=".42" filter="url(#shadow)" transform="translate(0 12)"/>
 
-    <filter id="headlight-glow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="1.5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+<g fill="url(#wheel)" stroke="#020507" stroke-width="5">
+<rect x="87" y="250" width="48" height="150" rx="22"/><rect x="377" y="250" width="48" height="150" rx="22"/>
+<rect x="87" y="690" width="48" height="150" rx="22"/><rect x="377" y="690" width="48" height="150" rx="22"/>
+</g>
 
-    <filter id="taillight-glow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="1.2" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
+<path d="M256 54C197 54 157 88 133 151C119 189 111 239 101 302L83 438C75 502 76 574 89 641L119 846C130 927 176 970 256 976C336 970 382 927 393 846L423 641C436 574 437 502 429 438L411 302C401 239 393 189 379 151C355 88 315 54 256 54Z" fill="url(#body)" stroke="#fff" stroke-width="5"/>
 
-    <!-- Main body: dark steel blue, lighter at front (top) -->
-    <linearGradient id="body" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%"   stop-color="#2e6a9e"/>
-      <stop offset="25%"  stop-color="#1a4a72"/>
-      <stop offset="60%"  stop-color="#112f4e"/>
-      <stop offset="100%" stop-color="#0a1e30"/>
-    </linearGradient>
+<path d="M105 390C127 410 141 455 141 514L126 785C122 829 135 883 163 919C134 893 116 854 109 804L88 641C78 566 80 480 105 390Z" fill="#7f8a94" opacity=".55"/>
+<path d="M407 390C385 410 371 455 371 514L386 785C390 829 377 883 349 919C378 893 396 854 403 804L424 641C434 566 432 480 407 390Z" fill="#707b85" opacity=".5"/>
 
-    <!-- Roof: darker, glassy -->
-    <linearGradient id="roof" x1="0.3" y1="0" x2="0.7" y2="1">
-      <stop offset="0%"   stop-color="#1e5a8a"/>
-      <stop offset="40%"  stop-color="#0f3558"/>
-      <stop offset="100%" stop-color="#081e33"/>
-    </linearGradient>
+<path d="M143 163C170 101 208 79 256 79C304 79 342 101 369 163L393 292C355 270 309 257 256 257C203 257 157 270 119 292Z" fill="#e1e5e9"/>
+<path d="M150 171C170 112 205 90 256 89C307 90 342 112 362 171L383 292C342 270 300 260 256 260C212 260 170 270 129 292Z" fill="url(#glass)" stroke="#7d929f" stroke-width="3"/>
 
-    <!-- Windshield: icy blue glass -->
-    <linearGradient id="wind" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%"   stop-color="rgba(200,235,255,0.82)"/>
-      <stop offset="100%" stop-color="rgba(100,180,240,0.30)"/>
-    </linearGradient>
+<path d="M132 309C169 280 209 267 256 267C303 267 343 280 380 309L365 566C337 592 299 605 256 605C213 605 175 592 147 566Z" fill="#0b1824" stroke="#718493" stroke-width="3"/>
+<path d="M161 322C194 298 221 288 253 286L235 572C204 568 180 559 157 545Z" fill="#bfeeff" opacity=".08"/>
+<path d="M146 624C177 646 214 656 256 656C298 656 335 646 366 624L355 782C332 823 299 845 256 847C213 845 180 823 157 782Z" fill="url(#glass)" stroke="#6d808d" stroke-width="3"/>
 
-    <!-- Rear glass -->
-    <linearGradient id="rear-glass" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%"   stop-color="rgba(80,150,210,0.40)"/>
-      <stop offset="100%" stop-color="rgba(180,220,255,0.60)"/>
-    </linearGradient>
+<path d="M133 307L78 282C66 276 58 286 63 300L76 334C81 345 94 348 106 341L140 323Z" fill="url(#body)" stroke="#fff" stroke-width="4"/>
+<path d="M379 307L434 282C446 276 454 286 449 300L436 334C431 345 418 348 406 341L372 323Z" fill="url(#body)" stroke="#fff" stroke-width="4"/>
 
-    <!-- Tyre -->
-    <radialGradient id="tyre" cx="40%" cy="35%" r="60%">
-      <stop offset="0%"   stop-color="#333"/>
-      <stop offset="100%" stop-color="#0d0d0d"/>
-    </radialGradient>
+<path d="M139 145C151 122 168 108 188 100L177 155C164 161 151 169 140 180Z" fill="url(#light)" stroke="#fff" stroke-width="2"/>
+<path d="M373 145C361 122 344 108 324 100L335 155C348 161 361 169 372 180Z" fill="url(#light)" stroke="#fff" stroke-width="2"/>
 
-    <!-- Rim -->
-    <radialGradient id="rim" cx="50%" cy="50%" r="50%">
-      <stop offset="0%"   stop-color="#8ab4cc"/>
-      <stop offset="60%"  stop-color="#3a6a88"/>
-      <stop offset="100%" stop-color="#1a3a50"/>
-    </radialGradient>
+<path d="M116 351C155 329 203 318 256 318C309 318 357 329 396 351" fill="none" stroke="#fff" stroke-width="3" opacity=".55"/>
+<path d="M139 598C175 615 214 624 256 624C298 624 337 615 373 598" fill="none" stroke="#7f8b95" stroke-width="3" opacity=".6"/>
+<path d="M143 430C172 444 206 451 256 451C306 451 340 444 369 430" fill="none" stroke="#64717b" stroke-width="2" opacity=".55"/>
+<path d="M146 590L134 753M366 590L378 753" fill="none" stroke="#6d7881" stroke-width="2" opacity=".5"/>
 
-    <!-- Hood specular highlight -->
-    <linearGradient id="hood-spec" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%"   stop-color="rgba(255,255,255,0.18)"/>
-      <stop offset="50%"  stop-color="rgba(255,255,255,0.04)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-    </linearGradient>
+<g fill="#fff" opacity=".7"><rect x="182" y="475" width="38" height="5" rx="2.5"/><rect x="292" y="475" width="38" height="5" rx="2.5"/></g>
 
-  </defs>
+<path d="M143 867C174 899 211 913 256 914C301 913 338 899 369 867" fill="none" stroke="#7e0a17" stroke-width="24" opacity=".35"/>
+<path d="M143 867C174 899 211 913 256 914C301 913 338 899 369 867" fill="none" stroke="url(#tail)" stroke-width="9" stroke-linecap="round"/>
+<path d="M158 918C188 946 222 956 256 957C290 956 324 946 354 918" fill="none" stroke="#8d98a1" stroke-width="5" opacity=".75"/>
 
-  <!-- ═══════════════════════════════════
-       TYRES  (drawn first, behind body)
-  ═══════════════════════════════════ -->
-
-  <!-- Front-left -->
-  <rect x="2.5" y="8"  width="7" height="11" rx="2.2" fill="url(#tyre)"/>
-  <ellipse cx="6"   cy="13.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
-  <ellipse cx="6"   cy="13.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
-
-  <!-- Front-right -->
-  <rect x="30.5" y="8"  width="7" height="11" rx="2.2" fill="url(#tyre)"/>
-  <ellipse cx="34"  cy="13.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
-  <ellipse cx="34"  cy="13.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
-
-  <!-- Rear-left -->
-  <rect x="2.5" y="37" width="7" height="11" rx="2.2" fill="url(#tyre)"/>
-  <ellipse cx="6"   cy="42.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
-  <ellipse cx="6"   cy="42.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
-
-  <!-- Rear-right -->
-  <rect x="30.5" y="37" width="7" height="11" rx="2.2" fill="url(#tyre)"/>
-  <ellipse cx="34"  cy="42.5" rx="2.2" ry="2.2" fill="url(#rim)"/>
-  <ellipse cx="34"  cy="42.5" rx="0.9" ry="0.9" fill="#c8dde8" opacity="0.6"/>
-
-  <!-- ═══════════════════════════════════
-       MAIN BODY
-  ═══════════════════════════════════ -->
-  <path
-    d="M10,5 Q20,2 30,5 L33,14 L34,42 Q20,46 6,42 L7,14 Z"
-    fill="url(#body)"
-    filter="url(#body-shadow)"
-  />
-
-  <!-- Body edge highlight — left -->
-  <path d="M7,14 L8,41 Q7,41.5 6.5,41 L7,14Z" fill="rgba(255,255,255,0.09)"/>
-  <!-- Body edge highlight — right -->
-  <path d="M33,14 L32,41 Q33,41.5 33.5,41 L33,14Z" fill="rgba(255,255,255,0.09)"/>
-
-  <!-- Hood specular -->
-  <path
-    d="M13,6 Q20,3.5 27,6 L29,13 Q20,10 11,13 Z"
-    fill="url(#hood-spec)"
-  />
-
-  <!-- ═══════════════════════════════════
-       ROOF CABIN
-  ═══════════════════════════════════ -->
-  <path
-    d="M14,17 Q20,14.5 26,17 L27,36 Q20,38.5 13,36 Z"
-    fill="url(#roof)"
-  />
-
-  <!-- ═══════════════════════════════════
-       WINDSHIELD (front)
-  ═══════════════════════════════════ -->
-  <path
-    d="M13.5,16.5 Q20,13.5 26.5,16.5 L26,22 Q20,19.5 14,22 Z"
-    fill="url(#wind)"
-  />
-  <!-- Windshield glare streak -->
-  <path
-    d="M16,16.8 Q20,14.8 24,16.8 L23.5,19 Q20,17.2 16.5,19 Z"
-    fill="rgba(255,255,255,0.32)"
-  />
-
-  <!-- ═══════════════════════════════════
-       REAR WINDOW
-  ═══════════════════════════════════ -->
-  <path
-    d="M14,35 Q20,37.5 26,35 L26.5,31 Q20,33.5 13.5,31 Z"
-    fill="url(#rear-glass)"
-  />
-
-  <!-- ═══════════════════════════════════
-       DOOR LINE
-  ═══════════════════════════════════ -->
-  <line x1="9" y1="27" x2="31" y2="27" stroke="rgba(255,255,255,0.08)" stroke-width="0.6"/>
-
-  <!-- ═══════════════════════════════════
-       HEADLIGHTS
-  ═══════════════════════════════════ -->
-  <!-- Left headlight housing -->
-  <path d="M10,6 Q13,5 16,6.5 L15.5,10 Q12.5,9 10,9.5 Z" fill="#0a1e30"/>
-  <!-- Left DRL strip -->
-  <path d="M10.5,7 Q13,6.2 15.5,7.2 L15.2,8.5 Q13,7.8 10.8,8.2 Z"
-        fill="#e8f4ff" opacity="0.95" filter="url(#headlight-glow)"/>
-
-  <!-- Right headlight housing -->
-  <path d="M30,6 Q27,5 24,6.5 L24.5,10 Q27.5,9 30,9.5 Z" fill="#0a1e30"/>
-  <!-- Right DRL strip -->
-  <path d="M29.5,7 Q27,6.2 24.5,7.2 L24.8,8.5 Q27,7.8 29.2,8.2 Z"
-        fill="#e8f4ff" opacity="0.95" filter="url(#headlight-glow)"/>
-
-  <!-- ═══════════════════════════════════
-       TAIL LIGHTS
-  ═══════════════════════════════════ -->
-  <!-- Left tail housing -->
-  <path d="M10,43.5 Q13,44.5 16,43 L15.5,40 Q12.5,41 10,40.5 Z" fill="#0a1e30"/>
-  <!-- Left tail strip -->
-  <path d="M10.5,43 Q13,43.8 15.5,42.5 L15.2,41.2 Q13,42 10.8,41.5 Z"
-        fill="#ff3333" opacity="0.92" filter="url(#taillight-glow)"/>
-
-  <!-- Right tail housing -->
-  <path d="M30,43.5 Q27,44.5 24,43 L24.5,40 Q27.5,41 30,40.5 Z" fill="#0a1e30"/>
-  <!-- Right tail strip -->
-  <path d="M29.5,43 Q27,43.8 24.5,42.5 L24.8,41.2 Q27,42 29.2,41.5 Z"
-        fill="#ff3333" opacity="0.92" filter="url(#taillight-glow)"/>
-
-  <!-- ═══════════════════════════════════
-       CYAN ACCENT — waistline
-  ═══════════════════════════════════ -->
-  <path
-    d="M8.5,27 Q20,25.5 31.5,27"
-    stroke="#56c7ff" stroke-width="0.7" fill="none" opacity="0.5"
-    stroke-linecap="round"
-  />
-
-  <!-- ═══════════════════════════════════
-       FRONT DIRECTION ARROW
-  ═══════════════════════════════════ -->
-  <polygon
-    points="20,0.5 22.5,5 17.5,5"
-    fill="#56c7ff"
-    opacity="0.95"
-    filter="url(#headlight-glow)"
-  />
-
+<path d="M256 0L224 52L256 40L288 52Z" fill="#fff" stroke="#bceeff" stroke-width="4"/>
 </svg>
