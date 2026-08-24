@@ -7,6 +7,13 @@ const { initSocketServer } = require("./socket/socketServer");
 const { initVehicleWebSocketServer } = require("./socket/vehicleWebSocketServer");
 const { getAllVehicles, getVehicleCount } = require("./services/vehicleState");
 const { getDeviceCount } = require("./services/deviceRegistry");
+const {
+  getAllNarrowRoads,
+  getNarrowRoadById,
+  createNarrowRoad,
+  updateNarrowRoad,
+  deleteNarrowRoad,
+} = require("./services/narrowRoadService");
 
 const app = express();
 
@@ -20,6 +27,72 @@ app.get("/health", (_req, res) => {
     vehicleCount: getVehicleCount(),
     vehicles: getAllVehicles(),
   });
+});
+
+// ==================================================
+// NARROW ROAD GEOFENCE API
+// ==================================================
+
+app.get("/api/narrow-roads", (_req, res) => {
+  try {
+    res.json({ success: true, roads: getAllNarrowRoads() });
+  } catch (error) {
+    console.error("[Narrow Road API] Failed to get roads:", error);
+    res.status(500).json({ success: false, message: "Failed to load narrow roads" });
+  }
+});
+
+app.get("/api/narrow-roads/:id", (req, res) => {
+  try {
+    const road = getNarrowRoadById(req.params.id);
+    if (!road) return res.status(404).json({ success: false, message: "Narrow road not found" });
+    res.json({ success: true, road });
+  } catch (error) {
+    console.error("[Narrow Road API] Failed to get road:", error);
+    res.status(500).json({ success: false, message: "Failed to load narrow road" });
+  }
+});
+
+app.post("/api/narrow-roads", (req, res) => {
+  try {
+    const { name, polygon } = req.body;
+    if (typeof name !== "string" || !name.trim())
+      return res.status(400).json({ success: false, message: "Road name is required" });
+    if (!Array.isArray(polygon) || polygon.length < 3)
+      return res.status(400).json({ success: false, message: "Polygon must contain at least 3 points" });
+    const road = createNarrowRoad({ name, polygon });
+    res.status(201).json({ success: true, road });
+  } catch (error) {
+    console.error("[Narrow Road API] Failed to create road:", error);
+    res.status(500).json({ success: false, message: "Failed to create narrow road" });
+  }
+});
+
+app.put("/api/narrow-roads/:id", (req, res) => {
+  try {
+    const { name, polygon } = req.body;
+    if (name === undefined && polygon === undefined)
+      return res.status(400).json({ success: false, message: "Nothing to update" });
+    if (polygon !== undefined && (!Array.isArray(polygon) || polygon.length < 3))
+      return res.status(400).json({ success: false, message: "Polygon must contain at least 3 points" });
+    const road = updateNarrowRoad(req.params.id, { name, polygon });
+    if (!road) return res.status(404).json({ success: false, message: "Narrow road not found" });
+    res.json({ success: true, road });
+  } catch (error) {
+    console.error("[Narrow Road API] Failed to update road:", error);
+    res.status(500).json({ success: false, message: "Failed to update narrow road" });
+  }
+});
+
+app.delete("/api/narrow-roads/:id", (req, res) => {
+  try {
+    const deleted = deleteNarrowRoad(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, message: "Narrow road not found" });
+    res.json({ success: true, message: "Narrow road deleted" });
+  } catch (error) {
+    console.error("[Narrow Road API] Failed to delete road:", error);
+    res.status(500).json({ success: false, message: "Failed to delete narrow road" });
+  }
 });
 
 const httpServer = http.createServer(app);
