@@ -320,6 +320,63 @@ const vehicleList = Object.values(vehicles).filter(
           Alerts
       -------------------------------------------------- */}
 
+      {egoVehicle.insideNarrowRoad && (
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 99999,
+            background: "#d32f2f",
+            color: "white",
+            padding: "18px 28px",
+            borderRadius: "12px",
+            border: "3px solid white",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            minWidth: "280px",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ fontSize: "32px" }}>
+            ⚠️
+          </div>
+
+          <div>
+            <div
+              style={{
+                fontSize: "20px",
+                fontWeight: "800",
+              }}
+            >
+              NARROW ROAD
+            </div>
+
+            <div
+              style={{
+                fontSize: "15px",
+                marginTop: "4px",
+              }}
+            >
+              {egoVehicle.narrowRoadName ||
+                "Narrow road detected"}
+            </div>
+
+            <div
+              style={{
+                fontSize: "12px",
+                marginTop: "3px",
+              }}
+            >
+              Proceed with caution
+            </div>
+          </div>
+        </div>
+      )}
+
       <AlertPanel />
 
 

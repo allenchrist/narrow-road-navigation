@@ -159,6 +159,37 @@ export function VehicleProvider({ children }) {
         };
       });
 
+      console.log(
+        "[VehicleContext] VEHICLES UPDATE:",
+        vehicleMap
+      );
+
+      const ego =
+        myVehicleId
+          ? vehicleMap[myVehicleId]
+          : null;
+
+      console.log(
+        "[VehicleContext] MY VEHICLE:",
+        myVehicleId
+      );
+
+      console.log(
+        "[VehicleContext] EGO VEHICLE:",
+        ego
+      );
+
+      console.log(
+        "[VehicleContext] GEOFENCE:",
+        {
+          insideNarrowRoad:
+            ego?.insideNarrowRoad,
+
+          narrowRoadName:
+            ego?.narrowRoadName,
+        }
+      );
+
       setVehicles(vehicleMap);
       setBackendConnected(true);
     }
@@ -185,12 +216,28 @@ export function VehicleProvider({ children }) {
         vehicleId
       );
 
-      if (!vehicleId) return;
+      if (
+        !vehicleId ||
+        typeof vehicleId !== "string"
+      ) {
+        console.error(
+          "[VehicleContext] Invalid vehicleId"
+        );
+
+        return;
+      }
 
       const normalizedVehicleId =
         vehicleId.trim().toUpperCase();
 
-      setMyVehicleId(normalizedVehicleId);
+      console.log(
+        "[VehicleContext] Setting MY VEHICLE ID:",
+        normalizedVehicleId
+      );
+
+      setMyVehicleId(
+        normalizedVehicleId
+      );
     }
 
     // --------------------------------------------------
