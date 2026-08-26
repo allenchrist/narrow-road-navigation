@@ -4,6 +4,10 @@
  * No database — real-time telemetry only.
  */
 
+const {
+  getGeofenceState,
+} = require("./geofenceService");
+
 // vehicles map: vehicleId → vehicle state object
 const vehicles = new Map();
 
@@ -27,6 +31,9 @@ function registerVehicle(vehicleId) {
       gyroZ: null,
       connected: true,
       lastReceivedAt: null, // backend receive time — NOT from Android
+      insideNarrowRoad: false,
+      narrowRoadId: null,
+      narrowRoadName: null,
     });
     console.log(`[Vehicle Registry] ${vehicleId} registered`);
   }
@@ -35,6 +42,19 @@ function registerVehicle(vehicleId) {
 function updateVehicleTelemetry(vehicleId, data) {
   if (!vehicles.has(vehicleId)) return;
   const existing = vehicles.get(vehicleId);
+
+  const geofence = getGeofenceState(
+    data.lat,
+    data.lon
+  );
+
+  console.log(
+    `[Geofence] ${vehicleId} | ` +
+    `GPS ${data.lat}, ${data.lon} | ` +
+    `${geofence.insideNarrowRoad ? "INSIDE" : "OUTSIDE"} | ` +
+    `${geofence.narrowRoadName || "No narrow road"}`
+  );
+
   vehicles.set(vehicleId, {
     ...existing,
     lat: data.lat,
@@ -47,6 +67,12 @@ function updateVehicleTelemetry(vehicleId, data) {
     gyroY: data.gyroY,
     gyroZ: data.gyroZ,
     lastReceivedAt: Date.now(),
+    insideNarrowRoad:
+      geofence.insideNarrowRoad,
+    narrowRoadId:
+      geofence.narrowRoadId,
+    narrowRoadName:
+      geofence.narrowRoadName,
   });
 }
 

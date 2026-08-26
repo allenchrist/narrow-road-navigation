@@ -3,17 +3,14 @@ const {
 } = require("./narrowRoadService");
 
 // --------------------------------------------------
-// Check whether a GPS point is inside a polygon
-// Ray-casting algorithm
+// Point-in-polygon
+// polygon points are [latitude, longitude]
 // --------------------------------------------------
 
 function isPointInsidePolygon(lat, lon, polygon) {
-  const pointLat = Number(lat);
-  const pointLon = Number(lon);
-
   if (
-    !Number.isFinite(pointLat) ||
-    !Number.isFinite(pointLon)
+    !Number.isFinite(Number(lat)) ||
+    !Number.isFinite(Number(lon))
   ) {
     return false;
   }
@@ -24,6 +21,9 @@ function isPointInsidePolygon(lat, lon, polygon) {
   ) {
     return false;
   }
+
+  const pointLat = Number(lat);
+  const pointLon = Number(lon);
 
   let inside = false;
 
@@ -64,27 +64,17 @@ function isPointInsidePolygon(lat, lon, polygon) {
 }
 
 // --------------------------------------------------
-// Find narrow road containing vehicle
+// Find narrow road at current vehicle position
 // --------------------------------------------------
 
 function findNarrowRoadAtPosition(lat, lon) {
-  const vehicleLat = Number(lat);
-  const vehicleLon = Number(lon);
-
-  if (
-    !Number.isFinite(vehicleLat) ||
-    !Number.isFinite(vehicleLon)
-  ) {
-    return null;
-  }
-
   const roads = getAllNarrowRoads();
 
   for (const road of roads) {
     if (
       isPointInsidePolygon(
-        vehicleLat,
-        vehicleLon,
+        lat,
+        lon,
         road.polygon
       )
     ) {
@@ -99,7 +89,7 @@ function findNarrowRoadAtPosition(lat, lon) {
 }
 
 // --------------------------------------------------
-// Get geofence state
+// Current geofence state
 // --------------------------------------------------
 
 function getGeofenceState(lat, lon) {

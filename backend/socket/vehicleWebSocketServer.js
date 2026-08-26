@@ -68,6 +68,13 @@ function initVehicleWebSocketServer(httpServer, path) {
   });
 
   wss.on("connection", (ws, req) => {
+    const connectionId =
+      `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    console.log(
+      `[Vehicle WS] CONNECTION CREATED: ${connectionId}`
+    );
+
     const remoteAddr = req.socket.remoteAddress;
 
     // State for this connection — populated after successful registration
@@ -75,7 +82,9 @@ function initVehicleWebSocketServer(httpServer, path) {
     let vehicleId = null;
     let registered = false;
 
-    console.log(`[Vehicle WS] New connection from ${remoteAddr} — awaiting registration`);
+    console.log(
+      `[Vehicle WS] New connection ${connectionId} from ${remoteAddr} — awaiting registration`
+    );
 
     // Close unregistered connections that never send a register message
     const registrationTimeout = setTimeout(() => {
@@ -87,6 +96,12 @@ function initVehicleWebSocketServer(httpServer, path) {
 
     // ── MESSAGE HANDLER ──────────────────────────────────────────────────────
     ws.on("message", (raw) => {
+      console.log(
+        `[Vehicle WS RAW] ${connectionId} | ` +
+        `${deviceId || "UNREGISTERED"} received:`,
+        raw.toString()
+      );
+
       let msg;
       try {
         msg = JSON.parse(raw.toString());
@@ -138,6 +153,10 @@ function initVehicleWebSocketServer(httpServer, path) {
 
         registered = true;
 
+        console.log(
+          `[Vehicle WS] READY FOR TELEMETRY: ${vehicleId}`
+        );
+
         // Track this Android connection
         connectedVehicles.set(deviceId, ws);
 
@@ -178,12 +197,28 @@ function initVehicleWebSocketServer(httpServer, path) {
       }
 
       const result = validateVehicleData(msg);
+
+      console.log(
+        `[Vehicle WS Debug] ${vehicleId} received message:`,
+        msg
+      );
+
       if (!result.valid) {
-        console.warn(`[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`);
+        console.warn(
+          `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`
+        );
         return;
       }
 
-      updateVehicleTelemetry(vehicleId, result.data);
+      console.log(
+        `[Vehicle WS Debug] ${vehicleId} VALID telemetry:`,
+        result.data
+      );
+
+      updateVehicleTelemetry(
+        vehicleId,
+        result.data
+      );
       updateLastSeen(deviceId);
 
       broadcastFleetUpdate();
@@ -195,7 +230,8 @@ function initVehicleWebSocketServer(httpServer, path) {
       clearTimeout(registrationTimeout);
 
       console.log(
-        `[Vehicle WS] CLOSE event — device=${deviceId ?? remoteAddr}, ` +
+        `[Vehicle WS] CLOSE ${connectionId} — ` +
+        `device=${deviceId ?? remoteAddr}, ` +
         `code=${code}, reason="${reason.toString()}"`
       );
 
