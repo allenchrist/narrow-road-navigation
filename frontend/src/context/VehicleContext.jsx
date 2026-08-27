@@ -14,21 +14,32 @@ const STALE_THRESHOLD_MS = 5000;
 
 const EMPTY_VEHICLE = {
   vehicleId: null,
+
   lat: null,
   lon: null,
   heading: null,
+
   accelX: null,
   accelY: null,
   accelZ: null,
+
   gyroX: null,
   gyroY: null,
   gyroZ: null,
+
   connected: false,
   lastReceivedAt: null,
+
+  insideNarrowRoad: false,
+  narrowRoadId: null,
+  narrowRoadName: null,
+
+  otherVehiclesInSameNarrowRoad: 0,
 };
 
 export function VehicleProvider({ children }) {
   const [vehicles, setVehicles] = useState({});
+
   const [backendConnected, setBackendConnected] =
     useState(false);
 
@@ -88,7 +99,10 @@ export function VehicleProvider({ children }) {
         return;
       }
 
-      if (ego.lat === null || ego.lon === null) {
+      if (
+        ego.lat === null ||
+        ego.lon === null
+      ) {
         setGpsStatus("WAITING");
         return;
       }
@@ -115,6 +129,10 @@ export function VehicleProvider({ children }) {
   useEffect(() => {
     const socket = getVehicleSocket();
 
+    // --------------------------------------------------
+    // Backend connected
+    // --------------------------------------------------
+
     function onConnect() {
       console.log(
         "[VehicleContext] Backend connected"
@@ -122,6 +140,10 @@ export function VehicleProvider({ children }) {
 
       setBackendConnected(true);
     }
+
+    // --------------------------------------------------
+    // Backend disconnected
+    // --------------------------------------------------
 
     function onDisconnect() {
       console.log(
@@ -148,14 +170,33 @@ export function VehicleProvider({ children }) {
     // Full fleet update
     // --------------------------------------------------
 
-    function onVehiclesUpdate({ vehicles: list }) {
-      if (!Array.isArray(list)) return;
+    function onVehiclesUpdate({
+      vehicles: list,
+    }) {
+      if (!Array.isArray(list)) {
+        return;
+      }
 
       const vehicleMap = {};
 
       list.forEach((vehicle) => {
+        if (!vehicle || !vehicle.vehicleId) {
+          return;
+        }
+
         vehicleMap[vehicle.vehicleId] = {
           ...vehicle,
+
+          insideNarrowRoad:
+            vehicle.insideNarrowRoad === true,
+
+          narrowRoadId:
+            vehicle.narrowRoadId ?? null,
+
+          narrowRoadName:
+            vehicle.narrowRoadName ?? null,
+
+          otherVehiclesInSameNarrowRoad: 0,
         };
       });
 
@@ -228,7 +269,9 @@ export function VehicleProvider({ children }) {
       }
 
       const normalizedVehicleId =
-        vehicleId.trim().toUpperCase();
+        vehicleId
+          .trim()
+          .toUpperCase();
 
       console.log(
         "[VehicleContext] Setting MY VEHICLE ID:",
@@ -244,7 +287,9 @@ export function VehicleProvider({ children }) {
     // Identity error
     // --------------------------------------------------
 
-    function onSessionError({ message }) {
+    function onSessionError({
+      message,
+    }) {
       console.error(
         "[VehicleContext] SESSION ERROR:",
         message
@@ -253,11 +298,22 @@ export function VehicleProvider({ children }) {
       setMyVehicleId(null);
     }
 
+    // --------------------------------------------------
+    // Existing socket connection
+    // --------------------------------------------------
+
     if (socket.connected) {
       setBackendConnected(true);
     }
 
-    socket.on("connect", onConnect);
+    // --------------------------------------------------
+    // Register listeners
+    // --------------------------------------------------
+
+    socket.on(
+      "connect",
+      onConnect
+    );
 
     socket.on(
       "disconnect",
@@ -279,8 +335,15 @@ export function VehicleProvider({ children }) {
       onSessionError
     );
 
+    // --------------------------------------------------
+    // Cleanup
+    // --------------------------------------------------
+
     return () => {
-      socket.off("connect", onConnect);
+      socket.off(
+        "connect",
+        onConnect
+      );
 
       socket.off(
         "disconnect",
@@ -302,26 +365,111 @@ export function VehicleProvider({ children }) {
         onSessionError
       );
     };
-  }, []);
+  }, [myVehicleId]);
 
-  // --------------------------------------------------
-  // Derived ego vehicle
-  // --------------------------------------------------
+  // ==================================================
+  // DERIVED EGO VEHICLE
+  // ==================================================
 
-  const egoVehicle =
+  const baseEgoVehicle =
     myVehicleId &&
     vehicles[myVehicleId]
-      ? {
-          ...vehicles[myVehicleId],
-          backendConnected,
+      ? vehicles[myVehicleId]
+      : EMPTY_VEHICLE;
+
+  // ==================================================
+  // COUNT OTHER VEHICLES IN SAME NARROW ROAD
+  // ==================================================
+
+  let otherVehiclesInSameNarrowRoad = 0;
+
+  if (
+    baseEgoVehicle.insideNarrowRoad === true &&
+    baseEgoVehicle.narrowRoadId
+  ) {
+    otherVehiclesInSameNarrowRoad =
+      Object.values(vehicles).filter((v) => {
+
+        // ----------------------------------------------
+        // Do not count our own vehicle
+        // ----------------------------------------------
+
+        if (
+          v.vehicleId === myVehicleId
+        ) {
+          return false;
         }
-      : {
-          ...EMPTY_VEHICLE,
-          backendConnected,
-        };
+
+        // ----------------------------------------------
+        // Vehicle must be connected
+        // ----------------------------------------------
+
+        if (
+          v.connected !== true
+        ) {
+          return false;
+        }
+
+        // ----------------------------------------------
+        // Vehicle must also be inside a narrow road
+        // ----------------------------------------------
+
+        if (
+          v.insideNarrowRoad !== true
+        ) {
+          return false;
+        }
+
+        // ----------------------------------------------
+        // Vehicle must be inside the SAME narrow road
+        // ----------------------------------------------
+
+        if (
+          v.narrowRoadId !==
+          baseEgoVehicle.narrowRoadId
+        ) {
+          return false;
+        }
+
+        return true;
+      }).length;
+  }
+
+  // ==================================================
+  // FINAL EGO VEHICLE
+  // ==================================================
+
+  const egoVehicle = {
+    ...baseEgoVehicle,
+
+    backendConnected,
+
+    otherVehiclesInSameNarrowRoad,
+  };
 
   // Existing components use this alias
   const vehicle = egoVehicle;
+
+  // ==================================================
+  // DEBUG
+  // ==================================================
+
+  console.log(
+    "[VehicleContext] RENDER STATE:",
+    {
+      myVehicleId,
+      egoVehicle,
+      insideNarrowRoad:
+        egoVehicle.insideNarrowRoad,
+      narrowRoadName:
+        egoVehicle.narrowRoadName,
+      otherVehiclesInSameNarrowRoad,
+    }
+  );
+
+  // ==================================================
+  // PROVIDER
+  // ==================================================
 
   return (
     <VehicleContext.Provider
@@ -347,5 +495,7 @@ export function VehicleProvider({ children }) {
 }
 
 export function useVehicle() {
-  return useContext(VehicleContext);
+  return useContext(
+    VehicleContext
+  );
 }

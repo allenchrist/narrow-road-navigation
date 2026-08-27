@@ -1,35 +1,49 @@
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
+
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
+
 import "leaflet/dist/leaflet.css";
 
 import { useVehicle } from "../../context/VehicleContext";
-import { haversineDistance } from "../../utils/haversine";
+import {
+  haversineDistance,
+} from "../../utils/haversine";
+
 import VehicleMarker from "./VehicleMarker";
 import AlertPanel from "../alerts/AlertPanel";
 
 /*
  * ---------------------------------------------------------
  * Ego map follower
- *
- * The map follows the ego vehicle whenever its GPS
- * position changes.
- *
- * We intentionally do NOT move the vehicle artificially.
- * The actual GPS telemetry determines its position.
  * ---------------------------------------------------------
  */
-function FollowEgo({ lat, lon }) {
+
+function FollowEgo({
+  lat,
+  lon,
+}) {
   const map = useMap();
 
-  const initializedRef = useRef(false);
+  const initializedRef =
+    useRef(false);
 
   useEffect(() => {
-    if (lat === null || lon === null) return;
+    if (
+      lat === null ||
+      lon === null
+    ) {
+      return;
+    }
 
-    /*
-     * First valid GPS position:
-     * move the map to the vehicle and zoom in.
-     */
     if (!initializedRef.current) {
       initializedRef.current = true;
 
@@ -45,13 +59,6 @@ function FollowEgo({ lat, lon }) {
       return;
     }
 
-    /*
-     * Subsequent GPS updates:
-     * keep the map centered on the ego vehicle.
-     *
-     * panTo is used instead of flyTo so that the
-     * map behaves more like a navigation application.
-     */
     map.panTo(
       [lat, lon],
       {
@@ -60,43 +67,51 @@ function FollowEgo({ lat, lon }) {
         easeLinearity: 0.25,
       }
     );
-
-  }, [lat, lon, map]);
+  }, [
+    lat,
+    lon,
+    map,
+  ]);
 
   return null;
 }
-
 
 /*
  * ---------------------------------------------------------
  * Map controller
  * ---------------------------------------------------------
  */
-function MapController({ onReady }) {
+
+function MapController({
+  onReady,
+}) {
   const map = useMap();
 
   useEffect(() => {
     onReady(map);
-  }, [map, onReady]);
+  }, [
+    map,
+    onReady,
+  ]);
 
   return null;
 }
-
 
 /*
  * ---------------------------------------------------------
  * Vehicle Map
  * ---------------------------------------------------------
  */
-function VehicleMap() {
 
+function VehicleMap() {
   const {
     vehicles,
     egoVehicle,
     myVehicleId,
   } = useVehicle();
 
-  const [map, setMap] = useState(null);
+  const [map, setMap] =
+    useState(null);
 
   const [mapMode, setMapMode] =
     useState("map");
@@ -104,21 +119,41 @@ function VehicleMap() {
   /*
    * Ego GPS availability
    */
- const hasEgoGps =
-  egoVehicle.lat !== null &&
-  egoVehicle.lon !== null;
 
-// Ego vehicle is always kept visible.
-// Other vehicles are visible only when connected.
-const vehicleList = Object.values(vehicles).filter(
-  (v) =>
-    v.vehicleId === myVehicleId ||
-    v.connected === true
-);
+  const hasEgoGps =
+    egoVehicle.lat !== null &&
+    egoVehicle.lon !== null;
+
+  /*
+   * Other vehicles are visible
+   * only when connected.
+   */
+
+  const vehicleList =
+    Object.values(vehicles).filter(
+      (v) =>
+        v.vehicleId === myVehicleId ||
+        v.connected === true
+    );
+
+  /*
+   * -------------------------------------------------------
+   * OTHER VEHICLE WARNING
+   * -------------------------------------------------------
+   */
+
+  const otherVehicleCount =
+    egoVehicle
+      .otherVehiclesInSameNarrowRoad || 0;
+
+  const hasOtherVehicles =
+    egoVehicle.insideNarrowRoad &&
+    otherVehicleCount > 0;
 
   /*
    * Map reference
    */
+
   const handleMapReady =
     useCallback(
       (mapInstance) => {
@@ -142,8 +177,12 @@ const vehicleList = Object.values(vehicles).filter(
   };
 
   const centerOnEgo = () => {
-
-    if (!map || !hasEgoGps) return;
+    if (
+      !map ||
+      !hasEgoGps
+    ) {
+      return;
+    }
 
     map.flyTo(
       [
@@ -157,7 +196,6 @@ const vehicleList = Object.values(vehicles).filter(
       }
     );
   };
-
 
   return (
     <div className="map-container-wrapper">
@@ -189,7 +227,6 @@ const vehicleList = Object.values(vehicles).filter(
 
         </div>
       )}
-
 
       {/* --------------------------------------------------
           Leaflet Map
@@ -225,7 +262,6 @@ const vehicleList = Object.values(vehicles).filter(
 
         )}
 
-
         {/* ------------------------------------------------
             Map controller
         ------------------------------------------------ */}
@@ -233,7 +269,6 @@ const vehicleList = Object.values(vehicles).filter(
         <MapController
           onReady={handleMapReady}
         />
-
 
         {/* ------------------------------------------------
             Follow ego vehicle
@@ -244,7 +279,6 @@ const vehicleList = Object.values(vehicles).filter(
           lon={egoVehicle.lon}
         />
 
-
         {/* ------------------------------------------------
             Render all vehicles
         ------------------------------------------------ */}
@@ -252,7 +286,8 @@ const vehicleList = Object.values(vehicles).filter(
         {vehicleList.map((v) => {
 
           const isEgo =
-            v.vehicleId === myVehicleId;
+            v.vehicleId ===
+            myVehicleId;
 
           const distanceFromEgo =
             !isEgo &&
@@ -272,14 +307,14 @@ const vehicleList = Object.values(vehicles).filter(
               key={v.vehicleId}
               vehicleData={v}
               isEgo={isEgo}
-              distanceFromEgo={distanceFromEgo}
+              distanceFromEgo={
+                distanceFromEgo
+              }
             />
           );
-
         })}
 
       </MapContainer>
-
 
       {/* --------------------------------------------------
           Map mode
@@ -315,9 +350,8 @@ const vehicleList = Object.values(vehicles).filter(
 
       </div>
 
-
       {/* --------------------------------------------------
-          Alerts
+          NARROW ROAD / OTHER VEHICLE ALERTS
       -------------------------------------------------- */}
 
       {egoVehicle.insideNarrowRoad && (
@@ -326,59 +360,144 @@ const vehicleList = Object.values(vehicles).filter(
             position: "absolute",
             top: "80px",
             left: "50%",
-            transform: "translateX(-50%)",
+            transform:
+              "translateX(-50%)",
             zIndex: 99999,
-            background: "#d32f2f",
+
+            background:
+              hasOtherVehicles
+                ? "#b71c1c"
+                : "#d32f2f",
+
             color: "white",
-            padding: "18px 28px",
+
+            padding:
+              "18px 28px",
+
             borderRadius: "12px",
-            border: "3px solid white",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+
+            border:
+              "3px solid white",
+
+            boxShadow:
+              "0 4px 20px rgba(0,0,0,0.5)",
+
             display: "flex",
-            alignItems: "center",
+
+            alignItems:
+              "center",
+
             gap: "14px",
-            minWidth: "280px",
-            justifyContent: "center",
+
+            minWidth: "300px",
+
+            justifyContent:
+              "center",
           }}
         >
-          <div style={{ fontSize: "32px" }}>
-            ⚠️
+
+          {/* ------------------------------------------------
+              Icon
+          ------------------------------------------------ */}
+
+          <div
+            style={{
+              fontSize: "32px",
+            }}
+          >
+            {hasOtherVehicles
+              ? "🚨"
+              : "⚠️"}
           </div>
+
+          {/* ------------------------------------------------
+              Content
+          ------------------------------------------------ */}
 
           <div>
-            <div
-              style={{
-                fontSize: "20px",
-                fontWeight: "800",
-              }}
-            >
-              NARROW ROAD
-            </div>
 
-            <div
-              style={{
-                fontSize: "15px",
-                marginTop: "4px",
-              }}
-            >
-              {egoVehicle.narrowRoadName ||
-                "Narrow road detected"}
-            </div>
+            {/* --------------------------------------------
+                OTHER VEHICLE WARNING
+            -------------------------------------------- */}
 
-            <div
-              style={{
-                fontSize: "12px",
-                marginTop: "3px",
-              }}
-            >
-              Proceed with caution
-            </div>
+            {hasOtherVehicles ? (
+
+              <>
+                <div
+                  style={{
+                    fontSize: "19px",
+                    fontWeight: "800",
+                  }}
+                >
+                  {otherVehicleCount === 1
+                    ? "ANOTHER VEHICLE IS APPROACHING"
+                    : "OTHER VEHICLES ARE APPROACHING"}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "14px",
+                    marginTop: "5px",
+                  }}
+                >
+                  Narrow road:{" "}
+                  {egoVehicle.narrowRoadName ||
+                    "Narrow road"}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "4px",
+                  }}
+                >
+                  Please proceed with caution
+                </div>
+              </>
+
+            ) : (
+
+              /* ------------------------------------------
+                 NORMAL NARROW ROAD WARNING
+              ------------------------------------------ */
+
+              <>
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "800",
+                  }}
+                >
+                  NARROW ROAD
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "15px",
+                    marginTop: "4px",
+                  }}
+                >
+                  {egoVehicle.narrowRoadName ||
+                    "Narrow road detected"}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "3px",
+                  }}
+                >
+                  Proceed with caution
+                </div>
+              </>
+            )}
+
           </div>
+
         </div>
       )}
 
       <AlertPanel />
-
 
       {/* --------------------------------------------------
           Map controls
@@ -413,7 +532,9 @@ const vehicleList = Object.values(vehicles).filter(
           }
           style={{
             opacity:
-              hasEgoGps ? 1 : 0.4,
+              hasEgoGps
+                ? 1
+                : 0.4,
           }}
         >
           ◎

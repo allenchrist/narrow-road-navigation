@@ -1498,3 +1498,57 @@
 .admin-edit-button:hover {
   background: rgba(86, 199, 255, 0.15);
 }
+
+/* =========================================================
+   NARROW ROAD ALERT BANNER
+   ========================================================= */
+
+.narrow-road-alert {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  min-width: 280px;
+
+  padding: 16px 24px;
+
+  background: #d32f2f;
+  color: white;
+
+  border: 3px solid white;
+  border-radius: 12px;
+
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.narrow-road-alert-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+}
+
+.narrow-road-alert-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.narrow-road-alert-content strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.narrow-road-alert-content span {
+  font-size: 15px;
+  margin-top: 3px;
+}
+
+.narrow-road-alert-content small {
+  font-size: 12px;
+  margin-top: 3px;
+}
