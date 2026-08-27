@@ -38,7 +38,8 @@ const EMPTY_VEHICLE = {
 };
 
 export function VehicleProvider({ children }) {
-  const [vehicles, setVehicles] = useState({});
+  const [vehicles, setVehicles] =
+    useState({});
 
   const [backendConnected, setBackendConnected] =
     useState(false);
@@ -109,7 +110,8 @@ export function VehicleProvider({ children }) {
 
       if (
         ego.lastReceivedAt &&
-        Date.now() - ego.lastReceivedAt >
+        Date.now() -
+          ego.lastReceivedAt >
           STALE_THRESHOLD_MS
       ) {
         setGpsStatus("STALE");
@@ -119,7 +121,8 @@ export function VehicleProvider({ children }) {
       setGpsStatus("ACTIVE");
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () =>
+      clearInterval(interval);
   }, []);
 
   // --------------------------------------------------
@@ -127,11 +130,8 @@ export function VehicleProvider({ children }) {
   // --------------------------------------------------
 
   useEffect(() => {
-    const socket = getVehicleSocket();
-
-    // --------------------------------------------------
-    // Backend connected
-    // --------------------------------------------------
+    const socket =
+      getVehicleSocket();
 
     function onConnect() {
       console.log(
@@ -140,10 +140,6 @@ export function VehicleProvider({ children }) {
 
       setBackendConnected(true);
     }
-
-    // --------------------------------------------------
-    // Backend disconnected
-    // --------------------------------------------------
 
     function onDisconnect() {
       console.log(
@@ -155,12 +151,14 @@ export function VehicleProvider({ children }) {
       setVehicles((previous) => {
         const updated = {};
 
-        Object.keys(previous).forEach((id) => {
-          updated[id] = {
-            ...previous[id],
-            connected: false,
-          };
-        });
+        Object.keys(previous).forEach(
+          (id) => {
+            updated[id] = {
+              ...previous[id],
+              connected: false,
+            };
+          }
+        );
 
         return updated;
       });
@@ -180,23 +178,16 @@ export function VehicleProvider({ children }) {
       const vehicleMap = {};
 
       list.forEach((vehicle) => {
-        if (!vehicle || !vehicle.vehicleId) {
-          return;
-        }
-
-        vehicleMap[vehicle.vehicleId] = {
+        vehicleMap[
+          vehicle.vehicleId
+        ] = {
           ...vehicle,
 
-          insideNarrowRoad:
-            vehicle.insideNarrowRoad === true,
-
-          narrowRoadId:
-            vehicle.narrowRoadId ?? null,
-
-          narrowRoadName:
-            vehicle.narrowRoadName ?? null,
-
-          otherVehiclesInSameNarrowRoad: 0,
+          // Safety fallback
+          otherVehiclesInSameNarrowRoad:
+            Number(
+              vehicle.otherVehiclesInSameNarrowRoad
+            ) || 0,
         };
       });
 
@@ -228,6 +219,9 @@ export function VehicleProvider({ children }) {
 
           narrowRoadName:
             ego?.narrowRoadName,
+
+          otherVehiclesInSameNarrowRoad:
+            ego?.otherVehiclesInSameNarrowRoad,
         }
       );
 
@@ -298,17 +292,9 @@ export function VehicleProvider({ children }) {
       setMyVehicleId(null);
     }
 
-    // --------------------------------------------------
-    // Existing socket connection
-    // --------------------------------------------------
-
     if (socket.connected) {
       setBackendConnected(true);
     }
-
-    // --------------------------------------------------
-    // Register listeners
-    // --------------------------------------------------
 
     socket.on(
       "connect",
@@ -334,10 +320,6 @@ export function VehicleProvider({ children }) {
       "session:error",
       onSessionError
     );
-
-    // --------------------------------------------------
-    // Cleanup
-    // --------------------------------------------------
 
     return () => {
       socket.off(
@@ -365,11 +347,11 @@ export function VehicleProvider({ children }) {
         onSessionError
       );
     };
-  }, [myVehicleId]);
+  }, []);
 
-  // ==================================================
-  // DERIVED EGO VEHICLE
-  // ==================================================
+  // --------------------------------------------------
+  // Derived ego vehicle
+  // --------------------------------------------------
 
   const baseEgoVehicle =
     myVehicleId &&
@@ -377,9 +359,9 @@ export function VehicleProvider({ children }) {
       ? vehicles[myVehicleId]
       : EMPTY_VEHICLE;
 
-  // ==================================================
-  // COUNT OTHER VEHICLES IN SAME NARROW ROAD
-  // ==================================================
+  // --------------------------------------------------
+  // Count OTHER vehicles inside the same narrow road
+  // --------------------------------------------------
 
   let otherVehiclesInSameNarrowRoad = 0;
 
@@ -389,41 +371,17 @@ export function VehicleProvider({ children }) {
   ) {
     otherVehiclesInSameNarrowRoad =
       Object.values(vehicles).filter((v) => {
-
-        // ----------------------------------------------
         // Do not count our own vehicle
-        // ----------------------------------------------
-
-        if (
-          v.vehicleId === myVehicleId
-        ) {
+        if (v.vehicleId === myVehicleId) {
           return false;
         }
 
-        // ----------------------------------------------
-        // Vehicle must be connected
-        // ----------------------------------------------
-
-        if (
-          v.connected !== true
-        ) {
+        // Vehicle must be inside a narrow road
+        if (v.insideNarrowRoad !== true) {
           return false;
         }
 
-        // ----------------------------------------------
-        // Vehicle must also be inside a narrow road
-        // ----------------------------------------------
-
-        if (
-          v.insideNarrowRoad !== true
-        ) {
-          return false;
-        }
-
-        // ----------------------------------------------
-        // Vehicle must be inside the SAME narrow road
-        // ----------------------------------------------
-
+        // Must be the SAME narrow road
         if (
           v.narrowRoadId !==
           baseEgoVehicle.narrowRoadId
@@ -431,45 +389,28 @@ export function VehicleProvider({ children }) {
           return false;
         }
 
+        // Only count connected vehicles
+        if (v.connected !== true) {
+          return false;
+        }
+
         return true;
       }).length;
   }
 
-  // ==================================================
-  // FINAL EGO VEHICLE
-  // ==================================================
+  // --------------------------------------------------
+  // Final ego vehicle
+  // --------------------------------------------------
 
   const egoVehicle = {
     ...baseEgoVehicle,
-
     backendConnected,
-
     otherVehiclesInSameNarrowRoad,
   };
 
   // Existing components use this alias
-  const vehicle = egoVehicle;
-
-  // ==================================================
-  // DEBUG
-  // ==================================================
-
-  console.log(
-    "[VehicleContext] RENDER STATE:",
-    {
-      myVehicleId,
-      egoVehicle,
-      insideNarrowRoad:
-        egoVehicle.insideNarrowRoad,
-      narrowRoadName:
-        egoVehicle.narrowRoadName,
-      otherVehiclesInSameNarrowRoad,
-    }
-  );
-
-  // ==================================================
-  // PROVIDER
-  // ==================================================
+  const vehicle =
+    egoVehicle;
 
   return (
     <VehicleContext.Provider

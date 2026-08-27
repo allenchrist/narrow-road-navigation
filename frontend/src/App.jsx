@@ -4,6 +4,7 @@ import { VehicleProvider } from "./context/VehicleContext";
 
 import Dashboard from "./pages/Dashboard";
 import AdminPage from "./pages/AdminPage";
+import SuggestNarrowRoad from "./pages/SuggestNarrowRoad";
 
 import "./App.css";
 
@@ -20,6 +21,12 @@ function App() {
               <Dashboard />
             </VehicleProvider>
           }
+        />
+
+        {/* Suggest Narrow Road */}
+        <Route
+          path="/suggest-narrow-road"
+          element={<SuggestNarrowRoad />}
         />
 
         {/* Admin narrow-road management */}

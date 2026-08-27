@@ -9,7 +9,7 @@
     "test": "node test/smokeTest.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "socket.io": "^4.7.5",

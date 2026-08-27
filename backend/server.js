@@ -14,10 +14,22 @@ const {
   updateNarrowRoad,
   deleteNarrowRoad,
 } = require("./services/narrowRoadService");
+const {
+  getAllSuggestions,
+  getSuggestionById,
+  createSuggestion,
+  updateSuggestionStatus,
+} = require("./services/narrowRoadSuggestionService");
 
 const app = express();
 
-app.use(cors({ origin: config.corsOrigin, credentials: false }));
+app.use(
+  cors({
+    origin: config.corsOrigin || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
@@ -94,6 +106,207 @@ app.delete("/api/narrow-roads/:id", (req, res) => {
     res.status(500).json({ success: false, message: "Failed to delete narrow road" });
   }
 });
+
+// ==================================================
+// USER NARROW ROAD SUGGESTIONS
+// ==================================================
+
+app.get(
+  "/api/narrow-road-suggestions",
+  (_req, res) => {
+    try {
+      res.json({
+        success: true,
+        suggestions:
+          getAllSuggestions(),
+      });
+    } catch (error) {
+      console.error(
+        "[Suggestion API] Failed to get suggestions:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to load suggestions",
+      });
+    }
+  }
+);
+
+
+// --------------------------------------------------
+// User submits a suggestion
+// --------------------------------------------------
+
+app.post(
+  "/api/narrow-road-suggestions",
+  (req, res) => {
+    try {
+      const {
+        name,
+        polygon,
+        reason,
+      } = req.body;
+
+      if (
+        typeof name !== "string" ||
+        !name.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Road name is required",
+        });
+      }
+
+      if (
+        !Array.isArray(polygon) ||
+        polygon.length < 3
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Polygon must contain at least 3 points",
+        });
+      }
+
+      const suggestion =
+        createSuggestion({
+          name,
+          polygon,
+          reason,
+        });
+
+      res.status(201).json({
+        success: true,
+        suggestion,
+      });
+
+    } catch (error) {
+      console.error(
+        "[Suggestion API] Failed to create suggestion:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to submit suggestion",
+      });
+    }
+  }
+);
+
+
+// --------------------------------------------------
+// Admin accepts/rejects suggestion
+// --------------------------------------------------
+
+app.put(
+  "/api/narrow-road-suggestions/:id/status",
+  (req, res) => {
+    try {
+      const {
+        status,
+      } = req.body;
+
+      if (
+        status !== "APPROVED" &&
+        status !== "REJECTED"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Status must be APPROVED or REJECTED",
+        });
+      }
+
+      const suggestion =
+        getSuggestionById(
+          req.params.id
+        );
+
+      if (!suggestion) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "Suggestion not found",
+        });
+      }
+
+      if (
+        suggestion.status !==
+        "PENDING"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Suggestion has already been reviewed",
+        });
+      }
+
+      // --------------------------------------------
+      // REJECT
+      // --------------------------------------------
+
+      if (
+        status === "REJECTED"
+      ) {
+        const updated =
+          updateSuggestionStatus(
+            req.params.id,
+            "REJECTED"
+          );
+
+        return res.json({
+          success: true,
+          suggestion: updated,
+        });
+      }
+
+      // --------------------------------------------
+      // APPROVE
+      // --------------------------------------------
+
+      const road =
+        createNarrowRoad({
+          name:
+            suggestion.name,
+
+          polygon:
+            suggestion.polygon,
+        });
+
+      const updated =
+        updateSuggestionStatus(
+          req.params.id,
+          "APPROVED"
+        );
+
+      res.json({
+        success: true,
+
+        suggestion: updated,
+
+        road,
+      });
+
+    } catch (error) {
+      console.error(
+        "[Suggestion API] Failed to review suggestion:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to review suggestion",
+      });
+    }
+  }
+);
 
 const httpServer = http.createServer(app);
 
