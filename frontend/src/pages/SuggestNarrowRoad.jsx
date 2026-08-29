@@ -11,8 +11,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
+const API_URL =
+  import.meta.env.VITE_API_URL ||
   "http://localhost:5000";
 
 // --------------------------------------------------
@@ -281,7 +281,7 @@ function SuggestNarrowRoad() {
 
       const response =
         await fetch(
-          `${BACKEND_URL}/api/narrow-road-suggestions`,
+          `${API_URL}/api/narrow-road-suggestions`,
           {
             method: "POST",
 

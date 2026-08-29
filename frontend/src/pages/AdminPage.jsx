@@ -12,7 +12,9 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-const BACKEND_URL = "http://localhost:5000";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";
 
 // --------------------------------------------------
 // Map click handler
@@ -173,7 +175,7 @@ function AdminPage() {
       setError("");
 
       const response = await fetch(
-        `${BACKEND_URL}/api/narrow-roads`
+        `${API_URL}/api/narrow-roads`
       );
 
       if (!response.ok) {
@@ -215,7 +217,7 @@ function AdminPage() {
       setSuggestionsError("");
 
       const response = await fetch(
-        `${BACKEND_URL}/api/narrow-road-suggestions`
+        `${API_URL}/api/narrow-road-suggestions`
       );
 
       if (!response.ok) {
@@ -439,8 +441,8 @@ function AdminPage() {
         editingRoadId !== null;
 
       const url = isEditing
-        ? `${BACKEND_URL}/api/narrow-roads/${editingRoadId}`
-        : `${BACKEND_URL}/api/narrow-roads`;
+        ? `${API_URL}/api/narrow-roads/${editingRoadId}`
+        : `${API_URL}/api/narrow-roads`;
 
       const response = await fetch(url, {
         method: isEditing
@@ -519,7 +521,7 @@ function AdminPage() {
     try {
       const response =
         await fetch(
-          `${BACKEND_URL}/api/narrow-roads/${id}`,
+          `${API_URL}/api/narrow-roads/${id}`,
           {
             method: "DELETE",
           }
@@ -609,7 +611,7 @@ function AdminPage() {
 
       const response =
         await fetch(
-          `${BACKEND_URL}/api/narrow-road-suggestions/${suggestion.id}/status`,
+          `${API_URL}/api/narrow-road-suggestions/${suggestion.id}/status`,
           {
             method: "PUT",
 
