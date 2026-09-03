@@ -2255,3 +2255,699 @@
     min-height: 400px;
   }
 }
+
+/* =========================================================
+
+/* =========================================================
+   CONNECTED VEHICLE - BLACK & NEON CYAN THEME
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   GLOBAL THEME
+   --------------------------------------------------------- */
+
+.dashboard,
+.admin-page,
+.suggest-road-page {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   HEADER - NEON CYAN WITH BLACK TEXT
+   --------------------------------------------------------- */
+
+.app-header {
+  background: #0FFCDD;
+  border-bottom: 2px solid #7DF9FF;
+  color: #000000;
+}
+
+.brand-section {
+  color: #000000;
+}
+
+.brand-mark {
+  background: rgba(0, 0, 0, 0.10);
+  border: 1px solid rgba(0, 0, 0, 0.40);
+  color: #000000;
+}
+
+.brand-text h1 {
+  color: #000000;
+}
+
+.brand-text span {
+  color: #003344;
+}
+
+/* ---------------------------------------------------------
+   HEADER STATUS
+   --------------------------------------------------------- */
+
+.system-status strong {
+  color: #000000;
+}
+
+.system-status span:not(.status-indicator) {
+  color: #000000;
+}
+
+.clock {
+  border-left-color: rgba(0, 0, 0, 0.25);
+}
+
+.clock strong {
+  color: #000000;
+}
+
+.clock span {
+  color: #003344;
+}
+
+/* ---------------------------------------------------------
+   PROFILE BUTTON / MENU
+   --------------------------------------------------------- */
+
+.profile-button {
+  background: rgba(0, 0, 0, 0.10);
+  border-color: rgba(0, 0, 0, 0.40);
+  color: #000000;
+}
+
+.profile-button:hover {
+  background: rgba(0, 0, 0, 0.20);
+  border-color: #000000;
+}
+
+.profile-menu {
+  background: #05080C;
+  border-color: #1C3545;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65);
+}
+
+.profile-menu-header strong {
+  color: #ffffff;
+}
+
+.profile-menu-header span {
+  color: #B8C5CF;
+}
+
+.profile-menu-divider {
+  background: #1C3545;
+}
+
+.profile-menu-item {
+  color: #ffffff;
+}
+
+.profile-menu-item:hover {
+  background: rgba(15, 240, 252, 0.18);
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   MAIN BODY
+   --------------------------------------------------------- */
+
+.dashboard-body {
+  background: #000000;
+}
+
+/* ---------------------------------------------------------
+   SIDEBAR - BLACK
+   --------------------------------------------------------- */
+
+.vehicle-sidebar {
+  background: #05080C;
+  border-right: 1px solid #16232D;
+  color: #ffffff;
+}
+
+.section-label {
+  color: #ffffff;
+}
+
+.telemetry-title {
+  color: #ffffff;
+}
+
+.health-header {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   SIDEBAR VEHICLE
+   --------------------------------------------------------- */
+
+.ego-identity h2 {
+  color: #ffffff;
+}
+
+.ego-identity p {
+  color: #ffffff;
+}
+
+.ego-visual {
+  background: #000000;
+  border-color: #1C3545;
+}
+
+.ego-ring {
+  border-color: rgba(15, 240, 252, 0.55);
+}
+
+/* ---------------------------------------------------------
+   DIVIDERS
+   --------------------------------------------------------- */
+
+.sidebar-divider {
+  background: #16232D;
+}
+
+/* ---------------------------------------------------------
+   POSITION / TELEMETRY BOXES
+   --------------------------------------------------------- */
+
+.telemetry-item {
+  background: #000000;
+  border-color: #18303E;
+}
+
+.telemetry-item span {
+  color: #ffffff;
+}
+
+.telemetry-item strong {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   IMU / SENSOR
+   --------------------------------------------------------- */
+
+.sensor-row {
+  color: #ffffff;
+}
+
+.sensor-values span {
+  background: #000000;
+  border-color: #18303E;
+  color: #ffffff;
+}
+
+.sensor-values strong {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   VEHICLE HEALTH
+   --------------------------------------------------------- */
+
+.vehicle-health {
+  background: #000000;
+  border-color: #18303E;
+}
+
+.vehicle-health p {
+  color: #ffffff;
+}
+
+.health-bar {
+  background: #18232B;
+}
+
+/* ---------------------------------------------------------
+   CONNECTED VEHICLE LIST
+   --------------------------------------------------------- */
+
+.vehicle-list-item {
+  background: #000000;
+  border-color: #18303E;
+}
+
+.vehicle-list-id {
+  color: #ffffff;
+}
+
+.vehicle-list-dist {
+  color: #ffffff;
+}
+
+.vehicle-list-status {
+  color: #ffffff;
+}
+
+.vehicle-list-item--ego {
+  background: rgba(15, 240, 252, 0.08);
+  border-color: rgba(15, 240, 252, 0.45);
+}
+
+.ego-tag {
+  color: #0FFCDD;
+  background: rgba(15, 240, 252, 0.12);
+  border-color: rgba(15, 240, 252, 0.40);
+}
+
+/* ---------------------------------------------------------
+   MAIN MAP AREA
+   --------------------------------------------------------- */
+
+.main-view {
+  background: #000000;
+}
+
+.map-container-wrapper {
+  background: #000000;
+}
+
+.vehicle-map.leaflet-container {
+  background: #000000;
+}
+
+/* ---------------------------------------------------------
+   DARK MAP
+   --------------------------------------------------------- */
+
+.vehicle-map .leaflet-tile {
+  filter:
+    brightness(0.42)
+    contrast(1.18)
+    saturate(0.65);
+}
+
+/* ---------------------------------------------------------
+   MAP ATTRIBUTION
+   --------------------------------------------------------- */
+
+.vehicle-map .leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.90);
+  color: #ffffff;
+}
+
+.vehicle-map .leaflet-control-attribution a {
+  color: #0FFCDD;
+}
+
+/* ---------------------------------------------------------
+   MAP MODE BUTTON
+   --------------------------------------------------------- */
+
+.map-mode {
+  background: rgba(0, 0, 0, 0.92);
+  border-color: #1B3443;
+}
+
+.map-mode span {
+  color: #ffffff;
+}
+
+.map-mode span.active {
+  background: #0FFCDD;
+  color: #000000;
+  border-radius: 5px;
+}
+
+/* ---------------------------------------------------------
+   MAP CONTROLS
+   --------------------------------------------------------- */
+
+.map-top-controls {
+  background: rgba(0, 0, 0, 0.94);
+  border-color: #1B3443;
+}
+
+.map-top-controls button {
+  background: transparent;
+  color: #ffffff;
+  border-bottom-color: #1B3443;
+}
+
+.map-top-controls button:hover {
+  background: rgba(15, 240, 252, 0.18);
+  color: #0FFCDD;
+}
+
+.map-top-controls button:active {
+  background: rgba(15, 240, 252, 0.30);
+}
+
+/* ---------------------------------------------------------
+   NO VEHICLE MAP MESSAGE
+   --------------------------------------------------------- */
+
+.map-no-gps-inner {
+  background: rgba(0, 0, 0, 0.92);
+  border-color: #1C3545;
+}
+
+.map-no-gps-icon {
+  color: #0FFCDD;
+}
+
+.map-no-gps-inner span {
+  color: #ffffff;
+}
+
+.map-no-gps-inner p {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   SAFETY STATE
+   --------------------------------------------------------- */
+
+.safety-state {
+  background: rgba(0, 0, 0, 0.94);
+  border-color: #1B3443;
+}
+
+.safety-state strong {
+  color: #ffffff;
+}
+
+.safety-state span:last-child {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   MAP POPUPS
+   --------------------------------------------------------- */
+
+.vehicle-map .leaflet-popup-content-wrapper {
+  background: #05080C;
+  color: #ffffff;
+  border-color: #1C3545;
+}
+
+.vehicle-map .leaflet-popup-tip {
+  background: #05080C;
+}
+
+.vehicle-map .leaflet-popup-close-button {
+  color: #ffffff !important;
+}
+
+.vehicle-map .leaflet-popup-close-button:hover {
+  color: #0FFCDD !important;
+}
+
+.vehicle-popup-header strong {
+  color: #ffffff;
+}
+
+.vehicle-popup-row span {
+  color: #ffffff;
+}
+
+.vehicle-popup-row strong {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   ALERT PANEL
+   --------------------------------------------------------- */
+
+.alert-panel {
+  background: rgba(0, 0, 0, 0.96);
+  border-color: #243640;
+}
+
+.alert-vehicles {
+  color: #ffffff;
+}
+
+.alert-distance {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   BOTTOM STATUS BAR - BLACK
+   --------------------------------------------------------- */
+
+.status-bar {
+  background: #000000;
+  border-top: 1px solid #16232D;
+  color: #ffffff;
+}
+
+.status-group {
+  border-right-color: #16232D;
+}
+
+.status-label {
+  color: #ffffff;
+}
+
+.status-value {
+  color: #ffffff;
+}
+
+/* ---------------------------------------------------------
+   KEEP STATUS COLORS
+   --------------------------------------------------------- */
+
+.online {
+  color: #35E889 !important;
+}
+
+.standby {
+  color: #FFD34D !important;
+}
+
+.offline {
+  color: #FF4D5A !important;
+}
+
+.status-indicator.online,
+.mini-dot.online,
+.vehicle-list-dot.online {
+  background: #35E889;
+}
+
+.status-indicator.standby,
+.mini-dot.standby,
+.vehicle-list-dot.standby {
+  background: #FFD34D;
+}
+
+.status-indicator.offline,
+.mini-dot.offline,
+.vehicle-list-dot.offline {
+  background: #FF4D5A;
+}
+
+/* ---------------------------------------------------------
+   ACCENT ELEMENTS
+   --------------------------------------------------------- */
+
+.connected-text {
+  color: #35E889;
+}
+
+.live-badge {
+  color: #0FFCDD;
+}
+
+.point-count,
+.admin-point-count {
+  color: #0FFCDD;
+}
+
+/* ---------------------------------------------------------
+   ADMIN PAGE
+   --------------------------------------------------------- */
+
+.admin-page {
+  background: #000000;
+  color: #ffffff;
+}
+
+.admin-header {
+  background: #0FFCDD;
+  border-bottom-color: #7DF9FF;
+  color: #000000;
+}
+
+.admin-title {
+  color: #000000;
+}
+
+.admin-subtitle {
+  color: #003344;
+}
+
+.admin-sidebar {
+  background: #05080C;
+  border-left-color: #16232D;
+}
+
+.admin-section-title {
+  color: #ffffff;
+}
+
+.admin-road-item {
+  background: #000000;
+  border-color: #18303E;
+}
+
+.admin-road-item strong {
+  color: #ffffff;
+}
+
+.admin-road-item span {
+  color: #ffffff;
+}
+
+.admin-drawing-help {
+  background: rgba(0, 0, 0, 0.94);
+  border-color: rgba(15, 240, 252, 0.55);
+}
+
+.admin-drawing-help strong {
+  color: #0FFCDD;
+}
+
+.admin-drawing-help span {
+  color: #ffffff;
+}
+
+.admin-drawing-panel label {
+  color: #ffffff;
+}
+
+.admin-drawing-panel input {
+  background: #000000;
+  border-color: #18303E;
+  color: #ffffff;
+}
+
+.admin-drawing-panel input:focus {
+  border-color: #0FFCDD;
+}
+
+/* ---------------------------------------------------------
+   ADMIN BUTTONS
+   --------------------------------------------------------- */
+
+.admin-primary-button {
+  background: #0FFCDD;
+  border-color: #7DF9FF;
+  color: #000000;
+}
+
+.admin-primary-button:hover {
+  background: #2FF5FF;
+}
+
+.admin-secondary-button {
+  background: #000000;
+  border-color: #18303E;
+  color: #ffffff;
+}
+
+.admin-secondary-button:hover {
+  background: #0B1116;
+  border-color: #0FFCDD;
+}
+
+.admin-edit-button {
+  background: rgba(15, 240, 252, 0.10);
+  border-color: rgba(15, 240, 252, 0.40);
+  color: #0FFCDD;
+}
+
+.admin-edit-button:hover {
+  background: rgba(15, 240, 252, 0.20);
+}
+
+/* ---------------------------------------------------------
+   SUGGEST NARROW ROAD PAGE
+   --------------------------------------------------------- */
+
+.suggest-road-page {
+  background: #000000;
+  color: #ffffff;
+}
+
+.suggest-road-header {
+  background: #0FFCDD;
+  border-bottom-color: #7DF9FF;
+  color: #000000;
+}
+
+.suggest-road-title {
+  color: #000000;
+}
+
+.suggest-road-subtitle {
+  color: #003344;
+}
+
+.suggest-back-button {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.35);
+  color: #000000;
+}
+
+.suggest-back-button:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* ---------------------------------------------------------
+   FORCE NORMAL UI TEXT TO WHITE
+   --------------------------------------------------------- */
+
+.vehicle-sidebar p,
+.vehicle-sidebar span,
+.vehicle-sidebar strong,
+.status-bar span,
+.status-bar strong {
+  color: #ffffff;
+}
+
+/* Re-apply state colors after white text rule */
+
+.vehicle-sidebar .healthy,
+.vehicle-sidebar .connected-text {
+  color: #35E889 !important;
+}
+
+.vehicle-sidebar .stale {
+  color: #FFD34D !important;
+}
+
+.vehicle-sidebar .disconnected-label {
+  color: #FF4D5A !important;
+}
+
+/* =========================================================
+   FORCE PURE BLACK BACKGROUNDS
+   ========================================================= */
+
+:root {
+  --bg-primary:    #000000;
+  --bg-secondary:  #000000;
+  --bg-panel:      #000000;
+  --bg-panel-hover:#0a0a0a;
+  --border:        #16232D;
+  --border-soft:   #16232D;
+  --accent-soft:   rgba(15, 252, 221, 0.10);
+}
+
+.main-view,
+.map-container-wrapper,
+.vehicle-map.leaflet-container,
+.dashboard-body,
+.dashboard,
+.admin-page,
+.suggest-road-page,
+.suggest-road-map-wrapper,
+.suggest-road-sidebar,
+.suggest-road-success,
+.admin-content,
+.admin-map,
+.health-bar {
+  background: #000000;
+}
