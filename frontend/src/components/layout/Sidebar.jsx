@@ -55,7 +55,7 @@ function Sidebar() {
       <div className="ego-identity">
         <div className="ego-visual">
           <div className="ego-ring"></div>
-          <span>🚗</span>
+          <span>🏎️</span>
         </div>
         <div>
           <h2>{myVehicleId || "NO VEHICLE"}</h2>
