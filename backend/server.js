@@ -1,4 +1,7 @@
 require("dotenv").config();
+
+console.log("JWT_SECRET loaded:", !!process.env.JWT_SECRET);
+
 const http = require("http");
 const express = require("express");
 const cors = require("cors");

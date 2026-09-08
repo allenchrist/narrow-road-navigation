@@ -84,6 +84,8 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    console.log("[Auth] JWT_SECRET available during login:", !!process.env.JWT_SECRET);
+
     const token = jwt.sign(
       {
         username: user.username,
