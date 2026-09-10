@@ -43,6 +43,9 @@ function useClock() {
 function Header() {
   const { vehicle, gpsStatus } = useVehicle();
 
+  const username =
+    window.location.pathname.split("/")[1] || "USER";
+
   const clock = useClock();
 
   const navigate = useNavigate();
@@ -186,11 +189,21 @@ function Header() {
         <div className="brand-text">
 
           <h1>
-            Connected Vehicle
+            {username}
           </h1>
 
-          <span>
-            Vehicle Coordination &amp; Safety
+          <span
+            className={
+              vehicle.connected
+                ? "user-connection connected"
+                : "user-connection disconnected"
+            }
+          >
+            <span className="connection-dot"></span>
+
+            {vehicle.connected
+              ? "CONNECTED"
+              : "DISCONNECTED"}
           </span>
 
         </div>
