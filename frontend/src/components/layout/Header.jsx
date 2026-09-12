@@ -95,7 +95,7 @@ function Header() {
   function handleSuggestNarrowRoad() {
     setProfileOpen(false);
 
-    navigate("/suggest-narrow-road");
+    navigate(`/${encodeURIComponent(username)}/suggest-narrow-road`);
   }
 
   return (

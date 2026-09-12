@@ -23,9 +23,9 @@ function App() {
           }
         />
 
-        {/* Suggest Narrow Road */}
+        {/* Username-based Suggest Narrow Road */}
         <Route
-          path="/suggest-narrow-road"
+          path="/:username/suggest-narrow-road"
           element={<SuggestNarrowRoad />}
         />
 
