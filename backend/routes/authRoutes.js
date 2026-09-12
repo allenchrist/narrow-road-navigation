@@ -5,7 +5,11 @@ const jwt = require("jsonwebtoken");
 const {
   registerUser,
   findUserByUsername,
+  findUserByDeviceId,
+  associateDeviceWithUser,
 } = require("../services/authService");
+
+const { authenticateToken } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -109,6 +113,90 @@ router.post("/login", async (req, res) => {
 
     return res.status(500).json({
       message: "Login failed.",
+    });
+  }
+});
+
+router.post("/device", authenticateToken, async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+
+    if (!deviceId || typeof deviceId !== "string") {
+      return res.status(400).json({
+        message: "Device ID is required.",
+      });
+    }
+
+    const normalizedDeviceId = deviceId.trim();
+
+    if (!normalizedDeviceId) {
+      return res.status(400).json({
+        message: "Device ID is required.",
+      });
+    }
+
+    const username = req.user.username;
+
+    if (!username) {
+      return res.status(401).json({
+        message: "Invalid authentication token.",
+      });
+    }
+
+    const user = await findUserByUsername(username);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    const existingDeviceUser =
+      await findUserByDeviceId(normalizedDeviceId);
+
+    if (
+      existingDeviceUser &&
+      existingDeviceUser.id !== user.id
+    ) {
+      return res.status(409).json({
+        message: "This device is already associated with another account.",
+      });
+    }
+
+    if (
+      user.device_id &&
+      user.device_id !== normalizedDeviceId
+    ) {
+      return res.status(409).json({
+        message: "This account is already associated with another device.",
+      });
+    }
+
+    const updatedUser = await associateDeviceWithUser(
+      user.id,
+      normalizedDeviceId
+    );
+
+    console.log(
+      `[Auth] Device associated: ${updatedUser.username} → ${updatedUser.device_id}`
+    );
+
+    return res.status(200).json({
+      message: "Device associated successfully.",
+      user: {
+        username: updatedUser.username,
+        email: updatedUser.email,
+      },
+      deviceId: updatedUser.device_id,
+    });
+  } catch (error) {
+    console.error(
+      "[Auth] Device association failed:",
+      error.message
+    );
+
+    return res.status(500).json({
+      message: "Failed to associate device.",
     });
   }
 });

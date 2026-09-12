@@ -16,6 +16,17 @@ async function initializeDatabase() {
       );
     `);
 
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS device_id VARCHAR(128);
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS users_device_id_unique
+      ON users(device_id)
+      WHERE device_id IS NOT NULL;
+    `);
+
     console.log("[Database] Users table is ready.");
   } catch (error) {
     console.error(
