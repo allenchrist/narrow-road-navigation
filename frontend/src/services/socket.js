@@ -10,35 +10,35 @@ const BACKEND_URL =
 
 
 // --------------------------------------------------
-// Dashboard device identity
+// Dashboard username identity
 //
 // Example:
-// ?device=bdb8a5d7-6e5c-467c-b041-bcbb1cd2931d
+// /allenchrist
 // --------------------------------------------------
 
-function getDashboardDeviceId() {
+function getDashboardUsername() {
   try {
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
+    const pathParts =
+      window.location.pathname
+        .split("/")
+        .filter(Boolean);
 
-    const deviceId =
-      params.get("device");
+    const username =
+      pathParts[0];
 
-    if (!deviceId) {
+    if (!username) {
       console.warn(
-        "[Socket.IO] No dashboard device ID"
+        "[Socket.IO] No dashboard username"
       );
 
       return null;
     }
 
     const normalized =
-      deviceId.trim();
+      decodeURIComponent(username).trim();
 
     console.log(
-      "[Socket.IO] Dashboard device ID:",
+      "[Socket.IO] Dashboard username:",
       normalized
     );
 
@@ -47,7 +47,7 @@ function getDashboardDeviceId() {
   } catch (error) {
 
     console.error(
-      "[Socket.IO] Failed to read dashboard device ID:",
+      "[Socket.IO] Failed to read dashboard username:",
       error
     );
 
@@ -56,8 +56,8 @@ function getDashboardDeviceId() {
 }
 
 
-const dashboardDeviceId =
-  getDashboardDeviceId();
+const dashboardUsername =
+  getDashboardUsername();
 
 
 // --------------------------------------------------
@@ -126,28 +126,28 @@ socket.on("connect", () => {
 
 
   // ------------------------------------------------
-  // Automatically identify dashboard
+  // Automatically identify dashboard by username
   // ------------------------------------------------
 
-  if (dashboardDeviceId) {
+  if (dashboardUsername) {
 
     console.log(
-      "[Socket.IO] Identifying dashboard device:",
-      dashboardDeviceId
+      "[Socket.IO] Identifying dashboard username:",
+      dashboardUsername
     );
 
     socket.emit(
       "session:identify",
       {
-        deviceId:
-          dashboardDeviceId,
+        username:
+          dashboardUsername,
       }
     );
 
   } else {
 
     console.warn(
-      "[Socket.IO] Dashboard has no device identity"
+      "[Socket.IO] Dashboard has no username identity"
     );
   }
 });

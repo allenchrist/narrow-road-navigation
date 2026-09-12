@@ -13,9 +13,9 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Normal vehicle dashboard */}
+        {/* Username-based vehicle dashboard */}
         <Route
-          path="/"
+          path="/:username"
           element={
             <VehicleProvider>
               <Dashboard />
