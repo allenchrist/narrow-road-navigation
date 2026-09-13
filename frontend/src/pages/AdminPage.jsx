@@ -705,7 +705,7 @@ function AdminPage() {
 
       <header className="admin-header">
 
-        <div>
+        <div className="admin-heading">
           <div className="admin-title">
             NARROW ROAD MANAGEMENT
           </div>
@@ -719,48 +719,28 @@ function AdminPage() {
             ADMIN SEARCH
         ------------------------------------------------ */}
 
-        <div
-          className="admin-search"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            flex: 1,
-            maxWidth: "560px",
-            marginLeft: "30px",
-          }}
-        >
-
-          <input
-            type="text"
-            value={searchText}
-            onChange={(event) =>
-              setSearchText(
-                event.target.value
-              )
-            }
-            onKeyDown={
-              handleSearchKeyDown
-            }
-            placeholder="Search location..."
-            style={{
-              flex: 1,
-            }}
-          />
+        <div className="admin-header-search-container">
+          <div className="admin-header-search">
+            <span className="admin-search-icon">🔍</span>
+            <input
+              type="text"
+              value={searchText}
+              onChange={(event) =>
+                setSearchText(event.target.value)
+              }
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search location..."
+            />
+          </div>
 
           <button
             type="button"
-            onClick={
-              searchLocationOnMap
-            }
+            onClick={searchLocationOnMap}
             disabled={searching}
-            className="admin-primary-button"
+            className="admin-search-btn"
           >
-            {searching
-              ? "SEARCHING..."
-              : "SEARCH"}
+            {searching ? "SEARCHING..." : "SEARCH  →"}
           </button>
-
         </div>
 
         {/* ------------------------------------------------
@@ -773,9 +753,7 @@ function AdminPage() {
 
             <button
               type="button"
-              onClick={
-                startDrawing
-              }
+              onClick={startDrawing}
               className="admin-primary-button"
             >
               + MARK NARROW ROAD
@@ -787,9 +765,7 @@ function AdminPage() {
 
               <button
                 type="button"
-                onClick={
-                  cancelDrawing
-                }
+                onClick={cancelDrawing}
                 className="admin-secondary-button"
               >
                 CANCEL
@@ -797,13 +773,9 @@ function AdminPage() {
 
               <button
                 type="button"
-                onClick={
-                  saveRoad
-                }
+                onClick={saveRoad}
                 disabled={
-                  saving ||
-                  currentPolygon.length <
-                    3
+                  saving || currentPolygon.length < 3
                 }
                 className="admin-primary-button"
               >

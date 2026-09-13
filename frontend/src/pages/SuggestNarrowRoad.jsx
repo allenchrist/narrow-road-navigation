@@ -388,16 +388,6 @@ function SuggestNarrowRoad() {
 
       <header className="suggest-road-header">
 
-        {/* BACK */}
-
-        <button
-          type="button"
-          className="suggest-back-button"
-          onClick={() => navigate("/")}
-        >
-          ← BACK
-        </button>
-
         {/* TITLE */}
 
         <div className="suggest-road-heading">
@@ -414,26 +404,28 @@ function SuggestNarrowRoad() {
 
         {/* SEARCH */}
 
-        <div className="suggest-header-search">
-
-          <input
-            type="text"
-            value={searchText}
-            onChange={(event) =>
-              setSearchText(event.target.value)
-            }
-            onKeyDown={handleSearchKeyDown}
-            placeholder="Search location..."
-          />
+        <div className="suggest-header-search-container">
+          <div className="suggest-header-search">
+            <span className="suggest-search-icon">🔍</span>
+            <input
+              type="text"
+              value={searchText}
+              onChange={(event) =>
+                setSearchText(event.target.value)
+              }
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search location..."
+            />
+          </div>
 
           <button
             type="button"
             onClick={searchLocationOnMap}
             disabled={searching}
+            className="suggest-search-btn"
           >
-            {searching ? "SEARCHING..." : "SEARCH"}
+            {searching ? "SEARCHING..." : "SEARCH  →"}
           </button>
-
         </div>
 
       </header>
