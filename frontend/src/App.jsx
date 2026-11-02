@@ -2,41 +2,57 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { VehicleProvider } from "./context/VehicleContext";
 
+import ErrorBoundary from "./components/common/ErrorBoundary";
+import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import AdminPage from "./pages/AdminPage";
 import SuggestNarrowRoad from "./pages/SuggestNarrowRoad";
 
-import "./App.css";
+import "./styles/dashboard.css";
+import "./styles/pages.css";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
 
-        {/* Username-based vehicle dashboard */}
-        <Route
-          path="/:username"
-          element={
-            <VehicleProvider>
-              <Dashboard />
-            </VehicleProvider>
-          }
-        />
+          <Route
+            path="/"
+            element={<Home />}
+          />
 
-        {/* Username-based Suggest Narrow Road */}
-        <Route
-          path="/:username/suggest-narrow-road"
-          element={<SuggestNarrowRoad />}
-        />
+          {/* Username-based vehicle dashboard */}
+          <Route
+            path="/:username"
+            element={
+              <VehicleProvider>
+                <Dashboard />
+              </VehicleProvider>
+            }
+          />
 
-        {/* Admin narrow-road management */}
-        <Route
-          path="/admin"
-          element={<AdminPage />}
-        />
+          {/* Username-based Suggest Narrow Road */}
+          <Route
+            path="/:username/suggest-narrow-road"
+            element={<SuggestNarrowRoad />}
+          />
 
-      </Routes>
-    </BrowserRouter>
+          {/* Admin narrow-road management */}
+          <Route
+            path="/admin"
+            element={<AdminPage />}
+          />
+
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

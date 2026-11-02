@@ -29,6 +29,8 @@ function vehicleAt(lat, lon, speed, bearing) {
   const travelBearing = speed >= 1 ? bearing : null;
 
   return {
+    lat,
+    lon,
     speed,
     bearing,
     ...computeGeofenceState(lat, lon, travelBearing, [ROAD]),
@@ -48,22 +50,26 @@ const tests = {
   "far away gets no alert": () => {
     assert.strictEqual(kind(vehicleAt(11.01, 77.01, MOVING, EAST)), "NONE");
   },
-  "driving towards the road warns before entry": () => {
-    const alert = buildNarrowRoadAlert(aheadEastbound(), []);
-    assert.strictEqual(alert.kind, "NARROW_ROAD_AHEAD");
-    assert.ok(alert.distanceM > 40 && alert.distanceM < 70, `distance ${alert.distanceM}`);
+  "no alert until the vehicle enters the road": () => {
+    assert.strictEqual(kind(aheadEastbound()), "NONE");
+    assert.strictEqual(kind(aheadEastbound(), [insideWestbound()]), "NONE");
+    assert.strictEqual(kind(aheadEastbound(), [aheadWestbound()]), "NONE");
   },
-  "driving away from the road gets no alert": () => {
-    assert.strictEqual(kind(vehicleAt(11, 76.9995, MOVING, WEST)), "NONE");
+  "driving towards the road counts as approaching": () => {
+    const [road] = aheadEastbound().approachingRoads;
+    assert.ok(road.distanceM > 40 && road.distanceM < 70, `distance ${road.distanceM}`);
   },
-  "driving past the road gets no alert": () => {
-    assert.strictEqual(kind(vehicleAt(11.0005, 76.9995, MOVING, 0)), "NONE");
+  "driving away from the road is not approaching": () => {
+    assert.strictEqual(vehicleAt(11, 76.9995, MOVING, WEST).approachingRoads.length, 0);
   },
-  "stopped far from the road gets no alert": () => {
-    assert.strictEqual(kind(vehicleAt(11, 76.9995, 0, null)), "NONE");
+  "driving past the road is not approaching": () => {
+    assert.strictEqual(vehicleAt(11.0005, 76.9995, MOVING, 0).approachingRoads.length, 0);
+  },
+  "stopped far from the road is not approaching": () => {
+    assert.strictEqual(vehicleAt(11, 76.9995, 0, null).approachingRoads.length, 0);
   },
   "stopped at the entrance counts as approaching": () => {
-    assert.strictEqual(kind(vehicleAt(11, 76.9998, 0, null)), "NARROW_ROAD_AHEAD");
+    assert.strictEqual(vehicleAt(11, 76.9998, 0, null).approachingRoads.length, 1);
   },
   "alone inside the road": () => {
     assert.strictEqual(kind(insideEastbound()), "IN_NARROW_ROAD");
@@ -77,14 +83,19 @@ const tests = {
   "stopped vehicle inside is still a hazard": () => {
     assert.strictEqual(kind(insideEastbound(), [insideStopped()]), "VEHICLE_IN_ROAD");
   },
-  "outside with a vehicle coming through says wait": () => {
-    assert.strictEqual(kind(aheadEastbound(), [insideWestbound()]), "WAIT_VEHICLE_IN_ROAD");
-  },
   "inside with a vehicle about to enter the far end": () => {
     assert.strictEqual(kind(insideEastbound(), [aheadWestbound()]), "VEHICLE_ENTERING");
   },
-  "both about to enter from opposite ends": () => {
-    assert.strictEqual(kind(aheadEastbound(), [aheadWestbound()]), "VEHICLE_ALSO_APPROACHING");
+  "the alert gives the distance to the nearest other vehicle": () => {
+    const alert = buildNarrowRoadAlert(insideEastbound(), [
+      insideWestbound(),
+      vehicleAt(11, 77.0019, MOVING, WEST),
+    ]);
+    assert.strictEqual(alert.vehicleCount, 2);
+    assert.ok(alert.vehicleDistanceM > 100 && alert.vehicleDistanceM < 120, `distance ${alert.vehicleDistanceM}`);
+  },
+  "alone inside gives no vehicle distance": () => {
+    assert.strictEqual(buildNarrowRoadAlert(insideEastbound(), []).vehicleDistanceM, null);
   },
   "a vehicle on another road is ignored": () => {
     assert.strictEqual(kind(insideEastbound(), [vehicleAt(11.01, 77.01, MOVING, WEST)]), "IN_NARROW_ROAD");
@@ -96,7 +107,7 @@ const tests = {
     assert.deepStrictEqual(first.insideRoadIds, ["R1", "R2"]);
     assert.deepStrictEqual(second.insideRoadIds, ["R2", "R1"]);
     assert.strictEqual(
-      kind({ speed: 0, bearing: null, ...first }, [{ speed: 0, bearing: null, ...second }]),
+      kind({ lat: 11, lon: 77.001, speed: 0, bearing: null, ...first }, [{ lat: 11, lon: 77.001, speed: 0, bearing: null, ...second }]),
       "VEHICLE_IN_ROAD"
     );
   },

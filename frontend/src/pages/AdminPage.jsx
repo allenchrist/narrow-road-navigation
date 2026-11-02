@@ -12,6 +12,8 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
+import Icon from "../components/common/Icon";
+
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5000";
@@ -144,6 +146,9 @@ function AdminPage() {
     useState(null);
 
   const [searchError, setSearchError] =
+    useState("");
+
+  const [roadFilter, setRoadFilter] =
     useState("");
 
   // --------------------------------------------------
@@ -365,6 +370,27 @@ function AdminPage() {
       ...previous,
       point,
     ]);
+  }
+
+  // --------------------------------------------------
+  // Undo last point
+  // --------------------------------------------------
+
+  function undoLastPoint() {
+    setCurrentPolygon((previous) =>
+      previous.slice(0, -1)
+    );
+  }
+
+  // --------------------------------------------------
+  // Show a saved road on the map
+  // --------------------------------------------------
+
+  function viewRoad(road) {
+    map?.fitBounds(road.polygon, {
+      padding: [80, 80],
+      maxZoom: 18,
+    });
   }
 
   // --------------------------------------------------
@@ -682,6 +708,12 @@ function AdminPage() {
         "PENDING"
     );
 
+  const filteredRoads = roads.filter((road) =>
+    road.name
+      .toLowerCase()
+      .includes(roadFilter.trim().toLowerCase())
+  );
+
   // --------------------------------------------------
   // Map ready
   // --------------------------------------------------
@@ -707,11 +739,11 @@ function AdminPage() {
 
         <div className="admin-heading">
           <div className="admin-title">
-            NARROW ROAD MANAGEMENT
+            Narrow road management
           </div>
 
           <div className="admin-subtitle">
-            ADMIN GEOFENCE CONTROL
+            Admin console
           </div>
         </div>
 
@@ -721,7 +753,7 @@ function AdminPage() {
 
         <div className="admin-header-search-container">
           <div className="admin-header-search">
-            <span className="admin-search-icon">🔍</span>
+            <span className="admin-search-icon"><Icon name="search" size={18} /></span>
             <input
               type="text"
               value={searchText}
@@ -739,7 +771,7 @@ function AdminPage() {
             disabled={searching}
             className="admin-search-btn"
           >
-            {searching ? "SEARCHING..." : "SEARCH  →"}
+            {searching ? "Searching…" : "Search"}
           </button>
         </div>
 
@@ -756,7 +788,8 @@ function AdminPage() {
               onClick={startDrawing}
               className="admin-primary-button"
             >
-              + MARK NARROW ROAD
+              <Icon name="add" size={18} />
+              Mark narrow road
             </button>
 
           ) : (
@@ -768,7 +801,17 @@ function AdminPage() {
                 onClick={cancelDrawing}
                 className="admin-secondary-button"
               >
-                CANCEL
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={undoLastPoint}
+                disabled={currentPolygon.length === 0}
+                className="admin-secondary-button"
+              >
+                <Icon name="undo" size={18} />
+                Undo
               </button>
 
               <button
@@ -780,10 +823,10 @@ function AdminPage() {
                 className="admin-primary-button"
               >
                 {saving
-                  ? "SAVING..."
+                  ? "Saving…"
                   : editingRoadId
-                  ? "UPDATE ROAD"
-                  : "SAVE ROAD"}
+                  ? "Update road"
+                  : "Save road"}
               </button>
 
             </>
@@ -793,26 +836,6 @@ function AdminPage() {
         </div>
 
       </header>
-
-      {/* Search error */}
-
-      {searchError && (
-        <div
-          style={{
-            position: "absolute",
-            top: "75px",
-            right: "20px",
-            zIndex: 10000,
-            background: "#24151a",
-            color: "#ff6b6b",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            border: "1px solid #7a2934",
-          }}
-        >
-          {searchError}
-        </div>
-      )}
 
       {/* ==================================================
           CONTENT
@@ -824,7 +847,7 @@ function AdminPage() {
             MAP
         ================================================== */}
 
-        <div className="admin-map">
+        <div className="admin-map cv-map--map">
 
           <MapContainer
             center={[
@@ -1010,6 +1033,12 @@ function AdminPage() {
 
           </MapContainer>
 
+          {searchError && (
+            <div className="admin-search-error" role="alert">
+              {searchError}
+            </div>
+          )}
+
           {/* ==================================================
               DRAWING HELP
           ================================================== */}
@@ -1019,12 +1048,11 @@ function AdminPage() {
             <div className="admin-drawing-help">
 
               <strong>
-                MARKING NARROW ROAD
+                Marking a narrow road
               </strong>
 
               <span>
-                Click around the
-                entire road boundary.
+                Click around the road to mark its boundary.
               </span>
 
               <span>
@@ -1051,7 +1079,10 @@ function AdminPage() {
           ================================================== */}
 
           <div className="admin-section-title">
-            USER SUGGESTIONS
+            User suggestions
+            <span className="admin-count">
+              {pendingSuggestions.length}
+            </span>
           </div>
 
           {suggestionsError && (
@@ -1179,8 +1210,8 @@ function AdminPage() {
                           }
                         >
                           {selected
-                            ? "SELECTED"
-                            : "VIEW"}
+                            ? "Selected"
+                            : "View"}
                         </button>
 
                         <button
@@ -1198,7 +1229,7 @@ function AdminPage() {
                         >
                           {reviewing
                             ? "..."
-                            : "APPROVE"}
+                            : "Approve"}
                         </button>
 
                         <button
@@ -1214,7 +1245,7 @@ function AdminPage() {
                             reviewing
                           }
                         >
-                          REJECT
+                          Reject
                         </button>
 
                       </div>
@@ -1233,15 +1264,7 @@ function AdminPage() {
               SEPARATOR
           ================================================== */}
 
-          <div
-            style={{
-              height: "1px",
-              background:
-                "rgba(255,255,255,0.08)",
-              margin:
-                "24px 0",
-            }}
-          />
+          <div className="admin-divider" />
 
           {/* ==================================================
               NEW / EDIT ROAD
@@ -1252,7 +1275,7 @@ function AdminPage() {
             <div className="admin-drawing-panel">
 
               <label>
-                ROAD NAME
+                Road name
               </label>
 
               <input
@@ -1293,15 +1316,23 @@ function AdminPage() {
               SAVED OFFICIAL ROADS
           ================================================== */}
 
-          <div
-            className="admin-section-title"
-            style={{
-              marginTop:
-                "20px",
-            }}
-          >
-            SAVED NARROW ROADS
+          <div className="admin-section-title">
+            Saved narrow roads
+            <span className="admin-count">
+              {roads.length}
+            </span>
           </div>
+
+          <input
+            type="search"
+            className="admin-road-filter"
+            value={roadFilter}
+            onChange={(event) =>
+              setRoadFilter(event.target.value)
+            }
+            placeholder="Filter roads by name"
+            aria-label="Filter roads by name"
+          />
 
           {loading ? (
 
@@ -1309,17 +1340,19 @@ function AdminPage() {
               Loading...
             </div>
 
-          ) : roads.length === 0 ? (
+          ) : filteredRoads.length === 0 ? (
 
             <div className="admin-empty">
-              No narrow roads marked yet.
+              {roads.length === 0
+                ? "No narrow roads marked yet."
+                : "No roads match that name."}
             </div>
 
           ) : (
 
             <div className="admin-road-list">
 
-              {roads.map((road) => (
+              {filteredRoads.map((road) => (
 
                 <div
                   key={road.id}
@@ -1346,6 +1379,15 @@ function AdminPage() {
 
                     <button
                       type="button"
+                      onClick={() => viewRoad(road)}
+                      className="admin-edit-button"
+                    >
+                      <Icon name="target" size={15} />
+                      View
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() =>
                         startEditingRoad(
                           road
@@ -1353,7 +1395,8 @@ function AdminPage() {
                       }
                       className="admin-edit-button"
                     >
-                      EDIT
+                      <Icon name="pencil" size={15} />
+                      Edit
                     </button>
 
                     <button
@@ -1365,7 +1408,8 @@ function AdminPage() {
                       }
                       className="admin-delete-button"
                     >
-                      DELETE
+                      <Icon name="trash" size={15} />
+                      Delete
                     </button>
 
                   </div>

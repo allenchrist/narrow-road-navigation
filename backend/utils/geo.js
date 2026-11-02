@@ -6,6 +6,19 @@ const MOVING_SPEED_MPS = 1;
 const toRadians = (degrees) => (degrees * Math.PI) / 180;
 
 /**
+ * Distance in metres between two points. Flat-earth, like the
+ * polygon check below, which is accurate over these short distances.
+ */
+function distanceBetween(latA, lonA, latB, lonB) {
+  const metresPerDegree = toRadians(1) * EARTH_RADIUS_M;
+
+  return Math.hypot(
+    (latB - latA) * metresPerDegree,
+    (lonB - lonA) * metresPerDegree * Math.cos(toRadians(latA))
+  );
+}
+
+/**
  * Smallest angle between two compass bearings, from 0 to 180.
  */
 function angleDifference(a, b) {
@@ -71,6 +84,7 @@ function nearestPointOnPolygon(lat, lon, polygon) {
 }
 
 module.exports = {
+  distanceBetween,
   angleDifference,
   getTravelBearing,
   nearestPointOnPolygon,

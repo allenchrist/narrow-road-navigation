@@ -3,7 +3,6 @@ import {
   useContext,
   useState,
   useEffect,
-  useRef,
 } from "react";
 
 import { useParams } from "react-router-dom";
@@ -11,8 +10,6 @@ import { useParams } from "react-router-dom";
 import { getVehicleSocket } from "../services/socket";
 
 const VehicleContext = createContext(null);
-
-const STALE_THRESHOLD_MS = 5000;
 
 const IDENTIFY_RETRY_MS = 5000;
 
@@ -22,26 +19,28 @@ const EMPTY_VEHICLE = {
   lat: null,
   lon: null,
   heading: null,
-
-  accelX: null,
-  accelY: null,
-  accelZ: null,
-
-  gyroX: null,
-  gyroY: null,
-  gyroZ: null,
+  speed: null,
+  bearing: null,
 
   connected: false,
-  lastReceivedAt: null,
+  active: false,
 
   insideNarrowRoad: false,
   narrowRoadId: null,
   narrowRoadName: null,
 
-  otherVehiclesInSameNarrowRoad: 0,
-
   narrowRoadAlert: null,
 };
+
+function getGpsStatus(backendConnected, myVehicleId, ego) {
+  if (!backendConnected) return "DISCONNECTED";
+  if (!myVehicleId) return "NO VEHICLE";
+  if (!ego.connected) return "OFFLINE";
+  if (ego.lat === null || ego.lon === null) return "WAITING";
+
+  // The server decides this, so a wrong clock on this screen can't affect it
+  return ego.active ? "ACTIVE" : "STALE";
+}
 
 export function VehicleProvider({ children }) {
   const { username } = useParams();
@@ -52,89 +51,12 @@ export function VehicleProvider({ children }) {
   const [backendConnected, setBackendConnected] =
     useState(false);
 
-  const [gpsStatus, setGpsStatus] =
-    useState("DISCONNECTED");
-
-  // --------------------------------------------------
   // Ego vehicle assigned to THIS dashboard
-  // --------------------------------------------------
-
   const [myVehicleId, setMyVehicleId] =
     useState(null);
 
   const [sessionError, setSessionError] =
     useState("");
-
-  const stateRef = useRef({
-    vehicles: {},
-    backendConnected: false,
-    myVehicleId: null,
-  });
-
-  stateRef.current = {
-    vehicles,
-    backendConnected,
-    myVehicleId,
-  };
-
-  // --------------------------------------------------
-  // GPS STATUS
-  // --------------------------------------------------
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const {
-        vehicles: vehicleMap,
-        backendConnected: connected,
-        myVehicleId: egoId,
-      } = stateRef.current;
-
-      if (!connected) {
-        setGpsStatus("DISCONNECTED");
-        return;
-      }
-
-      if (!egoId) {
-        setGpsStatus("NO VEHICLE");
-        return;
-      }
-
-      const ego = vehicleMap[egoId];
-
-      if (!ego) {
-        setGpsStatus("NO SIGNAL");
-        return;
-      }
-
-      if (!ego.connected) {
-        setGpsStatus("OFFLINE");
-        return;
-      }
-
-      if (
-        ego.lat === null ||
-        ego.lon === null
-      ) {
-        setGpsStatus("WAITING");
-        return;
-      }
-
-      if (
-        ego.lastReceivedAt &&
-        Date.now() -
-          ego.lastReceivedAt >
-          STALE_THRESHOLD_MS
-      ) {
-        setGpsStatus("STALE");
-        return;
-      }
-
-      setGpsStatus("ACTIVE");
-    }, 1000);
-
-    return () =>
-      clearInterval(interval);
-  }, []);
 
   // --------------------------------------------------
   // SOCKET.IO
@@ -151,20 +73,12 @@ export function VehicleProvider({ children }) {
     }
 
     function onConnect() {
-      console.log(
-        "[VehicleContext] Backend connected"
-      );
-
       setBackendConnected(true);
 
       identifyDashboard();
     }
 
     function onDisconnect() {
-      console.log(
-        "[VehicleContext] Backend disconnected"
-      );
-
       setBackendConnected(false);
 
       setVehicles((previous) => {
@@ -175,6 +89,7 @@ export function VehicleProvider({ children }) {
             updated[id] = {
               ...previous[id],
               connected: false,
+              active: false,
             };
           }
         );
@@ -182,10 +97,6 @@ export function VehicleProvider({ children }) {
         return updated;
       });
     }
-
-    // --------------------------------------------------
-    // Full fleet update
-    // --------------------------------------------------
 
     function onVehiclesUpdate({
       vehicles: list,
@@ -197,89 +108,45 @@ export function VehicleProvider({ children }) {
       const vehicleMap = {};
 
       list.forEach((vehicle) => {
-        vehicleMap[
-          vehicle.vehicleId
-        ] = {
-          ...vehicle,
-
-          // Safety fallback
-          otherVehiclesInSameNarrowRoad:
-            Number(
-              vehicle.otherVehiclesInSameNarrowRoad
-            ) || 0,
-        };
+        vehicleMap[vehicle.vehicleId] = vehicle;
       });
 
       setVehicles(vehicleMap);
       setBackendConnected(true);
     }
 
-    // --------------------------------------------------
-    // Dashboard → Vehicle assignment
-    // --------------------------------------------------
-
     function onSessionAssigned({
-      deviceId,
       vehicleId,
     }) {
-      console.log(
-        "[VehicleContext] SESSION ASSIGNED"
-      );
-
-      console.log(
-        "[VehicleContext] Device:",
-        deviceId
-      );
-
-      console.log(
-        "[VehicleContext] Vehicle:",
-        vehicleId
-      );
-
       if (
         !vehicleId ||
         typeof vehicleId !== "string"
       ) {
-        console.error(
-          "[VehicleContext] Invalid vehicleId"
-        );
-
         return;
       }
-
-      const normalizedVehicleId =
-        vehicleId
-          .trim()
-          .toUpperCase();
-
-      console.log(
-        "[VehicleContext] Setting MY VEHICLE ID:",
-        normalizedVehicleId
-      );
 
       setSessionError("");
 
       setMyVehicleId(
-        normalizedVehicleId
+        vehicleId
+          .trim()
+          .toUpperCase()
       );
     }
-
-    // --------------------------------------------------
-    // Identity error
-    // --------------------------------------------------
 
     function onSessionError({
       message,
     }) {
-      console.error(
-        "[VehicleContext] SESSION ERROR:",
-        message
-      );
-
       setSessionError(message);
 
       setMyVehicleId(null);
     }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("vehicles:update", onVehiclesUpdate);
+    socket.on("session:assigned", onSessionAssigned);
+    socket.on("session:error", onSessionError);
 
     // This page opened on a socket that is already connected,
     // for example after pressing Back from another page.
@@ -289,56 +156,12 @@ export function VehicleProvider({ children }) {
       identifyDashboard();
     }
 
-    socket.on(
-      "connect",
-      onConnect
-    );
-
-    socket.on(
-      "disconnect",
-      onDisconnect
-    );
-
-    socket.on(
-      "vehicles:update",
-      onVehiclesUpdate
-    );
-
-    socket.on(
-      "session:assigned",
-      onSessionAssigned
-    );
-
-    socket.on(
-      "session:error",
-      onSessionError
-    );
-
     return () => {
-      socket.off(
-        "connect",
-        onConnect
-      );
-
-      socket.off(
-        "disconnect",
-        onDisconnect
-      );
-
-      socket.off(
-        "vehicles:update",
-        onVehiclesUpdate
-      );
-
-      socket.off(
-        "session:assigned",
-        onSessionAssigned
-      );
-
-      socket.off(
-        "session:error",
-        onSessionError
-      );
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("vehicles:update", onVehiclesUpdate);
+      socket.off("session:assigned", onSessionAssigned);
+      socket.off("session:error", onSessionError);
     };
   }, [username]);
 
@@ -369,47 +192,24 @@ export function VehicleProvider({ children }) {
     username,
   ]);
 
-  // --------------------------------------------------
-  // Derived ego vehicle
-  // --------------------------------------------------
-
-  const baseEgoVehicle =
-    myVehicleId &&
-    vehicles[myVehicleId]
-      ? vehicles[myVehicleId]
-      : EMPTY_VEHICLE;
-
-  // --------------------------------------------------
-  // Final ego vehicle
-  // --------------------------------------------------
-
-  const egoVehicle = {
-    ...baseEgoVehicle,
-    backendConnected,
-  };
-
-  // Existing components use this alias
-  const vehicle =
-    egoVehicle;
+  const egoVehicle =
+    (myVehicleId && vehicles[myVehicleId]) ||
+    EMPTY_VEHICLE;
 
   return (
     <VehicleContext.Provider
       value={{
+        username,
         vehicles,
-
-        vehicle,
-
         egoVehicle,
-
         myVehicleId,
-
-        setMyVehicleId,
-
         backendConnected,
-
-        gpsStatus,
-
         sessionError,
+        gpsStatus: getGpsStatus(
+          backendConnected,
+          myVehicleId,
+          egoVehicle
+        ),
       }}
     >
       {children}

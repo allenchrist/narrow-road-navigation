@@ -1,0 +1,616 @@
+/* =========================================================
+   ADMIN AND SUGGESTION PAGES
+   Share the dashboard's colours, defined in dashboard.css.
+   ========================================================= */
+
+.admin-page,
+.suggest-road-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+}
+
+/* ---------------------------------------------------------
+   Header
+   --------------------------------------------------------- */
+
+.admin-header,
+.suggest-road-header {
+  z-index: 1100;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 18px;
+  min-height: 72px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--cv-border);
+  background: var(--cv-surface-solid);
+}
+
+.admin-heading,
+.suggest-road-heading {
+  flex-shrink: 0;
+}
+
+.admin-title,
+.suggest-road-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.admin-subtitle,
+.suggest-road-subtitle {
+  margin-top: 1px;
+  color: var(--cv-text-3);
+  font-size: 13px;
+}
+
+.admin-header-search-container,
+.suggest-header-search-container {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.admin-header-search,
+.suggest-header-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  background: var(--cv-bg);
+  color: var(--cv-text-3);
+  transition: border-color 0.15s;
+}
+
+.admin-header-search:focus-within,
+.suggest-header-search:focus-within {
+  border-color: var(--cv-accent);
+}
+
+.admin-search-icon,
+.suggest-search-icon {
+  display: flex;
+}
+
+.admin-header-search input,
+.suggest-header-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--cv-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.admin-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------
+   Buttons
+   --------------------------------------------------------- */
+
+.admin-primary-button,
+.admin-secondary-button,
+.admin-edit-button,
+.admin-delete-button,
+.admin-search-btn,
+.suggest-search-btn,
+.suggest-primary-button,
+.suggest-secondary-button,
+.suggest-submit-button,
+.suggest-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, filter 0.15s;
+}
+
+.admin-primary-button,
+.admin-search-btn,
+.suggest-search-btn,
+.suggest-primary-button,
+.suggest-submit-button {
+  background: var(--cv-accent);
+  color: var(--cv-on-accent);
+}
+
+.admin-primary-button:hover:not(:disabled),
+.admin-search-btn:hover:not(:disabled),
+.suggest-search-btn:hover:not(:disabled),
+.suggest-primary-button:hover:not(:disabled),
+.suggest-submit-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.admin-secondary-button,
+.admin-edit-button,
+.suggest-secondary-button,
+.suggest-back-button {
+  border-color: var(--cv-border);
+  background: transparent;
+  color: var(--cv-text);
+}
+
+.admin-secondary-button:hover:not(:disabled),
+.admin-edit-button:hover:not(:disabled),
+.suggest-secondary-button:hover:not(:disabled),
+.suggest-back-button:hover:not(:disabled) {
+  background: var(--cv-raised);
+}
+
+.admin-delete-button {
+  border-color: rgba(255, 92, 99, 0.35);
+  background: transparent;
+  color: var(--cv-bad);
+}
+
+.admin-delete-button:hover:not(:disabled) {
+  background: rgba(255, 92, 99, 0.12);
+}
+
+.admin-road-buttons button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.admin-page button:disabled,
+.suggest-road-page button:disabled {
+  background: var(--cv-raised);
+  border-color: transparent;
+  color: var(--cv-text-3);
+  cursor: default;
+}
+
+.admin-page :focus-visible,
+.suggest-road-page :focus-visible {
+  outline: 2px solid var(--cv-accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------
+   Layout
+   --------------------------------------------------------- */
+
+.admin-content,
+.suggest-road-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-map,
+.suggest-road-map-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background: var(--cv-bg);
+}
+
+.admin-leaflet-map,
+.suggest-road-map {
+  position: absolute;
+  inset: 0;
+  background: var(--cv-bg);
+  font-family: inherit;
+}
+
+.admin-map .leaflet-control-attribution,
+.suggest-road-map-wrapper .leaflet-control-attribution {
+  background: rgba(5, 8, 12, 0.75);
+  color: var(--cv-text-3);
+  font-size: 10px;
+}
+
+.admin-map .leaflet-control-attribution a,
+.suggest-road-map-wrapper .leaflet-control-attribution a {
+  color: var(--cv-text-2);
+}
+
+.admin-map .leaflet-bar,
+.suggest-road-map-wrapper .leaflet-bar {
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--cv-shadow);
+}
+
+.admin-map .leaflet-bar a,
+.suggest-road-map-wrapper .leaflet-bar a {
+  width: 38px;
+  height: 38px;
+  border-color: var(--cv-border);
+  background: var(--cv-surface-solid);
+  color: var(--cv-text);
+  line-height: 38px;
+}
+
+.admin-map .leaflet-bar a:hover,
+.suggest-road-map-wrapper .leaflet-bar a:hover {
+  background: var(--cv-raised);
+}
+
+.admin-sidebar,
+.suggest-road-sidebar {
+  flex-shrink: 0;
+  width: 380px;
+  padding: 20px;
+  border-left: 1px solid var(--cv-border);
+  background: var(--cv-surface-solid);
+  overflow-y: auto;
+}
+
+.admin-section-title,
+.suggest-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-count {
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cv-raised);
+  color: var(--cv-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.admin-divider {
+  height: 1px;
+  margin: 22px 0;
+  background: var(--cv-border);
+}
+
+/* ---------------------------------------------------------
+   Lists
+   --------------------------------------------------------- */
+
+.admin-road-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-road-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  background: var(--cv-bg);
+  transition: border-color 0.15s;
+}
+
+.admin-road-item:hover {
+  border-color: #33424f;
+}
+
+.admin-road-item strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-road-item span {
+  display: block;
+  margin-top: 2px;
+  color: var(--cv-text-3);
+  font-size: 13px;
+}
+
+.admin-road-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-road-filter {
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.admin-road-filter:focus {
+  border-color: var(--cv-accent);
+  outline: none;
+}
+
+.admin-empty {
+  padding: 18px;
+  border: 1px dashed var(--cv-border);
+  border-radius: 14px;
+  color: var(--cv-text-3);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------
+   Forms
+   --------------------------------------------------------- */
+
+.admin-drawing-panel,
+.suggest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 16px 0;
+}
+
+.admin-drawing-panel {
+  padding: 14px;
+  border: 1px solid var(--cv-accent);
+  border-radius: 14px;
+  background: rgba(86, 199, 255, 0.07);
+}
+
+.admin-drawing-panel label,
+.suggest-form label {
+  margin-top: 8px;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.admin-drawing-panel input,
+.suggest-form input,
+.suggest-form textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.admin-drawing-panel input:focus,
+.suggest-form input:focus,
+.suggest-form textarea:focus {
+  border-color: var(--cv-accent);
+  outline: none;
+}
+
+.admin-point-count,
+.suggest-point-count {
+  margin-top: 8px;
+  color: var(--cv-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.suggest-description {
+  margin: 0 0 16px;
+  color: var(--cv-text-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.suggest-road-sidebar .suggest-primary-button,
+.suggest-submit-button {
+  width: 100%;
+}
+
+.suggest-drawing-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.suggest-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--cv-raised);
+  color: var(--cv-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.suggest-notice strong {
+  color: var(--cv-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   Messages over the map
+   --------------------------------------------------------- */
+
+.admin-error,
+.suggest-error {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 92, 99, 0.12);
+  color: #ff9ca4;
+  font-size: 14px;
+}
+
+.admin-search-error,
+.suggest-search-error {
+  position: absolute;
+  z-index: 1050;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 92, 99, 0.4);
+  border-radius: 12px;
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+  color: #ff9ca4;
+  font-size: 14px;
+}
+
+.admin-drawing-help,
+.suggest-drawing-help {
+  position: absolute;
+  z-index: 1000;
+  bottom: 28px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 32px);
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border: 1px solid var(--cv-accent);
+  border-radius: 14px;
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+  color: var(--cv-text-2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.admin-drawing-help strong,
+.suggest-drawing-help strong {
+  color: var(--cv-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   Suggestion sent
+   --------------------------------------------------------- */
+
+.suggest-road-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(460px, calc(100% - 32px));
+  margin: auto;
+  padding: 36px;
+  border: 1px solid var(--cv-border);
+  border-radius: var(--cv-radius);
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+  text-align: center;
+}
+
+.suggest-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(67, 209, 122, 0.14);
+  color: var(--cv-good);
+}
+
+.suggest-road-success h1 {
+  margin: 18px 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.suggest-road-success p {
+  margin: 0;
+  color: var(--cv-text-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.suggest-road-success .suggest-success-status {
+  margin: 14px 0 22px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(242, 184, 75, 0.14);
+  color: var(--cv-warn);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   Smaller screens
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .admin-header,
+  .suggest-road-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+
+  .admin-header-search-container,
+  .suggest-header-search-container {
+    flex-basis: 100%;
+    order: 3;
+    max-width: none;
+  }
+
+  .admin-actions {
+    margin-left: auto;
+  }
+
+  .admin-content,
+  .suggest-road-content {
+    flex-direction: column;
+  }
+
+  .admin-map,
+  .suggest-road-map-wrapper {
+    flex: none;
+    height: 45%;
+  }
+
+  .admin-sidebar,
+  .suggest-road-sidebar {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border-top: 1px solid var(--cv-border);
+    border-left: 0;
+  }
+}

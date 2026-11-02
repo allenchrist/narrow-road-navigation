@@ -1,0 +1,1088 @@
+/* =========================================================
+   DASHBOARD (CAR SCREEN)
+   Built to be read at a glance: a full-screen map with the
+   drive panel and alerts floating above it.
+   ========================================================= */
+
+:root {
+  --cv-bg: #05080c;
+  --cv-surface: rgba(13, 19, 26, 0.92);
+  --cv-surface-solid: #0d131a;
+  --cv-raised: #151d26;
+  --cv-border: #232e3a;
+
+  --cv-text: #f2f5f7;
+  --cv-text-2: #a6b1bb;
+  --cv-text-3: #7f8c98;
+
+  --cv-accent: #56c7ff;
+  --cv-on-accent: #04202e;
+  --cv-good: #43d17a;
+  --cv-warn: #f2b84b;
+  --cv-bad: #ff5c63;
+
+  --cv-gap: 16px;
+  --cv-panel-width: 300px;
+  --cv-topbar-height: 64px;
+  --cv-radius: 16px;
+  --cv-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ---------------------------------------------------------
+   Layout
+   --------------------------------------------------------- */
+
+.cv-dashboard {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+}
+
+.cv-map,
+.cv-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.cv-map-canvas.leaflet-container {
+  z-index: 0;
+  background: var(--cv-bg);
+  font-family: inherit;
+}
+
+/* A soft fade at the edges, so the floating panels stand out */
+.cv-map::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(5, 8, 12, 0.55), transparent 22%),
+    linear-gradient(to top, rgba(5, 8, 12, 0.45), transparent 18%),
+    linear-gradient(to right, rgba(5, 8, 12, 0.45), transparent 30%);
+  pointer-events: none;
+}
+
+/* Turns the standard light map into a navy one that matches the dashboard */
+.cv-map--map .leaflet-tile {
+  filter: invert(1) contrast(0.72) brightness(1.18) grayscale(1) sepia(1) hue-rotate(175deg) saturate(2.6);
+}
+
+/* ---------------------------------------------------------
+   Shared pieces
+   --------------------------------------------------------- */
+
+.cv-panel,
+.cv-topbar,
+.cv-card {
+  background: var(--cv-surface);
+  border: 1px solid var(--cv-border);
+  border-radius: var(--cv-radius);
+  box-shadow: var(--cv-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.cv-card {
+  background: var(--cv-surface-solid);
+}
+
+.cv-section-label,
+.cv-chip-label {
+  display: block;
+  color: var(--cv-text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cv-brand-mark {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #56c7ff, #1e88c7);
+  color: var(--cv-on-accent);
+}
+
+.cv-brand-mark--large {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+}
+
+.cv-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--cv-text-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cv-icon-button:hover:not(:disabled) {
+  background: var(--cv-raised);
+  color: var(--cv-text);
+}
+
+.cv-icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cv-icon-button.is-highlighted {
+  background: var(--cv-accent);
+  color: var(--cv-on-accent);
+}
+
+.cv-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cv-accent);
+  color: var(--cv-on-accent);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.cv-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.cv-button:disabled {
+  background: var(--cv-raised);
+  color: var(--cv-text-3);
+  cursor: default;
+}
+
+.cv-dashboard :focus-visible,
+.cv-center-page :focus-visible {
+  outline: 2px solid var(--cv-accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------
+   Top bar
+   --------------------------------------------------------- */
+
+.cv-topbar {
+  position: absolute;
+  z-index: 1000;
+  top: var(--cv-gap);
+  left: var(--cv-gap);
+  right: var(--cv-gap);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--cv-topbar-height);
+  padding: 0 12px;
+}
+
+.cv-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cv-topbar-title {
+  min-width: 0;
+}
+
+.cv-topbar-title span {
+  display: block;
+  color: var(--cv-text-3);
+  font-size: 12px;
+}
+
+.cv-topbar-title strong {
+  display: block;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cv-topbar-right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 18px;
+}
+
+.cv-topbar-chips {
+  display: flex;
+  gap: 22px;
+}
+
+.cv-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-chip strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cv-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.cv-dot--good { background: var(--cv-good); }
+.cv-dot--warn { background: var(--cv-warn); }
+.cv-dot--bad { background: var(--cv-bad); }
+
+.cv-clock {
+  padding-left: 18px;
+  border-left: 1px solid var(--cv-border);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-menu {
+  position: relative;
+}
+
+.cv-menu-list {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  padding: 6px;
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+}
+
+.cv-menu-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cv-text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cv-menu-list button:hover {
+  background: var(--cv-raised);
+}
+
+/* ---------------------------------------------------------
+   Drive panel
+   --------------------------------------------------------- */
+
+.cv-drive-panel {
+  position: absolute;
+  z-index: 900;
+  top: calc(var(--cv-gap) * 2 + var(--cv-topbar-height));
+  left: var(--cv-gap);
+  display: flex;
+  flex-direction: column;
+  width: var(--cv-panel-width);
+  max-height: calc(100% - var(--cv-gap) * 3 - var(--cv-topbar-height));
+  overflow-y: auto;
+}
+
+.cv-drive-panel section {
+  padding: 18px;
+  border-bottom: 1px solid var(--cv-border);
+}
+
+.cv-drive-panel section:last-child {
+  border-bottom: 0;
+}
+
+.cv-speed-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cv-speed {
+  position: relative;
+  width: 148px;
+  height: 130px;
+}
+
+.cv-speed svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cv-gauge-track,
+.cv-gauge-value {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.cv-gauge-track {
+  stroke: var(--cv-raised);
+}
+
+.cv-gauge-value {
+  stroke: var(--cv-accent);
+  transition: stroke-dasharray 0.5s ease-out;
+}
+
+.cv-speed-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.cv-speed-value strong {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-speed-value span {
+  margin-top: 2px;
+  color: var(--cv-text-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cv-compass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cv-compass-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--cv-border);
+  border-radius: 50%;
+  color: var(--cv-accent);
+  transition: transform 0.4s ease-out;
+}
+
+.cv-road-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--cv-text-3);
+  transition: background 0.2s;
+}
+
+.cv-road-status strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--cv-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cv-road-status--narrow {
+  background: rgba(242, 184, 75, 0.1);
+  color: var(--cv-warn);
+}
+
+.cv-nearby-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cv-count {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cv-raised);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cv-nearby-empty {
+  margin: 0;
+  color: var(--cv-text-3);
+  font-size: 14px;
+}
+
+.cv-nearby ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-nearby li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--cv-raised);
+}
+
+.cv-nearby li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-nearby li strong,
+.cv-nearby li > div span {
+  display: block;
+}
+
+.cv-nearby li strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cv-nearby li > div span {
+  color: var(--cv-text-3);
+  font-size: 12px;
+}
+
+.cv-nearby li b {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-nearby-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(242, 184, 75, 0.14);
+  color: var(--cv-warn);
+}
+
+/* ---------------------------------------------------------
+   Alerts
+   --------------------------------------------------------- */
+
+.cv-alert-area {
+  position: absolute;
+  z-index: 950;
+  top: calc(var(--cv-gap) * 2 + var(--cv-topbar-height));
+  left: calc(var(--cv-gap) * 2 + var(--cv-panel-width));
+  right: var(--cv-gap);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.cv-alert {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(620px, 100%);
+  padding: 20px 24px;
+  border-radius: 20px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  animation: cv-alert-in 0.22s ease-out;
+}
+
+.cv-alert--danger {
+  background: #c62828;
+  color: #ffffff;
+  animation:
+    cv-alert-in 0.22s ease-out,
+    cv-alert-pulse 1.6s ease-in-out infinite;
+}
+
+.cv-alert--warning {
+  background: #e65100;
+  color: #ffffff;
+}
+
+.cv-alert--caution {
+  background: #ffc107;
+  color: #1a1400;
+}
+
+.cv-alert-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.cv-alert-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-alert-text strong,
+.cv-alert-text span,
+.cv-alert-text small {
+  display: block;
+}
+
+.cv-alert-text strong {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.cv-alert-text span {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.cv-alert-text small {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 13px;
+  opacity: 0.85;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cv-alert-distance {
+  flex-shrink: 0;
+  padding-left: 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: right;
+}
+
+.cv-alert-distance strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-alert-distance span {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.cv-notice {
+  max-width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+  color: var(--cv-warn);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@keyframes cv-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes cv-alert-pulse {
+  50% {
+    box-shadow: 0 0 0 8px rgba(198, 40, 40, 0.35);
+  }
+}
+
+/* ---------------------------------------------------------
+   Map controls
+   --------------------------------------------------------- */
+
+.cv-map-controls {
+  position: absolute;
+  z-index: 800;
+  right: var(--cv-gap);
+  bottom: 30px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.cv-control-group {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  background: var(--cv-surface);
+  box-shadow: var(--cv-shadow);
+}
+
+.cv-segmented {
+  display: flex;
+  padding: 4px;
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  background: var(--cv-surface);
+  box-shadow: var(--cv-shadow);
+}
+
+.cv-segmented button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cv-segmented button.is-active {
+  background: var(--cv-raised);
+  color: var(--cv-text);
+}
+
+.cv-sound-hint {
+  position: absolute;
+  z-index: 800;
+  left: var(--cv-gap);
+  bottom: 30px;
+  padding: 13px 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 14px;
+  background: var(--cv-surface);
+  box-shadow: var(--cv-shadow);
+  color: var(--cv-text-2);
+  font-size: 13px;
+}
+
+/* The main way back to the car, so it is large and labelled */
+.cv-mycar {
+  position: absolute;
+  z-index: 800;
+  left: 50%;
+  bottom: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 24px 0 20px;
+  transform: translateX(-50%);
+  border: 1px solid var(--cv-border);
+  border-radius: 999px;
+  background: var(--cv-surface);
+  box-shadow: var(--cv-shadow);
+  color: var(--cv-accent);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, filter 0.15s;
+}
+
+.cv-mycar:hover:not(:disabled) {
+  background: var(--cv-raised);
+}
+
+.cv-mycar.is-away {
+  border-color: transparent;
+  background: var(--cv-accent);
+  color: var(--cv-on-accent);
+  box-shadow: 0 8px 28px rgba(86, 199, 255, 0.4);
+}
+
+.cv-mycar.is-away:hover {
+  background: var(--cv-accent);
+  filter: brightness(1.08);
+}
+
+.cv-mycar:disabled {
+  color: var(--cv-text-3);
+  cursor: default;
+}
+
+.cv-map-canvas .leaflet-control-attribution {
+  background: rgba(5, 8, 12, 0.75);
+  color: var(--cv-text-3);
+  font-size: 10px;
+}
+
+.cv-map-canvas .leaflet-control-attribution a {
+  color: var(--cv-text-2);
+}
+
+/* ---------------------------------------------------------
+   Markers and popups
+   --------------------------------------------------------- */
+
+.cv-marker {
+  border: 0;
+  background: transparent;
+}
+
+.cv-marker-ego {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+}
+
+.cv-marker-ego img {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 46px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.4s ease-out;
+}
+
+.cv-marker-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(86, 199, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(86, 199, 255, 0.14);
+  animation: cv-marker-pulse 2s ease-out infinite;
+}
+
+@keyframes cv-marker-pulse {
+  from {
+    opacity: 1;
+    transform: scale(0.55);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.cv-marker-other {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: var(--cv-warn);
+  box-shadow: 0 0 14px rgba(242, 184, 75, 0.7);
+  color: #1a1400;
+}
+
+.cv-marker-other > div {
+  display: flex;
+  transition: transform 0.4s ease-out;
+}
+
+.cv-map-canvas .leaflet-popup-content-wrapper,
+.cv-map-canvas .leaflet-popup-tip {
+  background: var(--cv-surface-solid);
+  color: var(--cv-text);
+  box-shadow: var(--cv-shadow);
+}
+
+.cv-map-canvas .leaflet-popup-content {
+  margin: 14px 16px;
+}
+
+.cv-map-canvas a.leaflet-popup-close-button {
+  color: var(--cv-text-3);
+}
+
+.cv-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.cv-popup strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cv-popup div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.cv-popup span {
+  color: var(--cv-text-3);
+}
+
+.cv-popup b {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------
+   Overlay, start page and message cards
+   --------------------------------------------------------- */
+
+.cv-overlay {
+  position: absolute;
+  z-index: 980;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--cv-topbar-height) + var(--cv-gap) * 2) var(--cv-gap) var(--cv-gap);
+  background: rgba(5, 8, 12, 0.72);
+}
+
+.cv-center-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--cv-gap);
+  background:
+    radial-gradient(circle at top left, rgba(86, 199, 255, 0.13), transparent 50%),
+    var(--cv-bg);
+  color: var(--cv-text);
+  overflow-y: auto;
+}
+
+.cv-message-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(440px, 100%);
+  padding: 32px;
+  text-align: center;
+}
+
+.cv-message-card h1 {
+  margin: 16px 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cv-message-card p {
+  margin: 0;
+  color: var(--cv-text-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.cv-message-card .cv-button {
+  margin-top: 22px;
+}
+
+.cv-overlay-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(86, 199, 255, 0.12);
+  color: var(--cv-accent);
+}
+
+.cv-spinner {
+  width: 26px;
+  height: 26px;
+  margin-top: 22px;
+  border: 3px solid var(--cv-raised);
+  border-top-color: var(--cv-accent);
+  border-radius: 50%;
+  animation: cv-spin 0.9s linear infinite;
+}
+
+@keyframes cv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cv-field {
+  display: block;
+  width: 100%;
+  margin-top: 22px;
+  text-align: left;
+}
+
+.cv-field span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cv-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--cv-border);
+  border-radius: 12px;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+  font: inherit;
+}
+
+.cv-field input:focus {
+  border-color: var(--cv-accent);
+  outline: none;
+}
+
+/* ---------------------------------------------------------
+   Smaller screens: the panel moves below the alert
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .cv-topbar-chips {
+    display: none;
+  }
+
+  .cv-drive-panel {
+    top: auto;
+    left: var(--cv-gap);
+    right: var(--cv-gap);
+    bottom: var(--cv-gap);
+    width: auto;
+    max-height: 42%;
+  }
+
+  .cv-drive-panel section {
+    padding: 12px 14px;
+  }
+
+  .cv-speed {
+    width: 104px;
+    height: 92px;
+  }
+
+  .cv-speed-value strong {
+    font-size: 32px;
+  }
+
+  .cv-speed-value span {
+    font-size: 12px;
+  }
+
+  .cv-mycar {
+    left: auto;
+    right: var(--cv-gap);
+    bottom: calc(42% + var(--cv-gap) * 2);
+    min-height: 48px;
+    transform: none;
+  }
+
+  .cv-compass-arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .cv-alert-area {
+    left: var(--cv-gap);
+  }
+
+  .cv-alert {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .cv-alert-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .cv-alert-text strong {
+    font-size: 20px;
+  }
+
+  .cv-alert-text span {
+    font-size: 14px;
+  }
+
+  .cv-alert-distance {
+    padding-left: 12px;
+  }
+
+  .cv-alert-distance strong {
+    font-size: 22px;
+  }
+
+  /* On the right edge, so the car in the middle of the map stays visible */
+  .cv-map-controls {
+    bottom: calc(42% + 66px + var(--cv-gap) * 2);
+  }
+
+  .cv-segmented,
+  .cv-sound-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-alert,
+  .cv-alert--danger,
+  .cv-marker-ring {
+    animation: none;
+  }
+}

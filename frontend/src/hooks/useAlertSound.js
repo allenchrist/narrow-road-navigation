@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DANGER_REPEAT_MS = 2000;
 
@@ -10,15 +10,19 @@ const TONES = {
 /**
  * Beeps for an alert: repeatedly for danger, once for a warning.
  * Browsers block audio until the user has interacted with the page,
- * so the first click or tap anywhere unlocks it.
+ * so the first click or tap anywhere unlocks it. Returns whether
+ * sound is unlocked, so the screen can ask for that first tap.
  */
 export function useAlertSound(level, enabled) {
   const audioRef = useRef(null);
+
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     function unlockAudio() {
       audioRef.current ??= new AudioContext();
       audioRef.current.resume();
+      setUnlocked(true);
     }
 
     document.addEventListener("pointerdown", unlockAudio);
@@ -33,7 +37,7 @@ export function useAlertSound(level, enabled) {
   useEffect(() => {
     const tone = TONES[level];
 
-    if (!enabled || !tone) {
+    if (!enabled || !unlocked || !tone) {
       return;
     }
 
@@ -60,5 +64,7 @@ export function useAlertSound(level, enabled) {
     const interval = setInterval(beep, DANGER_REPEAT_MS);
 
     return () => clearInterval(interval);
-  }, [level, enabled]);
+  }, [level, enabled, unlocked]);
+
+  return unlocked;
 }

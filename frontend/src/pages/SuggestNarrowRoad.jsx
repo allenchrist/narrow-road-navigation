@@ -11,6 +11,8 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
+import Icon from "../components/common/Icon";
+
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5000";
@@ -349,21 +351,20 @@ function SuggestNarrowRoad() {
         <div className="suggest-road-success">
 
           <div className="suggest-success-icon">
-            ✓
+            <Icon name="check" size={32} />
           </div>
 
           <h1>
-            SUGGESTION SUBMITTED
+            Suggestion sent
           </h1>
 
           <p>
-            Your narrow-road suggestion
-            has been sent to the
-            administrator for review.
+            Thanks. An administrator will review
+            your narrow road suggestion.
           </p>
 
           <p className="suggest-success-status">
-            Status: PENDING REVIEW
+            Pending review
           </p>
 
           <button
@@ -373,7 +374,7 @@ function SuggestNarrowRoad() {
               navigate(`/${encodeURIComponent(username)}`)
             }
           >
-            BACK TO DASHBOARD
+            Back to dashboard
           </button>
 
         </div>
@@ -393,14 +394,25 @@ function SuggestNarrowRoad() {
 
         {/* TITLE */}
 
+        <button
+          type="button"
+          className="suggest-back-button"
+          onClick={() =>
+            navigate(`/${encodeURIComponent(username)}`)
+          }
+        >
+          <Icon name="back" size={18} />
+          Back
+        </button>
+
         <div className="suggest-road-heading">
 
           <div className="suggest-road-title">
-            SUGGEST NARROW ROAD
+            Suggest a narrow road
           </div>
 
           <div className="suggest-road-subtitle">
-            USER ROAD SUGGESTION
+            Help other drivers stay safe
           </div>
 
         </div>
@@ -409,7 +421,7 @@ function SuggestNarrowRoad() {
 
         <div className="suggest-header-search-container">
           <div className="suggest-header-search">
-            <span className="suggest-search-icon">🔍</span>
+            <span className="suggest-search-icon"><Icon name="search" size={18} /></span>
             <input
               type="text"
               value={searchText}
@@ -427,7 +439,7 @@ function SuggestNarrowRoad() {
             disabled={searching}
             className="suggest-search-btn"
           >
-            {searching ? "SEARCHING..." : "SEARCH  →"}
+            {searching ? "Searching…" : "Search"}
           </button>
         </div>
 
@@ -443,7 +455,7 @@ function SuggestNarrowRoad() {
             MAP
         ------------------------------------------------ */}
 
-        <div className="suggest-road-map-wrapper">
+        <div className="suggest-road-map-wrapper cv-map--map">
 
           <MapContainer
             center={[
@@ -550,12 +562,11 @@ function SuggestNarrowRoad() {
             <div className="suggest-drawing-help">
 
               <strong>
-                MARK THE NARROW ROAD
+                Mark the narrow road
               </strong>
 
               <span>
-                Click around the
-                entire road boundary.
+                Click around the road to mark its boundary.
               </span>
 
               <span>
@@ -577,7 +588,7 @@ function SuggestNarrowRoad() {
         <aside className="suggest-road-sidebar">
 
           <div className="suggest-section-title">
-            ROAD SUGGESTION
+            Your suggestion
           </div>
 
           <p className="suggest-description">
@@ -596,7 +607,8 @@ function SuggestNarrowRoad() {
                 startDrawing
               }
             >
-              🚧 START MARKING ROAD
+              <Icon name="add" size={18} />
+              Start marking the road
             </button>
           ) : (
             <div className="suggest-drawing-actions">
@@ -608,7 +620,7 @@ function SuggestNarrowRoad() {
                   cancelDrawing
                 }
               >
-                CANCEL
+                Cancel
               </button>
 
               <button
@@ -622,7 +634,8 @@ function SuggestNarrowRoad() {
                   0
                 }
               >
-                UNDO POINT
+                <Icon name="undo" size={18} />
+                Undo
               </button>
 
             </div>
@@ -635,7 +648,7 @@ function SuggestNarrowRoad() {
           <div className="suggest-form">
 
             <label>
-              ROAD NAME
+              Road name
             </label>
 
             <input
@@ -650,7 +663,7 @@ function SuggestNarrowRoad() {
             />
 
             <label>
-              WHY IS THIS ROAD NARROW?
+              Why is this road narrow? (optional)
             </label>
 
             <textarea
@@ -660,12 +673,14 @@ function SuggestNarrowRoad() {
                   event.target.value
                 )
               }
-              placeholder="Optional: Explain why you think this road should be marked as narrow..."
+              placeholder="For example: only one vehicle fits between the walls"
               rows={5}
             />
 
             <div className="suggest-point-count">
-              {currentPolygon.length} boundary points
+              {currentPolygon.length < 3
+                ? `${currentPolygon.length} of at least 3 points marked`
+                : `${currentPolygon.length} points marked`}
             </div>
 
           </div>
@@ -694,25 +709,20 @@ function SuggestNarrowRoad() {
             }
           >
             {submitting
-              ? "SUBMITTING..."
-              : "SUBMIT SUGGESTION"}
+              ? "Sending…"
+              : "Send suggestion"}
           </button>
 
           <div className="suggest-notice">
 
             <strong>
-              ADMIN REVIEW
+              Reviewed before it goes live
             </strong>
 
             <span>
-              Your suggestion will not
-              become an official narrow
-              road immediately.
-            </span>
-
-            <span>
-              An administrator must
-              review and approve it first.
+              An administrator checks each
+              suggestion before drivers get
+              alerts for it.
             </span>
 
           </div>
