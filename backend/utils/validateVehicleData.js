@@ -2,6 +2,9 @@
  * Validates the raw JSON object received from the Android WebSocket.
  * Returns { valid: true, data } or { valid: false, reason }.
  */
+const optionalNumber = (value) =>
+  typeof value === "number" && isFinite(value) ? value : null;
+
 function validateVehicleData(raw) {
   if (!raw || typeof raw !== "object") {
     return { valid: false, reason: "Payload is not an object" };
@@ -31,7 +34,22 @@ function validateVehicleData(raw) {
 
   return {
     valid: true,
-    data: { lat, lon, heading, accelX, accelY, accelZ, gyroX, gyroY, gyroZ },
+    data: {
+      lat,
+      lon,
+      heading,
+      accelX,
+      accelY,
+      accelZ,
+      gyroX,
+      gyroY,
+      gyroZ,
+
+      // Only sent by newer app versions
+      speed: optionalNumber(raw.speed),
+      bearing: optionalNumber(raw.bearing),
+      accuracy: optionalNumber(raw.accuracy),
+    },
   };
 }
 

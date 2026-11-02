@@ -4,9 +4,22 @@
  * No database — real-time telemetry only.
  */
 
+const config = require("../config/config");
 const {
   getGeofenceState,
 } = require("./geofenceService");
+const {
+  buildNarrowRoadAlert,
+  NO_ALERT,
+} = require("./narrowRoadAlert");
+const { getTravelBearing } = require("../utils/geo");
+
+// Positions less accurate than this do not change geofence state
+const MAX_GEOFENCE_ACCURACY_M = 50;
+
+// Stay "inside" this long after leaving, so GPS jitter at
+// the edge of a road does not make the warning flicker
+const INSIDE_HOLD_MS = 3000;
 
 // vehicles map: vehicleId → vehicle state object
 const vehicles = new Map();
@@ -31,6 +44,10 @@ function registerVehicle(vehicleId) {
       lon: null,
       heading: null,
 
+      speed: null,
+      bearing: null,
+      accuracy: null,
+
       accelX: null,
       accelY: null,
       accelZ: null,
@@ -48,6 +65,15 @@ function registerVehicle(vehicleId) {
       insideNarrowRoad: false,
       narrowRoadId: null,
       narrowRoadName: null,
+      insideRoadIds: [],
+      approachingRoads: [],
+      lastInsideAt: null,
+
+      // What the infotainment screen should show
+      narrowRoadAlert: NO_ALERT,
+
+      // Sending telemetry recently
+      active: false,
 
       // Number of OTHER connected vehicles
       // currently inside the same narrow road
@@ -65,23 +91,12 @@ function updateVehicleTelemetry(vehicleId, data) {
 
   const existing = vehicles.get(vehicleId);
 
-  const geofence = getGeofenceState(
-    data.lat,
-    data.lon
-  );
+  const now = Date.now();
 
-  console.log(
-    `[Geofence] ${vehicleId} | ` +
-      `GPS ${data.lat}, ${data.lon} | ` +
-      `${
-        geofence.insideNarrowRoad
-          ? "INSIDE"
-          : "OUTSIDE"
-      } | ` +
-      `${
-        geofence.narrowRoadName ||
-        "No narrow road"
-      }`
+  const geofence = resolveGeofenceState(
+    existing,
+    data,
+    now
   );
 
   vehicles.set(vehicleId, {
@@ -91,6 +106,10 @@ function updateVehicleTelemetry(vehicleId, data) {
     lon: data.lon,
     heading: data.heading,
 
+    speed: data.speed,
+    bearing: data.bearing,
+    accuracy: data.accuracy,
+
     accelX: data.accelX,
     accelY: data.accelY,
     accelZ: data.accelZ,
@@ -99,19 +118,52 @@ function updateVehicleTelemetry(vehicleId, data) {
     gyroY: data.gyroY,
     gyroZ: data.gyroZ,
 
-    lastReceivedAt: Date.now(),
+    lastReceivedAt: now,
 
-    insideNarrowRoad:
-      geofence.insideNarrowRoad,
-
-    narrowRoadId:
-      geofence.narrowRoadId,
-
-    narrowRoadName:
-      geofence.narrowRoadName,
+    ...geofence,
   });
+}
 
-  updateSameNarrowRoadVehicleCounts();
+function resolveGeofenceState(existing, data, now) {
+  const previous = {
+    insideNarrowRoad: existing.insideNarrowRoad,
+    narrowRoadId: existing.narrowRoadId,
+    narrowRoadName: existing.narrowRoadName,
+    insideRoadIds: existing.insideRoadIds,
+    lastInsideAt: existing.lastInsideAt,
+  };
+
+  if (
+    typeof data.accuracy === "number" &&
+    data.accuracy > MAX_GEOFENCE_ACCURACY_M
+  ) {
+    return {
+      ...previous,
+      approachingRoads: existing.approachingRoads,
+    };
+  }
+
+  const geofence = getGeofenceState(
+    data.lat,
+    data.lon,
+    getTravelBearing(data.speed, data.bearing)
+  );
+
+  const justLeft =
+    !geofence.insideNarrowRoad &&
+    existing.insideNarrowRoad &&
+    now - existing.lastInsideAt < INSIDE_HOLD_MS;
+
+  if (justLeft) {
+    return { ...geofence, ...previous, approachingRoads: [] };
+  }
+
+  return {
+    ...geofence,
+    lastInsideAt: geofence.insideNarrowRoad
+      ? now
+      : existing.lastInsideAt,
+  };
 }
 
 function setVehicleConnected(
@@ -126,14 +178,10 @@ function setVehicleConnected(
     ...existing,
     connected,
   });
-
-  updateSameNarrowRoadVehicleCounts();
 }
 
 function removeVehicle(vehicleId) {
   vehicles.delete(vehicleId);
-
-  updateSameNarrowRoadVehicleCounts();
 
   console.log(
     `[Vehicle Registry] ${vehicleId} removed`
@@ -141,54 +189,50 @@ function removeVehicle(vehicleId) {
 }
 
 /**
- * --------------------------------------------------
- * Calculate how many OTHER connected vehicles
- * are inside the same narrow road.
- *
- * Vehicle IDs are NOT exposed here.
- * Only the count is stored.
- * --------------------------------------------------
+ * A vehicle that stopped sending telemetry must not trigger warnings,
+ * even if its connection is still open. A phone can stay connected
+ * while Android has paused its GPS.
  */
-function updateSameNarrowRoadVehicleCounts() {
-  const allVehicles =
-    Array.from(vehicles.values());
+function isActive(vehicle, now) {
+  return (
+    vehicle.connected &&
+    vehicle.lastReceivedAt !== null &&
+    now - vehicle.lastReceivedAt <= config.staleThresholdMs
+  );
+}
+
+/**
+ * Refresh each vehicle's alert and its count of OTHER active
+ * vehicles inside the same narrow road. Vehicle IDs are not
+ * exposed here, only the alert and the count.
+ */
+function updateNarrowRoadAlerts() {
+  const now = Date.now();
+
+  const allVehicles = Array.from(vehicles.values());
 
   for (const vehicle of allVehicles) {
-    let otherVehicleCount = 0;
+    vehicle.active = isActive(vehicle, now);
+  }
 
-    if (
-      vehicle.connected &&
-      vehicle.insideNarrowRoad &&
-      vehicle.narrowRoadId
-    ) {
-      for (const other of allVehicles) {
-        if (
-          other.vehicleId ===
-          vehicle.vehicleId
-        ) {
-          continue;
-        }
+  const activeVehicles = allVehicles.filter((v) => v.active);
 
-        if (
-          !other.connected ||
-          !other.insideNarrowRoad
-        ) {
-          continue;
-        }
-
-        if (
-          other.narrowRoadId !==
-          vehicle.narrowRoadId
-        ) {
-          continue;
-        }
-
-        otherVehicleCount++;
-      }
+  for (const vehicle of allVehicles) {
+    if (!vehicle.active) {
+      vehicle.narrowRoadAlert = NO_ALERT;
+      vehicle.otherVehiclesInSameNarrowRoad = 0;
+      continue;
     }
 
-    vehicle.otherVehiclesInSameNarrowRoad =
-      otherVehicleCount;
+    const others = activeVehicles.filter(
+      (other) => other.vehicleId !== vehicle.vehicleId
+    );
+
+    vehicle.narrowRoadAlert = buildNarrowRoadAlert(vehicle, others);
+
+    vehicle.otherVehiclesInSameNarrowRoad = others.filter((other) =>
+      other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id))
+    ).length;
   }
 }
 
@@ -201,7 +245,7 @@ function getVehicle(vehicleId) {
 }
 
 function getAllVehicles() {
-  updateSameNarrowRoadVehicleCounts();
+  updateNarrowRoadAlerts();
 
   return Array.from(
     vehicles.values()

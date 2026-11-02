@@ -6,11 +6,15 @@ import {
   useRef,
 } from "react";
 
+import { useParams } from "react-router-dom";
+
 import { getVehicleSocket } from "../services/socket";
 
 const VehicleContext = createContext(null);
 
 const STALE_THRESHOLD_MS = 5000;
+
+const IDENTIFY_RETRY_MS = 5000;
 
 const EMPTY_VEHICLE = {
   vehicleId: null,
@@ -35,9 +39,13 @@ const EMPTY_VEHICLE = {
   narrowRoadName: null,
 
   otherVehiclesInSameNarrowRoad: 0,
+
+  narrowRoadAlert: null,
 };
 
 export function VehicleProvider({ children }) {
+  const { username } = useParams();
+
   const [vehicles, setVehicles] =
     useState({});
 
@@ -53,6 +61,9 @@ export function VehicleProvider({ children }) {
 
   const [myVehicleId, setMyVehicleId] =
     useState(null);
+
+  const [sessionError, setSessionError] =
+    useState("");
 
   const stateRef = useRef({
     vehicles: {},
@@ -133,12 +144,20 @@ export function VehicleProvider({ children }) {
     const socket =
       getVehicleSocket();
 
+    function identifyDashboard() {
+      socket.emit("session:identify", {
+        username,
+      });
+    }
+
     function onConnect() {
       console.log(
         "[VehicleContext] Backend connected"
       );
 
       setBackendConnected(true);
+
+      identifyDashboard();
     }
 
     function onDisconnect() {
@@ -191,40 +210,6 @@ export function VehicleProvider({ children }) {
         };
       });
 
-      console.log(
-        "[VehicleContext] VEHICLES UPDATE:",
-        vehicleMap
-      );
-
-      const ego =
-        myVehicleId
-          ? vehicleMap[myVehicleId]
-          : null;
-
-      console.log(
-        "[VehicleContext] MY VEHICLE:",
-        myVehicleId
-      );
-
-      console.log(
-        "[VehicleContext] EGO VEHICLE:",
-        ego
-      );
-
-      console.log(
-        "[VehicleContext] GEOFENCE:",
-        {
-          insideNarrowRoad:
-            ego?.insideNarrowRoad,
-
-          narrowRoadName:
-            ego?.narrowRoadName,
-
-          otherVehiclesInSameNarrowRoad:
-            ego?.otherVehiclesInSameNarrowRoad,
-        }
-      );
-
       setVehicles(vehicleMap);
       setBackendConnected(true);
     }
@@ -272,6 +257,8 @@ export function VehicleProvider({ children }) {
         normalizedVehicleId
       );
 
+      setSessionError("");
+
       setMyVehicleId(
         normalizedVehicleId
       );
@@ -289,11 +276,17 @@ export function VehicleProvider({ children }) {
         message
       );
 
+      setSessionError(message);
+
       setMyVehicleId(null);
     }
 
+    // This page opened on a socket that is already connected,
+    // for example after pressing Back from another page.
     if (socket.connected) {
       setBackendConnected(true);
+
+      identifyDashboard();
     }
 
     socket.on(
@@ -347,7 +340,34 @@ export function VehicleProvider({ children }) {
         onSessionError
       );
     };
-  }, []);
+  }, [username]);
+
+  // --------------------------------------------------
+  // Keep trying until this dashboard has a vehicle.
+  // The phone may connect after the dashboard opens.
+  // --------------------------------------------------
+
+  useEffect(() => {
+    if (!backendConnected || myVehicleId) {
+      return;
+    }
+
+    const socket =
+      getVehicleSocket();
+
+    const interval = setInterval(() => {
+      socket.emit("session:identify", {
+        username,
+      });
+    }, IDENTIFY_RETRY_MS);
+
+    return () =>
+      clearInterval(interval);
+  }, [
+    backendConnected,
+    myVehicleId,
+    username,
+  ]);
 
   // --------------------------------------------------
   // Derived ego vehicle
@@ -360,52 +380,12 @@ export function VehicleProvider({ children }) {
       : EMPTY_VEHICLE;
 
   // --------------------------------------------------
-  // Count OTHER vehicles inside the same narrow road
-  // --------------------------------------------------
-
-  let otherVehiclesInSameNarrowRoad = 0;
-
-  if (
-    baseEgoVehicle.insideNarrowRoad === true &&
-    baseEgoVehicle.narrowRoadId
-  ) {
-    otherVehiclesInSameNarrowRoad =
-      Object.values(vehicles).filter((v) => {
-        // Do not count our own vehicle
-        if (v.vehicleId === myVehicleId) {
-          return false;
-        }
-
-        // Vehicle must be inside a narrow road
-        if (v.insideNarrowRoad !== true) {
-          return false;
-        }
-
-        // Must be the SAME narrow road
-        if (
-          v.narrowRoadId !==
-          baseEgoVehicle.narrowRoadId
-        ) {
-          return false;
-        }
-
-        // Only count connected vehicles
-        if (v.connected !== true) {
-          return false;
-        }
-
-        return true;
-      }).length;
-  }
-
-  // --------------------------------------------------
   // Final ego vehicle
   // --------------------------------------------------
 
   const egoVehicle = {
     ...baseEgoVehicle,
     backendConnected,
-    otherVehiclesInSameNarrowRoad,
   };
 
   // Existing components use this alias
@@ -428,6 +408,8 @@ export function VehicleProvider({ children }) {
         backendConnected,
 
         gpsStatus,
+
+        sessionError,
       }}
     >
       {children}

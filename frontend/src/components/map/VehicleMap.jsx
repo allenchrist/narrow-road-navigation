@@ -19,7 +19,9 @@ import {
 } from "../../utils/haversine";
 
 import VehicleMarker from "./VehicleMarker";
-import AlertPanel from "../alerts/AlertPanel";
+import NarrowRoadLayer from "./NarrowRoadLayer";
+import NarrowRoadAlert from "../alerts/NarrowRoadAlert";
+import { useAlertSound } from "../../hooks/useAlertSound";
 
 /*
  * ---------------------------------------------------------
@@ -108,6 +110,7 @@ function VehicleMap() {
     vehicles,
     egoVehicle,
     myVehicleId,
+    sessionError,
   } = useVehicle();
 
   const [map, setMap] =
@@ -115,6 +118,17 @@ function VehicleMap() {
 
   const [mapMode, setMapMode] =
     useState("map");
+
+  const [soundOn, setSoundOn] =
+    useState(true);
+
+  // An alert from before a lost connection may no longer be true
+  const alert =
+    egoVehicle.backendConnected && egoVehicle.connected
+      ? egoVehicle.narrowRoadAlert
+      : null;
+
+  useAlertSound(alert?.level, soundOn);
 
   /*
    * Ego GPS availability
@@ -135,20 +149,6 @@ function VehicleMap() {
         v.vehicleId === myVehicleId ||
         v.connected === true
     );
-
-  /*
-   * -------------------------------------------------------
-   * OTHER VEHICLE WARNING
-   * -------------------------------------------------------
-   */
-
-  const otherVehicleCount =
-    egoVehicle
-      .otherVehiclesInSameNarrowRoad || 0;
-
-  const hasOtherVehicles =
-    egoVehicle.insideNarrowRoad &&
-    otherVehicleCount > 0;
 
   /*
    * Map reference
@@ -280,6 +280,14 @@ function VehicleMap() {
         />
 
         {/* ------------------------------------------------
+            Narrow roads
+        ------------------------------------------------ */}
+
+        <NarrowRoadLayer
+          activeRoadId={alert?.roadId}
+        />
+
+        {/* ------------------------------------------------
             Render all vehicles
         ------------------------------------------------ */}
 
@@ -351,11 +359,12 @@ function VehicleMap() {
       </div>
 
       {/* --------------------------------------------------
-          NARROW ROAD / OTHER VEHICLE ALERTS
+          Dashboard could not link to a vehicle
       -------------------------------------------------- */}
 
-      {egoVehicle.insideNarrowRoad && (
+      {sessionError && (
         <div
+          role="status"
           style={{
             position: "absolute",
             top: "80px",
@@ -363,147 +372,43 @@ function VehicleMap() {
             transform:
               "translateX(-50%)",
             zIndex: 99999,
-
-            background:
-              hasOtherVehicles
-                ? "#b71c1c"
-                : "#d32f2f",
-
-            color: "white",
-
-            padding:
-              "18px 28px",
-
-            borderRadius: "12px",
-
-            border:
-              "3px solid white",
-
-            boxShadow:
-              "0 4px 20px rgba(0,0,0,0.5)",
-
-            display: "flex",
-
-            alignItems:
-              "center",
-
-            gap: "14px",
-
-            minWidth: "300px",
-
-            justifyContent:
-              "center",
+            background: "#24151a",
+            color: "#ff6b6b",
+            padding: "10px 16px",
+            borderRadius: "8px",
+            border: "1px solid #7a2934",
           }}
         >
-
-          {/* ------------------------------------------------
-              Icon
-          ------------------------------------------------ */}
-
-          <div
-            style={{
-              fontSize: "32px",
-            }}
-          >
-            {hasOtherVehicles
-              ? "🚨"
-              : "⚠️"}
-          </div>
-
-          {/* ------------------------------------------------
-              Content
-          ------------------------------------------------ */}
-
-          <div>
-
-            {/* --------------------------------------------
-                OTHER VEHICLE WARNING
-            -------------------------------------------- */}
-
-            {hasOtherVehicles ? (
-
-              <>
-                <div
-                  style={{
-                    fontSize: "19px",
-                    fontWeight: "800",
-                  }}
-                >
-                  {otherVehicleCount === 1
-                    ? "ANOTHER VEHICLE IS APPROACHING"
-                    : "OTHER VEHICLES ARE APPROACHING"}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "14px",
-                    marginTop: "5px",
-                  }}
-                >
-                  Narrow road:{" "}
-                  {egoVehicle.narrowRoadName ||
-                    "Narrow road"}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    marginTop: "4px",
-                  }}
-                >
-                  Please proceed with caution
-                </div>
-              </>
-
-            ) : (
-
-              /* ------------------------------------------
-                 NORMAL NARROW ROAD WARNING
-              ------------------------------------------ */
-
-              <>
-                <div
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "800",
-                  }}
-                >
-                  NARROW ROAD
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "15px",
-                    marginTop: "4px",
-                  }}
-                >
-                  {egoVehicle.narrowRoadName ||
-                    "Narrow road detected"}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "12px",
-                    marginTop: "3px",
-                  }}
-                >
-                  Proceed with caution
-                </div>
-              </>
-            )}
-
-          </div>
-
+          {sessionError}
         </div>
       )}
 
-      <AlertPanel />
+      <NarrowRoadAlert alert={alert} />
 
       {/* --------------------------------------------------
           Map controls
       -------------------------------------------------- */}
 
       <div className="map-top-controls">
+
+        <button
+          type="button"
+          onClick={() =>
+            setSoundOn((previous) => !previous)
+          }
+          aria-label={
+            soundOn
+              ? "Mute alert sound"
+              : "Turn on alert sound"
+          }
+          title={
+            soundOn
+              ? "Mute alert sound"
+              : "Turn on alert sound"
+          }
+        >
+          {soundOn ? "🔊" : "🔇"}
+        </button>
 
         <button
           type="button"

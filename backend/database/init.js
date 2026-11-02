@@ -1,33 +1,84 @@
 require("dotenv").config();
 
+const fs = require("fs");
+const path = require("path");
+
 const { pool } = require("../config/database");
+const { ensureSchema } = require("./schema");
+
+const DATA_DIR = path.join(__dirname, "..", "data");
+
+function readJsonFile(fileName) {
+  const filePath = path.join(DATA_DIR, fileName);
+
+  return fs.existsSync(filePath)
+    ? JSON.parse(fs.readFileSync(filePath, "utf8"))
+    : [];
+}
+
+/**
+ * Copies roads and suggestions from the old JSON files. Rows that already
+ * exist are left alone, so edits made on the admin page are kept. Run this
+ * only once: a road deleted since the last run would be imported again.
+ */
+async function importJsonData() {
+  let roadCount = 0;
+  let suggestionCount = 0;
+
+  for (const road of readJsonFile("narrowRoads.json")) {
+    const result = await pool.query(
+      `
+      INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id) DO NOTHING;
+      `,
+      [
+        road.id,
+        road.name,
+        JSON.stringify(road.polygon),
+        road.createdAt,
+        road.updatedAt,
+      ]
+    );
+
+    roadCount += result.rowCount;
+  }
+
+  for (const suggestion of readJsonFile("narrowRoadSuggestions.json")) {
+    const result = await pool.query(
+      `
+      INSERT INTO narrow_road_suggestions
+        (id, name, polygon, reason, status, submitted_at, reviewed_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (id) DO NOTHING;
+      `,
+      [
+        suggestion.id,
+        suggestion.name,
+        JSON.stringify(suggestion.polygon),
+        suggestion.reason || "",
+        suggestion.status,
+        suggestion.submittedAt,
+        suggestion.reviewedAt,
+      ]
+    );
+
+    suggestionCount += result.rowCount;
+  }
+
+  console.log(
+    `[Database] Imported ${roadCount} roads and ${suggestionCount} suggestions.`
+  );
+}
 
 async function initializeDatabase() {
   try {
     console.log("[Database] Initializing database...");
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) NOT NULL UNIQUE,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    await ensureSchema();
+    await importJsonData();
 
-    await pool.query(`
-      ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS device_id VARCHAR(128);
-    `);
-
-    await pool.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS users_device_id_unique
-      ON users(device_id)
-      WHERE device_id IS NOT NULL;
-    `);
-
-    console.log("[Database] Users table is ready.");
+    console.log("[Database] Tables are ready.");
   } catch (error) {
     console.error(
       "[Database] Failed to initialize database:",

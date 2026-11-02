@@ -10,9 +10,8 @@
  *   vehicleState    — vehicle telemetry (lat, lon, heading, IMU, connected flag)
  *   vehicleIdAllocator — allocates new vehicle IDs for first-seen devices
  *
- * Future extension point:
- *   Replace the in-memory `devices` Map with a database call inside each
- *   function without changing the WebSocket protocol or callers.
+ * The device→vehicle mapping is saved in PostgreSQL, so a phone keeps its
+ * vehicle ID across server restarts. Connection state is in memory only.
  *
  * Data model per device:
  * {
@@ -23,6 +22,9 @@
  *   ws:         WebSocket | null — current active connection (not serialised)
  * }
  */
+
+const { pool } = require("../config/database");
+const { reserveVehicleId } = require("./vehicleIdAllocator");
 
 // devices map: deviceId → device record
 const devices = new Map();
@@ -56,6 +58,33 @@ function validateDeviceId(deviceId) {
 // ── Registry operations ───────────────────────────────────────────────────────
 
 /**
+ * Load saved device→vehicle mappings. A device already in memory is kept
+ * as it is, because it may have connected while the database was waking.
+ * Returns the number of saved devices.
+ */
+async function loadDevices() {
+  const result = await pool.query(
+    "SELECT device_id, vehicle_id FROM devices;"
+  );
+
+  for (const row of result.rows) {
+    reserveVehicleId(row.vehicle_id);
+
+    if (!devices.has(row.device_id)) {
+      devices.set(row.device_id, {
+        deviceId: row.device_id,
+        vehicleId: row.vehicle_id,
+        connected: false,
+        lastSeen: null,
+        ws: null,
+      });
+    }
+  }
+
+  return result.rows.length;
+}
+
+/**
  * Register a device for the first time.
  * Associates deviceId with a newly allocated vehicleId.
  * Must only be called when hasDevice(deviceId) === false.
@@ -69,6 +98,22 @@ function registerDevice(deviceId, vehicleId, ws) {
     ws,
   });
   console.log(`[Device Registry] Registered new device ${deviceId} → ${vehicleId}`);
+
+  pool
+    .query(
+      `
+      INSERT INTO devices (device_id, vehicle_id)
+      VALUES ($1, $2)
+      ON CONFLICT (device_id) DO NOTHING;
+      `,
+      [deviceId, vehicleId]
+    )
+    .catch((error) => {
+      console.error(
+        `[Device Registry] Failed to save ${deviceId}:`,
+        error.message
+      );
+    });
 }
 
 /**
@@ -152,6 +197,7 @@ function getDeviceCount() {
 
 module.exports = {
   validateDeviceId,
+  loadDevices,
   registerDevice,
   hasDevice,
   getDevice,

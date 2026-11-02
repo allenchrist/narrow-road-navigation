@@ -1,121 +1,62 @@
-const fs = require("fs");
-const path = require("path");
+const { pool } = require("../config/database");
+const {
+  loadNarrowRoads,
+  createNarrowRoad,
+} = require("./narrowRoadService");
 
-const DATA_DIR = path.join(__dirname, "../data");
-const FILE_PATH = path.join(
-  DATA_DIR,
-  "narrowRoadSuggestions.json"
-);
-
-// --------------------------------------------------
-// Ensure data directory/file exists
-// --------------------------------------------------
-
-function ensureFile() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, {
-      recursive: true,
-    });
-  }
-
-  if (!fs.existsSync(FILE_PATH)) {
-    fs.writeFileSync(
-      FILE_PATH,
-      "[]",
-      "utf8"
-    );
-  }
+function rowToSuggestion(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    polygon: row.polygon,
+    reason: row.reason,
+    status: row.status,
+    submittedAt: row.submitted_at.toISOString(),
+    reviewedAt: row.reviewed_at ? row.reviewed_at.toISOString() : null,
+  };
 }
 
 // --------------------------------------------------
 // Read suggestions
 // --------------------------------------------------
 
-function getAllSuggestions() {
-  ensureFile();
+async function getAllSuggestions() {
+  const result = await pool.query(
+    "SELECT * FROM narrow_road_suggestions ORDER BY submitted_at, id;"
+  );
 
-  try {
-    const data =
-      fs.readFileSync(
-        FILE_PATH,
-        "utf8"
-      );
-
-    const suggestions =
-      JSON.parse(data);
-
-    return Array.isArray(suggestions)
-      ? suggestions
-      : [];
-  } catch (error) {
-    console.error(
-      "[Suggestion Service] Failed to read suggestions:",
-      error
-    );
-
-    return [];
-  }
+  return result.rows.map(rowToSuggestion);
 }
 
-// --------------------------------------------------
-// Save suggestions
-// --------------------------------------------------
-
-function saveSuggestions(
-  suggestions
-) {
-  ensureFile();
-
-  fs.writeFileSync(
-    FILE_PATH,
-    JSON.stringify(
-      suggestions,
-      null,
-      2
-    ),
-    "utf8"
+async function getSuggestionById(id) {
+  const result = await pool.query(
+    "SELECT * FROM narrow_road_suggestions WHERE id = $1;",
+    [id]
   );
+
+  return result.rows[0] ? rowToSuggestion(result.rows[0]) : null;
 }
 
 // --------------------------------------------------
 // Create suggestion
 // --------------------------------------------------
 
-function createSuggestion({
-  name,
-  polygon,
-  reason,
-}) {
-  const suggestions =
-    getAllSuggestions();
-
-  const suggestion = {
-    id: `SUG_${Date.now()}`,
-
-    name: name.trim(),
-
-    polygon,
-
-    reason:
-      typeof reason === "string"
-        ? reason.trim()
-        : "",
-
-    status: "PENDING",
-
-    submittedAt:
-      new Date().toISOString(),
-
-    reviewedAt: null,
-  };
-
-  suggestions.push(
-    suggestion
+async function createSuggestion({ name, polygon, reason }) {
+  const result = await pool.query(
+    `
+    INSERT INTO narrow_road_suggestions (id, name, polygon, reason)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *;
+    `,
+    [
+      `SUG_${Date.now()}`,
+      name.trim(),
+      JSON.stringify(polygon),
+      typeof reason === "string" ? reason.trim() : "",
+    ]
   );
 
-  saveSuggestions(
-    suggestions
-  );
+  const suggestion = rowToSuggestion(result.rows[0]);
 
   console.log(
     `[Suggestion Service] New suggestion created: ${suggestion.id}`
@@ -125,57 +66,79 @@ function createSuggestion({
 }
 
 // --------------------------------------------------
-// Get suggestion
+// Reject suggestion. Returns null if it was already reviewed.
 // --------------------------------------------------
 
-function getSuggestionById(id) {
-  return getAllSuggestions()
-    .find(
-      (suggestion) =>
-        suggestion.id === id
-    ) || null;
+async function rejectSuggestion(id) {
+  const result = await pool.query(
+    `
+    UPDATE narrow_road_suggestions
+    SET status = 'REJECTED', reviewed_at = CURRENT_TIMESTAMP
+    WHERE id = $1 AND status = 'PENDING'
+    RETURNING *;
+    `,
+    [id]
+  );
+
+  return result.rows[0] ? rowToSuggestion(result.rows[0]) : null;
 }
 
 // --------------------------------------------------
-// Update suggestion status
+// Approve suggestion and create its road together, so one
+// cannot be saved without the other. Returns null if the
+// suggestion was already reviewed.
 // --------------------------------------------------
 
-function updateSuggestionStatus(
-  id,
-  status
-) {
-  const suggestions =
-    getAllSuggestions();
+async function approveSuggestion(id) {
+  const client = await pool.connect();
 
-  const index =
-    suggestions.findIndex(
-      (suggestion) =>
-        suggestion.id === id
+  try {
+    await client.query("BEGIN");
+
+    const updated = await client.query(
+      `
+      UPDATE narrow_road_suggestions
+      SET status = 'APPROVED', reviewed_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND status = 'PENDING'
+      RETURNING *;
+      `,
+      [id]
     );
 
-  if (index === -1) {
-    return null;
+    if (updated.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const suggestion = rowToSuggestion(updated.rows[0]);
+
+    const road = await createNarrowRoad(
+      {
+        name: suggestion.name,
+        polygon: suggestion.polygon,
+      },
+      client
+    );
+
+    await client.query("COMMIT");
+
+    return { suggestion, road };
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    // The road may already be in memory, so match it back to the database
+    await loadNarrowRoads();
+
+    throw error;
+  } finally {
+    client.release();
   }
-
-  suggestions[index] = {
-    ...suggestions[index],
-
-    status,
-
-    reviewedAt:
-      new Date().toISOString(),
-  };
-
-  saveSuggestions(
-    suggestions
-  );
-
-  return suggestions[index];
 }
 
 module.exports = {
   getAllSuggestions,
   getSuggestionById,
   createSuggestion,
-  updateSuggestionStatus,
+  rejectSuggestion,
+  approveSuggestion,
 };

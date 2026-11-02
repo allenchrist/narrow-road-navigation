@@ -6,13 +6,15 @@ const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const config = require("./config/config");
-const { testDatabaseConnection } = require("./config/database");
+const { ensureSchema } = require("./database/schema");
 const authRoutes = require("./routes/authRoutes");
-const { initSocketServer } = require("./socket/socketServer");
+const { initSocketServer, broadcastFleetUpdate } = require("./socket/socketServer");
 const { initVehicleWebSocketServer } = require("./socket/vehicleWebSocketServer");
 const { getAllVehicles, getVehicleCount } = require("./services/vehicleState");
-const { getDeviceCount } = require("./services/deviceRegistry");
+const { getDeviceCount, loadDevices } = require("./services/deviceRegistry");
+const { isValidPolygon, POLYGON_ERROR } = require("./utils/validatePolygon");
 const {
+  loadNarrowRoads,
   getAllNarrowRoads,
   getNarrowRoadById,
   createNarrowRoad,
@@ -23,16 +25,23 @@ const {
   getAllSuggestions,
   getSuggestionById,
   createSuggestion,
-  updateSuggestionStatus,
+  rejectSuggestion,
+  approveSuggestion,
 } = require("./services/narrowRoadSuggestionService");
+
+// Dashboards get the fleet on a timer rather than on every GPS packet.
+// This also tells them when a vehicle goes stale, which no packet would.
+const FLEET_BROADCAST_MS = 1000;
+
+const DATABASE_RETRY_MS = 10000;
 
 const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: config.corsOrigin,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: false,
   })
 );
@@ -74,14 +83,14 @@ app.get("/api/narrow-roads/:id", (req, res) => {
   }
 });
 
-app.post("/api/narrow-roads", (req, res) => {
+app.post("/api/narrow-roads", async (req, res) => {
   try {
     const { name, polygon } = req.body;
     if (typeof name !== "string" || !name.trim())
       return res.status(400).json({ success: false, message: "Road name is required" });
-    if (!Array.isArray(polygon) || polygon.length < 3)
-      return res.status(400).json({ success: false, message: "Polygon must contain at least 3 points" });
-    const road = createNarrowRoad({ name, polygon });
+    if (!isValidPolygon(polygon))
+      return res.status(400).json({ success: false, message: POLYGON_ERROR });
+    const road = await createNarrowRoad({ name, polygon });
     res.status(201).json({ success: true, road });
   } catch (error) {
     console.error("[Narrow Road API] Failed to create road:", error);
@@ -89,14 +98,16 @@ app.post("/api/narrow-roads", (req, res) => {
   }
 });
 
-app.put("/api/narrow-roads/:id", (req, res) => {
+app.put("/api/narrow-roads/:id", async (req, res) => {
   try {
     const { name, polygon } = req.body;
     if (name === undefined && polygon === undefined)
       return res.status(400).json({ success: false, message: "Nothing to update" });
-    if (polygon !== undefined && (!Array.isArray(polygon) || polygon.length < 3))
-      return res.status(400).json({ success: false, message: "Polygon must contain at least 3 points" });
-    const road = updateNarrowRoad(req.params.id, { name, polygon });
+    if (name !== undefined && (typeof name !== "string" || !name.trim()))
+      return res.status(400).json({ success: false, message: "Road name is required" });
+    if (polygon !== undefined && !isValidPolygon(polygon))
+      return res.status(400).json({ success: false, message: POLYGON_ERROR });
+    const road = await updateNarrowRoad(req.params.id, { name, polygon });
     if (!road) return res.status(404).json({ success: false, message: "Narrow road not found" });
     res.json({ success: true, road });
   } catch (error) {
@@ -105,9 +116,9 @@ app.put("/api/narrow-roads/:id", (req, res) => {
   }
 });
 
-app.delete("/api/narrow-roads/:id", (req, res) => {
+app.delete("/api/narrow-roads/:id", async (req, res) => {
   try {
-    const deleted = deleteNarrowRoad(req.params.id);
+    const deleted = await deleteNarrowRoad(req.params.id);
     if (!deleted) return res.status(404).json({ success: false, message: "Narrow road not found" });
     res.json({ success: true, message: "Narrow road deleted" });
   } catch (error) {
@@ -122,12 +133,12 @@ app.delete("/api/narrow-roads/:id", (req, res) => {
 
 app.get(
   "/api/narrow-road-suggestions",
-  (_req, res) => {
+  async (_req, res) => {
     try {
       res.json({
         success: true,
         suggestions:
-          getAllSuggestions(),
+          await getAllSuggestions(),
       });
     } catch (error) {
       console.error(
@@ -151,7 +162,7 @@ app.get(
 
 app.post(
   "/api/narrow-road-suggestions",
-  (req, res) => {
+  async (req, res) => {
     try {
       const {
         name,
@@ -170,19 +181,15 @@ app.post(
         });
       }
 
-      if (
-        !Array.isArray(polygon) ||
-        polygon.length < 3
-      ) {
+      if (!isValidPolygon(polygon)) {
         return res.status(400).json({
           success: false,
-          message:
-            "Polygon must contain at least 3 points",
+          message: POLYGON_ERROR,
         });
       }
 
       const suggestion =
-        createSuggestion({
+        await createSuggestion({
           name,
           polygon,
           reason,
@@ -215,7 +222,7 @@ app.post(
 
 app.put(
   "/api/narrow-road-suggestions/:id/status",
-  (req, res) => {
+  async (req, res) => {
     try {
       const {
         status,
@@ -233,7 +240,7 @@ app.put(
       }
 
       const suggestion =
-        getSuggestionById(
+        await getSuggestionById(
           req.params.id
         );
 
@@ -245,10 +252,19 @@ app.put(
         });
       }
 
-      if (
-        suggestion.status !==
-        "PENDING"
-      ) {
+      const result =
+        status === "REJECTED"
+          ? {
+              suggestion:
+                await rejectSuggestion(
+                  req.params.id
+                ),
+            }
+          : await approveSuggestion(
+              req.params.id
+            );
+
+      if (!result?.suggestion) {
         return res.status(400).json({
           success: false,
           message:
@@ -256,50 +272,9 @@ app.put(
         });
       }
 
-      // --------------------------------------------
-      // REJECT
-      // --------------------------------------------
-
-      if (
-        status === "REJECTED"
-      ) {
-        const updated =
-          updateSuggestionStatus(
-            req.params.id,
-            "REJECTED"
-          );
-
-        return res.json({
-          success: true,
-          suggestion: updated,
-        });
-      }
-
-      // --------------------------------------------
-      // APPROVE
-      // --------------------------------------------
-
-      const road =
-        createNarrowRoad({
-          name:
-            suggestion.name,
-
-          polygon:
-            suggestion.polygon,
-        });
-
-      const updated =
-        updateSuggestionStatus(
-          req.params.id,
-          "APPROVED"
-        );
-
       res.json({
         success: true,
-
-        suggestion: updated,
-
-        road,
+        ...result,
       });
 
     } catch (error) {
@@ -325,17 +300,50 @@ initSocketServer(httpServer);
 // 2. WebSocket server for Android vehicle clients
 initVehicleWebSocketServer(httpServer, config.vehicleWsPath);
 
+setInterval(broadcastFleetUpdate, FLEET_BROADCAST_MS);
+
 const PORT = process.env.PORT || config.port;
 
-httpServer.listen(PORT, "0.0.0.0", async () => {
+/**
+ * Loads saved roads and devices. Keeps retrying if the database is
+ * unavailable, because the server can still track vehicles meanwhile
+ * and Neon may need time to wake up.
+ */
+async function loadSavedData() {
+  try {
+    await ensureSchema();
+
+    const roads = await loadNarrowRoads();
+    const deviceCount = await loadDevices();
+
+    console.log(
+      `[Database] Loaded ${roads.length} narrow roads and ${deviceCount} devices`
+    );
+  } catch (error) {
+    console.error(
+      `[Database] Could not load saved data, retrying in ${DATABASE_RETRY_MS / 1000}s:`,
+      error.message
+    );
+
+    setTimeout(loadSavedData, DATABASE_RETRY_MS);
+  }
+}
+
+async function startServer() {
+  // Devices load before phones can connect, so a returning
+  // phone gets its saved vehicle ID rather than a new one.
+  await loadSavedData();
+
+  httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`[Server] Listening on port ${PORT}`);
   console.log(
     `[Server] Vehicle WS endpoint: ws://0.0.0.0:${PORT}${config.vehicleWsPath}`
   );
   console.log(`[Server] CORS origins: ${config.corsOrigin}`);
+  });
+}
 
-  await testDatabaseConnection();
-});
+startServer();
 
 process.on("SIGINT", () => {
   httpServer.close(() => {

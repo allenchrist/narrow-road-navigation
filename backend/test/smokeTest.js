@@ -11,6 +11,7 @@
  *   TEST 6 — Telemetry isolation: device-A telemetry doesn't affect device-B
  *   TEST 7 — Disconnect marks vehicle connected=false, others unaffected
  *   TEST 8 — /health endpoint returns deviceCount and vehicleCount
+ *   TEST 9 — Malformed input is rejected without crashing the server
  *
  * Usage:
  *   node backend/test/smokeTest.js
@@ -22,7 +23,7 @@
 const WebSocket = require("ws");
 const http = require("http");
 
-const WS_URL = "ws://127.0.0.1:5000/vehicle";
+const WS_URL = process.env.WS_URL || "ws://127.0.0.1:5000/vehicle";
 const HEALTH_URL = process.env.HEALTH_URL || "http://127.0.0.1:5000/health";
 
 let passed = 0;
@@ -106,6 +107,24 @@ function fetchHealth() {
         try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
       });
     }).on("error", reject);
+  });
+}
+
+/**
+ * POST JSON to the backend and return the HTTP status code.
+ */
+function postJson(path, body) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      new URL(path, HEALTH_URL),
+      { method: "POST", headers: { "Content-Type": "application/json" } },
+      (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode));
+      }
+    );
+    req.on("error", reject);
+    req.end(JSON.stringify(body));
   });
 }
 
@@ -206,6 +225,26 @@ async function runTests() {
   assert(typeof health8.deviceCount === "number" && health8.deviceCount >= 3, `deviceCount: ${health8.deviceCount}`);
   assert(typeof health8.vehicleCount === "number" && health8.vehicleCount >= 3, `vehicleCount: ${health8.vehicleCount}`);
   assert(Array.isArray(health8.vehicles), "vehicles array present");
+  console.log("");
+
+  // ── TEST 9: Malformed input ─────────────────────────────────────────────
+  console.log("TEST 9 — Malformed input is rejected without crashing the server");
+  const probe = new WebSocket(WS_URL);
+  await new Promise((resolve, reject) => {
+    probe.on("open", resolve);
+    probe.on("error", reject);
+  });
+  probe.send("null");
+  r2.ws.send("null");
+  await delay(300);
+  const health9 = await fetchHealth();
+  assert(health9.status === "ok", "server still running after null messages");
+  await closeAndWait(probe);
+  const badPolygonStatus = await postJson("/api/narrow-road-suggestions", {
+    name: "smoke-test",
+    polygon: [1, 2, 3],
+  });
+  assert(badPolygonStatus === 400, `invalid polygon rejected (status ${badPolygonStatus})`);
   console.log("");
 
   // ── Cleanup ─────────────────────────────────────────────────────────────

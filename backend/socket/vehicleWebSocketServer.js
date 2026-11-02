@@ -27,7 +27,6 @@ const {
   registerVehicle,
   updateVehicleTelemetry,
   setVehicleConnected,
-  getAllVehicles,
 } = require("../services/vehicleState");
 const { broadcastFleetUpdate } = require("./socketServer");
 const { allocateVehicleId } = require("../services/vehicleIdAllocator");
@@ -44,14 +43,17 @@ const {
 
 const { createPairing } = require("../services/pairingService");
 
-// All currently connected Android vehicle WebSockets
-const connectedVehicles = new Map();
-
 // How long (ms) to wait for a register message before closing the connection
 const REGISTRATION_TIMEOUT_MS = 10000;
 
+// Largest message accepted from a phone. Telemetry packets are well under this.
+const MAX_MESSAGE_BYTES = 64 * 1024;
+
 function initVehicleWebSocketServer(httpServer, path) {
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_MESSAGE_BYTES,
+  });
 
   console.log(`[Vehicle WS] Server listening on path: ${path}`);
 
@@ -60,8 +62,14 @@ function initVehicleWebSocketServer(httpServer, path) {
    * Socket.IO handles /socket.io/ upgrades independently.
    */
   httpServer.on("upgrade", (request, socket, head) => {
-    const url = new URL(request.url, `http://${request.headers.host}`);
-    if (url.pathname !== path) return;
+    let pathname;
+    try {
+      pathname = new URL(request.url, "http://localhost").pathname;
+    } catch {
+      socket.destroy();
+      return;
+    }
+    if (pathname !== path) return;
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit("connection", ws, request);
     });
@@ -96,17 +104,17 @@ function initVehicleWebSocketServer(httpServer, path) {
 
     // ── MESSAGE HANDLER ──────────────────────────────────────────────────────
     ws.on("message", (raw) => {
-      console.log(
-        `[Vehicle WS RAW] ${connectionId} | ` +
-        `${deviceId || "UNREGISTERED"} received:`,
-        raw.toString()
-      );
-
       let msg;
       try {
         msg = JSON.parse(raw.toString());
       } catch {
         ws.send(JSON.stringify({ type: "error", message: "Malformed JSON" }));
+        return;
+      }
+
+      // JSON.parse also accepts null, numbers, strings and arrays
+      if (msg === null || typeof msg !== "object" || Array.isArray(msg)) {
+        ws.send(JSON.stringify({ type: "error", message: "Message must be a JSON object" }));
         return;
       }
 
@@ -157,9 +165,6 @@ function initVehicleWebSocketServer(httpServer, path) {
           `[Vehicle WS] READY FOR TELEMETRY: ${vehicleId}`
         );
 
-        // Track this Android connection
-        connectedVehicles.set(deviceId, ws);
-
         // --------------------------------------------------
         // Generate temporary pairing code
         // --------------------------------------------------
@@ -184,7 +189,6 @@ function initVehicleWebSocketServer(httpServer, path) {
         );
 
         broadcastFleetUpdate();
-        broadcastFleetToVehicles();
 
         return;
       }
@@ -198,11 +202,6 @@ function initVehicleWebSocketServer(httpServer, path) {
 
       const result = validateVehicleData(msg);
 
-      console.log(
-        `[Vehicle WS Debug] ${vehicleId} received message:`,
-        msg
-      );
-
       if (!result.valid) {
         console.warn(
           `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`
@@ -210,19 +209,11 @@ function initVehicleWebSocketServer(httpServer, path) {
         return;
       }
 
-      console.log(
-        `[Vehicle WS Debug] ${vehicleId} VALID telemetry:`,
-        result.data
-      );
-
       updateVehicleTelemetry(
         vehicleId,
         result.data
       );
       updateLastSeen(deviceId);
-
-      broadcastFleetUpdate();
-      broadcastFleetToVehicles();
     });
 
     // ── DISCONNECT ───────────────────────────────────────────────────────────
@@ -242,10 +233,6 @@ function initVehicleWebSocketServer(httpServer, path) {
         return;
       }
 
-      if (getConnection(deviceId) === ws) {
-        connectedVehicles.delete(deviceId);
-      }
-
       const currentWs = getConnection(deviceId);
 
       if (currentWs === ws || currentWs === null) {
@@ -253,7 +240,6 @@ function initVehicleWebSocketServer(httpServer, path) {
         setVehicleConnected(vehicleId, false);
 
         broadcastFleetUpdate();
-        broadcastFleetToVehicles();
 
         console.log(
           `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected`
@@ -271,23 +257,6 @@ function initVehicleWebSocketServer(httpServer, path) {
   });
 
   return wss;
-}
-
-function broadcastFleetToVehicles() {
-  const fleet = getAllVehicles();
-
-  const message = JSON.stringify({
-    type: "fleet_update",
-    vehicles: fleet,
-  });
-
-  for (const [deviceId, ws] of connectedVehicles.entries()) {
-    if (ws.readyState === 1) {
-      ws.send(message);
-    } else {
-      connectedVehicles.delete(deviceId);
-    }
-  }
 }
 
 module.exports = { initVehicleWebSocketServer };

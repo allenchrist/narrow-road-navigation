@@ -39,7 +39,9 @@ function initSocketServer(httpServer) {
 
     socket.on(
       "session:identify",
-      async ({ username }) => {
+      async (payload) => {
+        const username = payload?.username;
+
         console.log(
           `[Socket.IO] session:identify received from ${socket.id}:`,
           username
@@ -66,6 +68,12 @@ function initSocketServer(httpServer) {
 
           return;
         }
+
+        // A dashboard can identify again on an existing socket,
+        // so it needs the current fleet here as well.
+        socket.emit("vehicles:update", {
+          vehicles: getAllVehicles(),
+        });
 
         try {
           // ----------------------------------------------
@@ -180,7 +188,9 @@ function initSocketServer(httpServer) {
 
     socket.on(
       "session:pair",
-      ({ pairingCode }) => {
+      (payload) => {
+        const pairingCode = payload?.pairingCode;
+
         if (
           !pairingCode ||
           typeof pairingCode !== "string"

@@ -1,102 +1,74 @@
-const fs = require("fs");
-const path = require("path");
+const { pool } = require("../config/database");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
-const DATA_FILE = path.join(DATA_DIR, "narrowRoads.json");
+// Telemetry checks every road on each GPS packet, so all roads are kept
+// in memory. PostgreSQL is the permanent copy: every change is written
+// there first, then applied here.
+let cachedRoads = [];
 
-// --------------------------------------------------
-// Ensure data directory/file exists
-// --------------------------------------------------
-
-function ensureDataFile() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(
-      DATA_FILE,
-      "[]",
-      "utf8"
-    );
-  }
+function rowToRoad(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    polygon: row.polygon,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
 }
 
 // --------------------------------------------------
-// Read all narrow roads
+// Load all narrow roads into memory
+// --------------------------------------------------
+
+async function loadNarrowRoads() {
+  const result = await pool.query(
+    "SELECT * FROM narrow_roads ORDER BY created_at, id;"
+  );
+
+  cachedRoads = result.rows.map(rowToRoad);
+
+  return cachedRoads;
+}
+
+// --------------------------------------------------
+// Read narrow roads
 // --------------------------------------------------
 
 function getAllNarrowRoads() {
-  ensureDataFile();
-
-  try {
-    const raw = fs.readFileSync(
-      DATA_FILE,
-      "utf8"
-    );
-
-    const roads = JSON.parse(raw);
-
-    return Array.isArray(roads)
-      ? roads
-      : [];
-  } catch (error) {
-    console.error(
-      "[Narrow Road] Failed to read data:",
-      error
-    );
-
-    return [];
-  }
+  return cachedRoads;
 }
-
-// --------------------------------------------------
-// Save all narrow roads
-// --------------------------------------------------
-
-function saveAllNarrowRoads(roads) {
-  ensureDataFile();
-
-  fs.writeFileSync(
-    DATA_FILE,
-    JSON.stringify(roads, null, 2),
-    "utf8"
-  );
-}
-
-// --------------------------------------------------
-// Get one narrow road
-// --------------------------------------------------
 
 function getNarrowRoadById(id) {
-  const roads = getAllNarrowRoads();
-
-  return roads.find(
+  return cachedRoads.find(
     (road) => road.id === id
   ) || null;
 }
 
 // --------------------------------------------------
 // Create narrow road
+//
+// db lets a caller include this in its own transaction.
 // --------------------------------------------------
 
-function createNarrowRoad({
-  name,
-  polygon
-}) {
-  const roads = getAllNarrowRoads();
+async function createNarrowRoad(
+  { name, polygon },
+  db = pool
+) {
+  const result = await db.query(
+    `
+    INSERT INTO narrow_roads (id, name, polygon)
+    VALUES ($1, $2, $3)
+    RETURNING *;
+    `,
+    [
+      `NR_${Date.now()}`,
+      String(name).trim(),
+      JSON.stringify(polygon),
+    ]
+  );
 
-  const road = {
-    id: `NR_${Date.now()}`,
-    name: String(name).trim(),
-    polygon,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+  const road = rowToRoad(result.rows[0]);
 
-  roads.push(road);
-
-  saveAllNarrowRoads(roads);
+  cachedRoads = [...cachedRoads, road];
 
   console.log(
     `[Narrow Road] Created ${road.id}: ${road.name}`
@@ -109,62 +81,58 @@ function createNarrowRoad({
 // Update narrow road
 // --------------------------------------------------
 
-function updateNarrowRoad(
-  id,
-  {
-    name,
-    polygon
-  }
-) {
-  const roads = getAllNarrowRoads();
-
-  const index = roads.findIndex(
-    (road) => road.id === id
+async function updateNarrowRoad(id, { name, polygon }) {
+  const result = await pool.query(
+    `
+    UPDATE narrow_roads
+    SET
+      name = COALESCE($2, name),
+      polygon = COALESCE($3::jsonb, polygon),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1
+    RETURNING *;
+    `,
+    [
+      id,
+      name === undefined ? null : String(name).trim(),
+      polygon === undefined ? null : JSON.stringify(polygon),
+    ]
   );
 
-  if (index === -1) {
+  if (result.rowCount === 0) {
     return null;
   }
 
-  roads[index] = {
-    ...roads[index],
+  const road = rowToRoad(result.rows[0]);
 
-    ...(name !== undefined && {
-      name: String(name).trim()
-    }),
-
-    ...(polygon !== undefined && {
-      polygon
-    }),
-
-    updatedAt: new Date().toISOString()
-  };
-
-  saveAllNarrowRoads(roads);
+  cachedRoads = cachedRoads.map((existing) =>
+    existing.id === id ? road : existing
+  );
 
   console.log(
     `[Narrow Road] Updated ${id}`
   );
 
-  return roads[index];
+  return road;
 }
 
 // --------------------------------------------------
 // Delete narrow road
 // --------------------------------------------------
 
-function deleteNarrowRoad(id) {
-  const roads = getAllNarrowRoads();
-
-  const filtered = roads.filter(
-    (road) => road.id !== id
+async function deleteNarrowRoad(id) {
+  const result = await pool.query(
+    "DELETE FROM narrow_roads WHERE id = $1;",
+    [id]
   );
 
-  if (filtered.length === roads.length) {
+  if (result.rowCount === 0) {
     return false;
   }
 
-  saveAllNarrowRoads(filtered);
+  cachedRoads = cachedRoads.filter(
+    (road) => road.id !== id
+  );
 
   console.log(
     `[Narrow Road] Deleted ${id}`
@@ -174,9 +142,10 @@ function deleteNarrowRoad(id) {
 }
 
 module.exports = {
+  loadNarrowRoads,
   getAllNarrowRoads,
   getNarrowRoadById,
   createNarrowRoad,
   updateNarrowRoad,
-  deleteNarrowRoad
+  deleteNarrowRoad,
 };

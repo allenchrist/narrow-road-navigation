@@ -36,6 +36,19 @@ function allocateVehicleId() {
 }
 
 /**
+ * Mark a saved vehicle ID as taken, so new devices never receive it.
+ */
+function reserveVehicleId(vehicleId) {
+  reservedIds.add(vehicleId);
+
+  const number = parseInt(vehicleId.replace("VEHICLE_", ""), 10);
+
+  if (number >= nextCounter) {
+    nextCounter = number + 1;
+  }
+}
+
+/**
  * Check if a vehicle ID has been permanently reserved.
  */
 function isVehicleIdReserved(vehicleId) {
@@ -49,4 +62,4 @@ function getAllocatedCount() {
   return reservedIds.size;
 }
 
-module.exports = { allocateVehicleId, isVehicleIdReserved, getAllocatedCount };
+module.exports = { allocateVehicleId, reserveVehicleId, isVehicleIdReserved, getAllocatedCount };

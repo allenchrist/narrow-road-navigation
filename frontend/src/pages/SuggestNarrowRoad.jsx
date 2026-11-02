@@ -8,7 +8,7 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 
 const API_URL =
@@ -74,6 +74,9 @@ function SearchLocation({
 function SuggestNarrowRoad() {
   const navigate =
     useNavigate();
+
+  const { username } =
+    useParams();
 
   const [drawing, setDrawing] =
     useState(false);
@@ -367,7 +370,7 @@ function SuggestNarrowRoad() {
             type="button"
             className="suggest-primary-button"
             onClick={() =>
-              navigate("/")
+              navigate(`/${encodeURIComponent(username)}`)
             }
           >
             BACK TO DASHBOARD
