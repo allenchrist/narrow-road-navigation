@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { VehicleProvider } from "./context/VehicleContext";
 
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import RequireDriver from "./components/common/RequireDriver";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
-import AdminPage from "./pages/AdminPage";
+import AdminAccess from "./pages/AdminAccess";
 import SuggestNarrowRoad from "./pages/SuggestNarrowRoad";
 
 import "./styles/dashboard.css";
@@ -27,22 +28,28 @@ function App() {
           <Route
             path="/:username"
             element={
-              <VehicleProvider>
-                <Dashboard />
-              </VehicleProvider>
+              <RequireDriver>
+                <VehicleProvider>
+                  <Dashboard />
+                </VehicleProvider>
+              </RequireDriver>
             }
           />
 
           {/* Username-based Suggest Narrow Road */}
           <Route
             path="/:username/suggest-narrow-road"
-            element={<SuggestNarrowRoad />}
+            element={
+              <RequireDriver>
+                <SuggestNarrowRoad />
+              </RequireDriver>
+            }
           />
 
           {/* Admin narrow-road management */}
           <Route
             path="/admin"
-            element={<AdminPage />}
+            element={<AdminAccess />}
           />
 
           <Route

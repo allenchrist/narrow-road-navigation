@@ -15,6 +15,25 @@ const APPROACH_ANGLE_DEGREES = 45;
 // A stopped vehicle this close is treated as waiting at the road
 const WAITING_DISTANCE_M = 40;
 
+// Most road shapes are only a few metres wide, which is less than a phone's
+// GPS error. A car on the road often reads as just outside it, so anything
+// this close counts as on the road. Follows the phone's reported accuracy,
+// within limits, so a nearby parallel street doesn't count when GPS is poor.
+const MIN_ROAD_TOLERANCE_M = 8;
+const MAX_ROAD_TOLERANCE_M = 15;
+
+// For phones that don't report accuracy
+const DEFAULT_ROAD_TOLERANCE_M = 10;
+
+function getRoadTolerance(accuracy) {
+  return typeof accuracy === "number"
+    ? Math.min(
+        MAX_ROAD_TOLERANCE_M,
+        Math.max(MIN_ROAD_TOLERANCE_M, accuracy)
+      )
+    : DEFAULT_ROAD_TOLERANCE_M;
+}
+
 // --------------------------------------------------
 // Point-in-polygon
 // polygon points are [latitude, longitude]
@@ -84,19 +103,24 @@ function isPointInsidePolygon(lat, lon, polygon) {
 // overlap, so every matching road is reported.
 // --------------------------------------------------
 
-function computeGeofenceState(lat, lon, travelBearing, roads) {
+function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
   const insideRoads = [];
   const approachingRoads = [];
 
-  for (const road of roads) {
-    if (isPointInsidePolygon(lat, lon, road.polygon)) {
-      insideRoads.push(road);
-      continue;
-    }
+  const tolerance = getRoadTolerance(accuracy);
 
+  for (const road of roads) {
     const nearest = nearestPointOnPolygon(lat, lon, road.polygon);
 
     if (!nearest) {
+      continue;
+    }
+
+    if (
+      isPointInsidePolygon(lat, lon, road.polygon) ||
+      nearest.distanceM <= tolerance
+    ) {
+      insideRoads.push(road);
       continue;
     }
 
@@ -127,12 +151,13 @@ function computeGeofenceState(lat, lon, travelBearing, roads) {
   };
 }
 
-function getGeofenceState(lat, lon, travelBearing = null) {
+function getGeofenceState(lat, lon, travelBearing = null, accuracy) {
   return computeGeofenceState(
     lat,
     lon,
     travelBearing,
-    getAllNarrowRoads()
+    getAllNarrowRoads(),
+    accuracy
   );
 }
 

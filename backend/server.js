@@ -1,18 +1,54 @@
 require("dotenv").config();
 
-console.log("JWT_SECRET loaded:", !!process.env.JWT_SECRET);
+// Without these the server would start, then fail in confusing ways later
+const REQUIRED_SETTINGS = ["DATABASE_URL", "JWT_SECRET"];
+
+const missingSettings = REQUIRED_SETTINGS.filter(
+  (name) => !process.env[name]
+);
+
+if (missingSettings.length > 0) {
+  console.error(
+    `[Server] Missing required settings: ${missingSettings.join(", ")}`
+  );
+
+  process.exit(1);
+}
+
+if (!process.env.ADMIN_PASSWORD) {
+  console.warn(
+    "[Server] ADMIN_PASSWORD is not set, so nobody can sign in to the admin page"
+  );
+}
 
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const config = require("./config/config");
+const { pool } = require("./config/database");
 const { ensureSchema } = require("./database/schema");
 const authRoutes = require("./routes/authRoutes");
-const { initSocketServer, broadcastFleetUpdate } = require("./socket/socketServer");
-const { initVehicleWebSocketServer } = require("./socket/vehicleWebSocketServer");
-const { getAllVehicles, getVehicleCount } = require("./services/vehicleState");
+const adminRoutes = require("./routes/adminRoutes");
+const { authenticateToken, requireAdmin } = require("./middleware/authMiddleware");
+const {
+  initSocketServer,
+  broadcastFleetUpdate,
+  closeSocketServer,
+} = require("./socket/socketServer");
+const {
+  initVehicleWebSocketServer,
+  closeVehicleConnections,
+} = require("./socket/vehicleWebSocketServer");
+const { getVehicleCount } = require("./services/vehicleState");
 const { getDeviceCount, loadDevices } = require("./services/deviceRegistry");
 const { isValidPolygon, POLYGON_ERROR } = require("./utils/validatePolygon");
+const {
+  ROAD_NAME_ERROR,
+  REASON_ERROR,
+  isValidRoadName,
+  isValidReason,
+} = require("./utils/validateRoadText");
+const { createRateLimiter, getClientIp } = require("./utils/rateLimit");
 const {
   loadNarrowRoads,
   getAllNarrowRoads,
@@ -35,7 +71,27 @@ const FLEET_BROADCAST_MS = 1000;
 
 const DATABASE_RETRY_MS = 10000;
 
+// Picks up road changes made through another server using this database
+const ROAD_REFRESH_MS = 60000;
+
+// Render stops the server soon after asking it to shut down
+const SHUTDOWN_TIMEOUT_MS = 5000;
+
+const SUGGESTION_WINDOW_MS = 60 * 60 * 1000;
+
+const suggestionsByAddress = createRateLimiter({
+  max: 10,
+  windowMs: SUGGESTION_WINDOW_MS,
+});
+
+const suggestionsOverall = createRateLimiter({
+  max: 100,
+  windowMs: SUGGESTION_WINDOW_MS,
+});
+
 const app = express();
+
+app.disable("x-powered-by");
 
 app.use(
   cors({
@@ -49,13 +105,13 @@ app.use(
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     deviceCount: getDeviceCount(),
     vehicleCount: getVehicleCount(),
-    vehicles: getAllVehicles(),
   });
 });
 
@@ -63,7 +119,7 @@ app.get("/health", (_req, res) => {
 // NARROW ROAD GEOFENCE API
 // ==================================================
 
-app.get("/api/narrow-roads", (_req, res) => {
+app.get("/api/narrow-roads", authenticateToken, (_req, res) => {
   try {
     res.json({ success: true, roads: getAllNarrowRoads() });
   } catch (error) {
@@ -72,7 +128,7 @@ app.get("/api/narrow-roads", (_req, res) => {
   }
 });
 
-app.get("/api/narrow-roads/:id", (req, res) => {
+app.get("/api/narrow-roads/:id", authenticateToken, (req, res) => {
   try {
     const road = getNarrowRoadById(req.params.id);
     if (!road) return res.status(404).json({ success: false, message: "Narrow road not found" });
@@ -83,11 +139,11 @@ app.get("/api/narrow-roads/:id", (req, res) => {
   }
 });
 
-app.post("/api/narrow-roads", async (req, res) => {
+app.post("/api/narrow-roads", requireAdmin, async (req, res) => {
   try {
     const { name, polygon } = req.body;
-    if (typeof name !== "string" || !name.trim())
-      return res.status(400).json({ success: false, message: "Road name is required" });
+    if (!isValidRoadName(name))
+      return res.status(400).json({ success: false, message: ROAD_NAME_ERROR });
     if (!isValidPolygon(polygon))
       return res.status(400).json({ success: false, message: POLYGON_ERROR });
     const road = await createNarrowRoad({ name, polygon });
@@ -98,13 +154,13 @@ app.post("/api/narrow-roads", async (req, res) => {
   }
 });
 
-app.put("/api/narrow-roads/:id", async (req, res) => {
+app.put("/api/narrow-roads/:id", requireAdmin, async (req, res) => {
   try {
     const { name, polygon } = req.body;
     if (name === undefined && polygon === undefined)
       return res.status(400).json({ success: false, message: "Nothing to update" });
-    if (name !== undefined && (typeof name !== "string" || !name.trim()))
-      return res.status(400).json({ success: false, message: "Road name is required" });
+    if (name !== undefined && !isValidRoadName(name))
+      return res.status(400).json({ success: false, message: ROAD_NAME_ERROR });
     if (polygon !== undefined && !isValidPolygon(polygon))
       return res.status(400).json({ success: false, message: POLYGON_ERROR });
     const road = await updateNarrowRoad(req.params.id, { name, polygon });
@@ -116,7 +172,7 @@ app.put("/api/narrow-roads/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/narrow-roads/:id", async (req, res) => {
+app.delete("/api/narrow-roads/:id", requireAdmin, async (req, res) => {
   try {
     const deleted = await deleteNarrowRoad(req.params.id);
     if (!deleted) return res.status(404).json({ success: false, message: "Narrow road not found" });
@@ -133,6 +189,7 @@ app.delete("/api/narrow-roads/:id", async (req, res) => {
 
 app.get(
   "/api/narrow-road-suggestions",
+  requireAdmin,
   async (_req, res) => {
     try {
       res.json({
@@ -164,20 +221,36 @@ app.post(
   "/api/narrow-road-suggestions",
   async (req, res) => {
     try {
+      const address = getClientIp(req);
+
+      if (
+        suggestionsByAddress.isBlocked(address) ||
+        suggestionsOverall.isBlocked("all")
+      ) {
+        return res.status(429).json({
+          success: false,
+          message:
+            "Too many suggestions. Try again later.",
+        });
+      }
+
       const {
         name,
         polygon,
         reason,
       } = req.body;
 
-      if (
-        typeof name !== "string" ||
-        !name.trim()
-      ) {
+      if (!isValidRoadName(name)) {
         return res.status(400).json({
           success: false,
-          message:
-            "Road name is required",
+          message: ROAD_NAME_ERROR,
+        });
+      }
+
+      if (!isValidReason(reason)) {
+        return res.status(400).json({
+          success: false,
+          message: REASON_ERROR,
         });
       }
 
@@ -194,6 +267,9 @@ app.post(
           polygon,
           reason,
         });
+
+      suggestionsByAddress.record(address);
+      suggestionsOverall.record("all");
 
       res.status(201).json({
         success: true,
@@ -222,6 +298,7 @@ app.post(
 
 app.put(
   "/api/narrow-road-suggestions/:id/status",
+  requireAdmin,
   async (req, res) => {
     try {
       const {
@@ -292,6 +369,36 @@ app.put(
   }
 );
 
+// ==================================================
+// Replies for anything the routes above didn't handle
+// ==================================================
+
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Not found",
+  });
+});
+
+// Express only treats this as an error handler if it takes all four arguments
+app.use((error, _req, res, _next) => {
+  const status = error.status || 500;
+
+  if (status >= 500) {
+    console.error("[Server] Request failed:", error);
+  }
+
+  res.status(status).json({
+    success: false,
+    message:
+      status === 413
+        ? "Request is too large"
+        : status < 500
+        ? "Invalid request"
+        : "Something went wrong",
+  });
+});
+
 const httpServer = http.createServer(app);
 
 // 1. Socket.IO for React dashboards
@@ -301,6 +408,15 @@ initSocketServer(httpServer);
 initVehicleWebSocketServer(httpServer, config.vehicleWsPath);
 
 setInterval(broadcastFleetUpdate, FLEET_BROADCAST_MS);
+
+setInterval(() => {
+  loadNarrowRoads().catch((error) => {
+    console.error(
+      "[Database] Could not refresh narrow roads:",
+      error.message
+    );
+  });
+}, ROAD_REFRESH_MS);
 
 const PORT = process.env.PORT || config.port;
 
@@ -345,9 +461,39 @@ async function startServer() {
 
 startServer();
 
-process.on("SIGINT", () => {
-  httpServer.close(() => {
+let shuttingDown = false;
+
+/**
+ * Render sends SIGTERM on every deploy. Phones are told the server is going
+ * away, so they reconnect to the new one by themselves.
+ */
+function shutDown(signal) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+
+  console.log(`[Server] ${signal} received, shutting down`);
+
+  setTimeout(() => {
+    console.error("[Server] Shutdown took too long, stopping now");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS).unref();
+
+  closeVehicleConnections();
+
+  closeSocketServer(async () => {
+    try {
+      await pool.end();
+    } catch (error) {
+      console.error("[Server] Failed to close the database:", error.message);
+    }
+
     console.log("[Server] Shut down cleanly");
     process.exit(0);
   });
-});
+}
+
+process.on("SIGINT", () => shutDown("SIGINT"));
+process.on("SIGTERM", () => shutDown("SIGTERM"));

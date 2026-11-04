@@ -129,13 +129,13 @@ function DrivePanel({ alert }) {
 
       <section className="cv-nearby">
         <div className="cv-nearby-header">
-          <span className="cv-section-label">Other vehicles</span>
+          <span className="cv-section-label">Nearby vehicles</span>
           <span className="cv-count">{nearby.length}</span>
         </div>
 
         {nearby.length === 0 ? (
           <p className="cv-nearby-empty">
-            No other vehicles connected
+            No other vehicles nearby
           </p>
         ) : (
           <ul>

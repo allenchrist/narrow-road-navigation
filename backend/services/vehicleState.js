@@ -12,7 +12,10 @@ const {
   buildNarrowRoadAlert,
   NO_ALERT,
 } = require("./narrowRoadAlert");
-const { getTravelBearing } = require("../utils/geo");
+const { distanceBetween, getTravelBearing } = require("../utils/geo");
+
+// Drivers only receive other vehicles within this distance
+const NEARBY_RADIUS_M = 1000;
 
 // Positions less accurate than this do not change geofence state
 const MAX_GEOFENCE_ACCURACY_M = 50;
@@ -146,7 +149,8 @@ function resolveGeofenceState(existing, data, now) {
   const geofence = getGeofenceState(
     data.lat,
     data.lon,
-    getTravelBearing(data.speed, data.bearing)
+    getTravelBearing(data.speed, data.bearing),
+    data.accuracy
   );
 
   const justLeft =
@@ -254,6 +258,57 @@ function getAllVehicles() {
   }));
 }
 
+/**
+ * Only what a dashboard displays. Motion sensor readings and
+ * internal road calculations stay on the server.
+ */
+function getVehiclesForDashboard() {
+  return getAllVehicles().map((vehicle) => ({
+    vehicleId: vehicle.vehicleId,
+    lat: vehicle.lat,
+    lon: vehicle.lon,
+    heading: vehicle.heading,
+    speed: vehicle.speed,
+    bearing: vehicle.bearing,
+    connected: vehicle.connected,
+    active: vehicle.active,
+    narrowRoadAlert: vehicle.narrowRoadAlert,
+  }));
+}
+
+/**
+ * What one driver may see: their own vehicle, plus other active vehicles
+ * nearby. A driver has to be sharing their own position to see anyone, so
+ * an account alone can't be used to look around. Another vehicle's alert
+ * is left out, because it's only meant for that driver.
+ */
+function getVisibleVehicles(vehicles, ownVehicleId) {
+  const own = vehicles.find(
+    (vehicle) => vehicle.vehicleId === ownVehicleId
+  );
+
+  if (!own) {
+    return [];
+  }
+
+  if (!own.active || own.lat === null) {
+    return [own];
+  }
+
+  const others = vehicles
+    .filter(
+      (vehicle) =>
+        vehicle.vehicleId !== ownVehicleId &&
+        vehicle.active &&
+        vehicle.lat !== null &&
+        distanceBetween(own.lat, own.lon, vehicle.lat, vehicle.lon) <=
+          NEARBY_RADIUS_M
+    )
+    .map(({ narrowRoadAlert: _alert, ...vehicle }) => vehicle);
+
+  return [own, ...others];
+}
+
 function getVehicleCount() {
   return vehicles.size;
 }
@@ -269,6 +324,8 @@ module.exports = {
   removeVehicle,
   getVehicle,
   getAllVehicles,
+  getVehiclesForDashboard,
+  getVisibleVehicles,
   getVehicleCount,
   hasVehicle,
 };

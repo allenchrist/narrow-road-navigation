@@ -19,6 +19,7 @@
  * Usage:
  *   node backend/test/vehicleClient.js
  *
+ * These phones have no login, so REQUIRE_VEHICLE_TOKEN must be off on the backend.
  * Requires the backend to be running:
  *   node backend/server.js
  */

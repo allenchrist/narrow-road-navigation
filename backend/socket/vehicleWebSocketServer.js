@@ -39,9 +39,11 @@ const {
   updateLastSeen,
   getConnection,
   removeConnection,
+  getDeviceCount,
 } = require("../services/deviceRegistry");
 
-const { createPairing } = require("../services/pairingService");
+const { isDeviceAuthorized } = require("../services/vehicleAuth");
+const { createRateLimiter, getClientIp } = require("../utils/rateLimit");
 
 // How long (ms) to wait for a register message before closing the connection
 const REGISTRATION_TIMEOUT_MS = 10000;
@@ -49,8 +51,45 @@ const REGISTRATION_TIMEOUT_MS = 10000;
 // Largest message accepted from a phone. Telemetry packets are well under this.
 const MAX_MESSAGE_BYTES = 64 * 1024;
 
+// Phones send about one packet a second. Anything much faster is dropped.
+const MIN_TELEMETRY_INTERVAL_MS = 200;
+
+// Each new phone is saved permanently and added to every fleet message
+const MAX_DEVICES = 1000;
+
+const NEW_DEVICE_WINDOW_MS = 60 * 60 * 1000;
+
+const newDevicesByAddress = createRateLimiter({
+  max: 20,
+  windowMs: NEW_DEVICE_WINDOW_MS,
+});
+
+const newDevicesOverall = createRateLimiter({
+  max: 200,
+  windowMs: NEW_DEVICE_WINDOW_MS,
+});
+
+function canRegisterNewDevice(address) {
+  return (
+    getDeviceCount() < MAX_DEVICES &&
+    !newDevicesByAddress.isBlocked(address) &&
+    !newDevicesOverall.isBlocked("all")
+  );
+}
+
+// "Going away" in the WebSocket standard. Phones reconnect after this.
+const CLOSE_SERVER_RESTARTING = 1001;
+
+// A temporary server fault. Phones reconnect after this too.
+const CLOSE_SERVER_ERROR = 1011;
+
+// The phone must log in again. It doesn't reconnect after this.
+const CLOSE_NOT_AUTHORIZED = 4004;
+
+let wss = null;
+
 function initVehicleWebSocketServer(httpServer, path) {
-  const wss = new WebSocketServer({
+  wss = new WebSocketServer({
     noServer: true,
     maxPayload: MAX_MESSAGE_BYTES,
   });
@@ -76,23 +115,15 @@ function initVehicleWebSocketServer(httpServer, path) {
   });
 
   wss.on("connection", (ws, req) => {
-    const connectionId =
-      `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-    console.log(
-      `[Vehicle WS] CONNECTION CREATED: ${connectionId}`
-    );
-
     const remoteAddr = req.socket.remoteAddress;
 
     // State for this connection — populated after successful registration
     let deviceId = null;
     let vehicleId = null;
     let registered = false;
-
-    console.log(
-      `[Vehicle WS] New connection ${connectionId} from ${remoteAddr} — awaiting registration`
-    );
+    let checkingLogin = false;
+    let lastTelemetryAt = 0;
+    let warnedAboutTelemetry = false;
 
     // Close unregistered connections that never send a register message
     const registrationTimeout = setTimeout(() => {
@@ -103,7 +134,12 @@ function initVehicleWebSocketServer(httpServer, path) {
     }, REGISTRATION_TIMEOUT_MS);
 
     // ── MESSAGE HANDLER ──────────────────────────────────────────────────────
-    ws.on("message", (raw) => {
+    ws.on("message", async (raw) => {
+      // Anything that arrives during the login check is ignored
+      if (checkingLogin) {
+        return;
+      }
+
       let msg;
       try {
         msg = JSON.parse(raw.toString());
@@ -134,8 +170,47 @@ function initVehicleWebSocketServer(httpServer, path) {
           return;
         }
 
-        deviceId = validation.normalized;
+        const clientAddress = getClientIp(req);
+
+        if (
+          !hasDevice(validation.normalized) &&
+          !canRegisterNewDevice(clientAddress)
+        ) {
+          console.warn(`[Vehicle WS] New device refused from ${clientAddress}`);
+          ws.send(JSON.stringify({ type: "error", message: "Too many new devices. Try again later." }));
+          ws.close(4003, "Too many new devices");
+          return;
+        }
+
         clearTimeout(registrationTimeout);
+
+        checkingLogin = true;
+
+        let authorized;
+
+        try {
+          authorized = await isDeviceAuthorized(req, validation.normalized);
+        } catch (error) {
+          console.error(`[Vehicle WS] Login check failed: ${error.message}`);
+          ws.close(CLOSE_SERVER_ERROR, "Try again");
+          return;
+        } finally {
+          checkingLogin = false;
+        }
+
+        if (!authorized) {
+          console.warn(`[Vehicle WS] Refused ${validation.normalized} from ${clientAddress}`);
+          ws.send(JSON.stringify({ type: "error", message: "Not authorized for this device" }));
+          ws.close(CLOSE_NOT_AUTHORIZED, "Not authorized");
+          return;
+        }
+
+        // The phone may have disconnected during the check
+        if (ws.readyState !== ws.OPEN) {
+          return;
+        }
+
+        deviceId = validation.normalized;
 
         // ── DUPLICATE CONNECTION HANDLING ────────────────────────────────────
         // If this device already has an active connection, close the old one.
@@ -155,36 +230,19 @@ function initVehicleWebSocketServer(httpServer, path) {
           // ── NEW DEVICE: allocate a permanent vehicleId ────────────────────
           vehicleId = allocateVehicleId();
           registerDevice(deviceId, vehicleId, ws);
+          newDevicesByAddress.record(clientAddress);
+          newDevicesOverall.record("all");
           registerVehicle(vehicleId);
           console.log(`[Vehicle WS] New device ${deviceId} → ${vehicleId} (allocated)`);
         }
 
         registered = true;
 
-        console.log(
-          `[Vehicle WS] READY FOR TELEMETRY: ${vehicleId}`
-        );
-
-        // --------------------------------------------------
-        // Generate temporary pairing code
-        // --------------------------------------------------
-
-        const pairingCode = createPairing(
-          deviceId,
-          vehicleId
-        );
-
-        console.log(
-          `[Vehicle WS] Pairing code for ${vehicleId}: ${pairingCode}`
-        );
-
-        // Respond with deviceId, vehicleId and pairing code
         ws.send(
           JSON.stringify({
             type: "registered",
             deviceId,
             vehicleId,
-            pairingCode,
           })
         );
 
@@ -200,12 +258,26 @@ function initVehicleWebSocketServer(httpServer, path) {
         return;
       }
 
+      const now = Date.now();
+
+      if (now - lastTelemetryAt < MIN_TELEMETRY_INTERVAL_MS) {
+        return;
+      }
+
+      lastTelemetryAt = now;
+
       const result = validateVehicleData(msg);
 
       if (!result.valid) {
-        console.warn(
-          `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`
-        );
+        // Once per connection, as a faulty phone repeats this every second
+        if (!warnedAboutTelemetry) {
+          warnedAboutTelemetry = true;
+
+          console.warn(
+            `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`
+          );
+        }
+
         return;
       }
 
@@ -217,19 +289,10 @@ function initVehicleWebSocketServer(httpServer, path) {
     });
 
     // ── DISCONNECT ───────────────────────────────────────────────────────────
-    ws.on("close", (code, reason) => {
+    ws.on("close", (code) => {
       clearTimeout(registrationTimeout);
 
-      console.log(
-        `[Vehicle WS] CLOSE ${connectionId} — ` +
-        `device=${deviceId ?? remoteAddr}, ` +
-        `code=${code}, reason="${reason.toString()}"`
-      );
-
       if (!registered || !deviceId) {
-        console.log(
-          `[Vehicle WS] Unregistered connection from ${remoteAddr} closed`
-        );
         return;
       }
 
@@ -242,11 +305,7 @@ function initVehicleWebSocketServer(httpServer, path) {
         broadcastFleetUpdate();
 
         console.log(
-          `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected`
-        );
-      } else {
-        console.log(
-          `[Vehicle WS] Replaced connection for ${deviceId} closed (no state change)`
+          `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected, code ${code}`
         );
       }
     });
@@ -259,4 +318,19 @@ function initVehicleWebSocketServer(httpServer, path) {
   return wss;
 }
 
-module.exports = { initVehicleWebSocketServer };
+// The phone is no longer linked to its account, so it must log in again
+function disconnectDevice(deviceId) {
+  getConnection(deviceId)?.close(CLOSE_NOT_AUTHORIZED, "Device unlinked");
+}
+
+function closeVehicleConnections() {
+  wss?.clients.forEach((ws) => {
+    ws.close(CLOSE_SERVER_RESTARTING, "Server restarting");
+  });
+}
+
+module.exports = {
+  initVehicleWebSocketServer,
+  disconnectDevice,
+  closeVehicleConnections,
+};

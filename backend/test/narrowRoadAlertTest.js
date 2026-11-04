@@ -97,6 +97,34 @@ const tests = {
   "alone inside gives no vehicle distance": () => {
     assert.strictEqual(buildNarrowRoadAlert(insideEastbound(), []).vehicleDistanceM, null);
   },
+  "a car just outside a thin road shape counts as on it": () => {
+    // About 5.5 m beyond the road's northern edge
+    const nearEdge = computeGeofenceState(11.00015, 77.001, null, [ROAD], 5);
+    assert.deepStrictEqual(nearEdge.insideRoadIds, ["R1"]);
+  },
+  "a car well beyond the tolerance is not on the road": () => {
+    // About 22 m beyond the northern edge
+    const away = computeGeofenceState(11.0003, 77.001, null, [ROAD], 5);
+    assert.deepStrictEqual(away.insideRoadIds, []);
+  },
+  "good GPS still allows the minimum tolerance": () => {
+    // About 7 m beyond the edge, with GPS accurate to 2 m
+    assert.strictEqual(computeGeofenceState(11.00016, 77.001, null, [ROAD], 2).insideRoadIds.length, 1);
+    // About 12 m beyond the edge is too far when GPS is that good
+    assert.strictEqual(computeGeofenceState(11.0002, 77.001, null, [ROAD], 2).insideRoadIds.length, 0);
+  },
+  "poor GPS widens the tolerance, up to a limit": () => {
+    // About 12 m beyond the edge
+    assert.strictEqual(computeGeofenceState(11.0002, 77.001, null, [ROAD], 14).insideRoadIds.length, 1);
+    // About 17 m beyond the edge, even with very poor GPS
+    assert.strictEqual(computeGeofenceState(11.00025, 77.001, null, [ROAD], 40).insideRoadIds.length, 0);
+  },
+  "a phone that reports no accuracy gets a middle tolerance": () => {
+    // About 8.9 m beyond the edge
+    assert.strictEqual(computeGeofenceState(11.00018, 77.001, null, [ROAD]).insideRoadIds.length, 1);
+    // About 12 m beyond the edge
+    assert.strictEqual(computeGeofenceState(11.0002, 77.001, null, [ROAD]).insideRoadIds.length, 0);
+  },
   "a vehicle on another road is ignored": () => {
     assert.strictEqual(kind(insideEastbound(), [vehicleAt(11.01, 77.01, MOVING, WEST)]), "IN_NARROW_ROAD");
   },

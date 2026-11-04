@@ -16,9 +16,15 @@
  * Usage:
  *   node backend/test/smokeTest.js
  *
+ * These phones have no login, so REQUIRE_VEHICLE_TOKEN must be off on the backend.
+ * Reads the fleet through the admin login, so ADMIN_PASSWORD must be set,
+ * either in the environment or in backend/.env.
+ *
  * Requires the backend to be running:
  *   node backend/server.js
  */
+
+require("dotenv").config();
 
 const WebSocket = require("ws");
 const http = require("http");
@@ -98,7 +104,7 @@ function sendTelemetry(ws, overrides = {}) {
 /**
  * Fetch the /health endpoint and return parsed JSON.
  */
-function fetchHealth() {
+function fetchServerHealth() {
   return new Promise((resolve, reject) => {
     http.get(HEALTH_URL, (res) => {
       let data = "";
@@ -108,6 +114,31 @@ function fetchHealth() {
       });
     }).on("error", reject);
   });
+}
+
+let adminToken = null;
+
+/**
+ * The health details, with the full fleet from the admin route.
+ */
+async function fetchHealth() {
+  if (!adminToken) {
+    const login = await fetch(new URL("/api/admin/login", HEALTH_URL), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: process.env.ADMIN_PASSWORD }),
+    });
+
+    adminToken = (await login.json()).token;
+  }
+
+  const fleet = await fetch(new URL("/api/admin/vehicles", HEALTH_URL), {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+
+  const { vehicles } = await fleet.json();
+
+  return { ...(await fetchServerHealth()), vehicles };
 }
 
 /**

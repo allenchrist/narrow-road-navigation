@@ -9,7 +9,8 @@
     "db:init": "node database/init.js",
     "simulate": "node test/simulator.js",
     "test": "node test/smokeTest.js",
-    "test:alerts": "node test/narrowRoadAlertTest.js"
+    "test:alerts": "node test/narrowRoadAlertTest.js",
+    "test:validation": "node test/validationTest.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

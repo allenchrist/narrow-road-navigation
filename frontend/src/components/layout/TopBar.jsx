@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useVehicle } from "../../context/VehicleContext";
+import { signOutDriver } from "../../services/driverSession";
 import Icon from "../common/Icon";
 
 const GPS_LABELS = {
@@ -144,6 +145,18 @@ function TopBar() {
               >
                 <Icon name="add" size={18} />
                 Suggest a narrow road
+              </button>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  signOutDriver();
+                  navigate("/", { replace: true });
+                }}
+              >
+                <Icon name="close" size={18} />
+                Log out
               </button>
             </div>
           )}

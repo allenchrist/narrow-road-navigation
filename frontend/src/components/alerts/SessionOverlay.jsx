@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { useVehicle } from "../../context/VehicleContext";
+import { signOutDriver } from "../../services/driverSession";
 import Icon from "../common/Icon";
 
 // Keyed by the backend's session:error messages
@@ -8,9 +9,9 @@ const SESSION_MESSAGES = {
   "User not found": {
     icon: "person",
     title: "Account not found",
-    detail: (username) =>
-      `There's no account called "${username}". Check the spelling and try again.`,
-    showHomeLink: true,
+    detail: () =>
+      "This account no longer exists. Log in with another one.",
+    showLogOut: true,
   },
   "No device is associated with this account": {
     icon: "phone",
@@ -56,11 +57,12 @@ const UNKNOWN_ERROR = {
  */
 function SessionOverlay() {
   const {
-    username,
     myVehicleId,
     backendConnected,
     sessionError,
   } = useVehicle();
+
+  const navigate = useNavigate();
 
   if (myVehicleId) {
     return null;
@@ -81,7 +83,7 @@ function SessionOverlay() {
 
         <h1>{content.title}</h1>
 
-        <p>{content.detail(username)}</p>
+        <p>{content.detail()}</p>
 
         {content.waiting && (
           <div
@@ -91,10 +93,17 @@ function SessionOverlay() {
           />
         )}
 
-        {content.showHomeLink && (
-          <Link to="/" className="cv-button">
-            Enter a different username
-          </Link>
+        {content.showLogOut && (
+          <button
+            type="button"
+            className="cv-button"
+            onClick={() => {
+              signOutDriver();
+              navigate("/", { replace: true });
+            }}
+          >
+            Log out
+          </button>
         )}
       </div>
     </div>

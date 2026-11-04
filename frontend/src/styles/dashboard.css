@@ -932,6 +932,26 @@
   margin-top: 22px;
 }
 
+.cv-field--close {
+  margin-top: 12px;
+}
+
+.cv-form-note {
+  margin-top: 16px !important;
+  color: var(--cv-text-3) !important;
+  font-size: 13px !important;
+}
+
+.cv-form-error {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 92, 99, 0.12);
+  color: #ff9ca4;
+  font-size: 14px;
+}
+
 .cv-overlay-icon {
   display: flex;
   align-items: center;

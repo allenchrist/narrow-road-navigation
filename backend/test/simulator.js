@@ -14,7 +14,7 @@
  * Environment:
  *   BACKEND_URL   default http://localhost:5000
  *
- * Uses the demo account sim_car_a, creating it on first run.
+ * Uses the demo accounts sim_car_a and sim_car_b, creating them on first run.
  */
 
 const WebSocket = require("ws");
@@ -25,12 +25,10 @@ const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:5000").replace
 const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 
 // This account can only see its own demo dashboard, so a fixed password is fine
-const DEMO_USERNAME = "sim_car_a";
-const DEMO_EMAIL = "sim_car_a@example.com";
 const DEMO_PASSWORD = "simulator-demo-only";
 
-const CAR_A_DEVICE = "simulator-car-a";
-const CAR_B_DEVICE = "simulator-car-b";
+const CAR_A = { username: "sim_car_a", deviceId: "simulator-car-a" };
+const CAR_B = { username: "sim_car_b", deviceId: "simulator-car-b" };
 
 const TICK_MS = 1000;
 const START_DELAY_MS = 5000;
@@ -60,10 +58,13 @@ async function postJson(path, body, token) {
   return { status: response.status, body: await response.json() };
 }
 
-async function prepareDemoAccount() {
+/**
+ * Creates the account if needed, links its device, and returns its login token.
+ */
+async function prepareDemoAccount({ username, deviceId }) {
   const registered = await postJson("/api/auth/register", {
-    username: DEMO_USERNAME,
-    email: DEMO_EMAIL,
+    username,
+    email: `${username}@example.com`,
     password: DEMO_PASSWORD,
   });
 
@@ -72,7 +73,7 @@ async function prepareDemoAccount() {
   }
 
   const login = await postJson("/api/auth/login", {
-    username: DEMO_USERNAME,
+    username,
     password: DEMO_PASSWORD,
   });
 
@@ -82,17 +83,22 @@ async function prepareDemoAccount() {
 
   const device = await postJson(
     "/api/auth/device",
-    { deviceId: CAR_A_DEVICE },
+    { deviceId },
     login.body.token
   );
 
   if (device.status !== 200) {
     throw new Error(`Could not link the demo device: ${device.body.message}`);
   }
+
+  return login.body.token;
 }
 
-async function getRoads() {
-  const response = await fetch(`${BACKEND_URL}/api/narrow-roads`);
+async function getRoads(token) {
+  const response = await fetch(`${BACKEND_URL}/api/narrow-roads`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
   const { roads } = await response.json();
 
   if (!roads || roads.length === 0) {
@@ -102,11 +108,14 @@ async function getRoads() {
   return roads;
 }
 
-async function getAlert(vehicleId) {
-  const response = await fetch(`${BACKEND_URL}/health`);
-  const { vehicles } = await response.json();
+async function getAlert(token) {
+  const response = await fetch(`${BACKEND_URL}/api/auth/vehicle`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  return vehicles.find((v) => v.vehicleId === vehicleId)?.narrowRoadAlert?.kind ?? "UNKNOWN";
+  const { vehicle } = await response.json();
+
+  return vehicle?.narrowRoadAlert?.kind ?? "UNKNOWN";
 }
 
 // ── Route: a straight line through the road, extended past both ends ──────────
@@ -210,9 +219,11 @@ function chooseRoad(roads) {
 
 // ── Simulated phones ──────────────────────────────────────────────────────────
 
-function connectCar(deviceId) {
+function connectCar({ deviceId }, token) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(VEHICLE_WS_URL);
+    const ws = new WebSocket(VEHICLE_WS_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     ws.on("open", () => {
       ws.send(JSON.stringify({ type: "register", deviceId }));
@@ -347,7 +358,7 @@ async function runPhase(phase, route, carA, carB) {
     await delay(TICK_MS);
   }
 
-  const alert = await getAlert(carA.vehicleId);
+  const alert = await getAlert(carA.token);
   const passed = alert === phase.expected;
 
   console.log(
@@ -377,16 +388,18 @@ async function main() {
 
   console.log(`Backend: ${BACKEND_URL}`);
 
-  await prepareDemoAccount();
+  const carAToken = await prepareDemoAccount(CAR_A);
+  const carBToken = await prepareDemoAccount(CAR_B);
 
-  const { road, route, nearbyRoads } = chooseRoad(await getRoads());
+  const { road, route, nearbyRoads } = chooseRoad(await getRoads(carAToken));
 
   console.log(
     `Road: ${road.name} (${Math.round(route.length)} m, ${nearbyRoads} other roads nearby)`
   );
 
-  const carA = await connectCar(CAR_A_DEVICE);
-  const carB = await connectCar(CAR_B_DEVICE);
+  const carA = await connectCar(CAR_A, carAToken);
+  carA.token = carAToken;
+  const carB = await connectCar(CAR_B, carBToken);
 
   const stop = () => {
     carA.ws.close();
@@ -397,7 +410,7 @@ async function main() {
   process.on("SIGINT", stop);
 
   console.log(`Car A: ${carA.vehicleId}, Car B: ${carB.vehicleId}`);
-  console.log(`\nOpen the dashboard as Car A: /${DEMO_USERNAME}`);
+  console.log(`\nOpen the dashboard as Car A: /${CAR_A.username}`);
   console.log(`Click once on the page to allow alert sounds. Starting in ${START_DELAY_MS / 1000}s...`);
 
   await delay(START_DELAY_MS);

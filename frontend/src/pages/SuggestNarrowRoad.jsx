@@ -13,9 +13,7 @@ import "leaflet/dist/leaflet.css";
 
 import Icon from "../components/common/Icon";
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5000";
+import { BACKEND_URL } from "../config";
 
 // --------------------------------------------------
 // Map click handler
@@ -286,7 +284,7 @@ function SuggestNarrowRoad() {
 
       const response =
         await fetch(
-          `${API_URL}/api/narrow-road-suggestions`,
+          `${BACKEND_URL}/api/narrow-road-suggestions`,
           {
             method: "POST",
 
@@ -654,6 +652,7 @@ function SuggestNarrowRoad() {
             <input
               type="text"
               value={roadName}
+              maxLength={100}
               onChange={(event) =>
                 setRoadName(
                   event.target.value
@@ -668,6 +667,7 @@ function SuggestNarrowRoad() {
 
             <textarea
               value={reason}
+              maxLength={500}
               onChange={(event) =>
                 setReason(
                   event.target.value

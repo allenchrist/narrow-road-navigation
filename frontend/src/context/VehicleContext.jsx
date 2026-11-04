@@ -5,9 +5,13 @@ import {
   useEffect,
 } from "react";
 
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
-import { getVehicleSocket } from "../services/socket";
+import { signOutDriver } from "../services/driverSession";
+import {
+  getVehicleSocket,
+  SOCKET_NOT_AUTHORIZED,
+} from "../services/socket";
 
 const VehicleContext = createContext(null);
 
@@ -25,10 +29,6 @@ const EMPTY_VEHICLE = {
   connected: false,
   active: false,
 
-  insideNarrowRoad: false,
-  narrowRoadId: null,
-  narrowRoadName: null,
-
   narrowRoadAlert: null,
 };
 
@@ -44,6 +44,7 @@ function getGpsStatus(backendConnected, myVehicleId, ego) {
 
 export function VehicleProvider({ children }) {
   const { username } = useParams();
+  const navigate = useNavigate();
 
   const [vehicles, setVehicles] =
     useState({});
@@ -67,9 +68,22 @@ export function VehicleProvider({ children }) {
       getVehicleSocket();
 
     function identifyDashboard() {
-      socket.emit("session:identify", {
-        username,
-      });
+      socket.emit("session:identify");
+    }
+
+    // The login has expired, so the driver needs to log in again
+    function onConnectError(error) {
+      if (error.message === SOCKET_NOT_AUTHORIZED) {
+        signOutDriver();
+
+        navigate("/", {
+          replace: true,
+          state: {
+            username,
+            reason: "Your login has ended. Please log in again.",
+          },
+        });
+      }
     }
 
     function onConnect() {
@@ -143,6 +157,8 @@ export function VehicleProvider({ children }) {
     }
 
     socket.on("connect", onConnect);
+    socket.on("session:changed", identifyDashboard);
+    socket.on("connect_error", onConnectError);
     socket.on("disconnect", onDisconnect);
     socket.on("vehicles:update", onVehiclesUpdate);
     socket.on("session:assigned", onSessionAssigned);
@@ -158,12 +174,14 @@ export function VehicleProvider({ children }) {
 
     return () => {
       socket.off("connect", onConnect);
+      socket.off("session:changed", identifyDashboard);
+      socket.off("connect_error", onConnectError);
       socket.off("disconnect", onDisconnect);
       socket.off("vehicles:update", onVehiclesUpdate);
       socket.off("session:assigned", onSessionAssigned);
       socket.off("session:error", onSessionError);
     };
-  }, [username]);
+  }, [username, navigate]);
 
   // --------------------------------------------------
   // Keep trying until this dashboard has a vehicle.
@@ -179,9 +197,7 @@ export function VehicleProvider({ children }) {
       getVehicleSocket();
 
     const interval = setInterval(() => {
-      socket.emit("session:identify", {
-        username,
-      });
+      socket.emit("session:identify");
     }, IDENTIFY_RETRY_MS);
 
     return () =>
@@ -189,7 +205,6 @@ export function VehicleProvider({ children }) {
   }, [
     backendConnected,
     myVehicleId,
-    username,
   ]);
 
   const egoVehicle =

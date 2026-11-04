@@ -35,6 +35,23 @@ function authenticateToken(req, res, next) {
   }
 }
 
+/**
+ * Only allows a token from the admin login. A driver's login token is
+ * valid, but it doesn't carry the admin role.
+ */
+function requireAdmin(req, res, next) {
+  authenticateToken(req, res, () => {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Administrator access required.",
+      });
+    }
+
+    next();
+  });
+}
+
 module.exports = {
   authenticateToken,
+  requireAdmin,
 };

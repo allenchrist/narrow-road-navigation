@@ -1,13 +1,30 @@
 const { Pool } = require("pg");
 
+/**
+ * sslmode in the address would override the ssl setting below, and the
+ * pg library warns that its meaning is changing, so it's removed here.
+ */
+function withoutSslMode(connectionString) {
+  if (!connectionString) {
+    return connectionString;
+  }
+
+  const url = new URL(connectionString);
+
+  url.searchParams.delete("sslmode");
+
+  return url.toString();
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: withoutSslMode(process.env.DATABASE_URL),
 
   // Neon can take a few seconds to wake after being idle
   connectionTimeoutMillis: 15000,
 
+  // Encrypted, and checks the server really is who it claims to be
   ssl: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
   },
 });
 
@@ -15,26 +32,6 @@ pool.on("error", (err) => {
   console.error("[Database] Unexpected PostgreSQL error:", err);
 });
 
-async function testDatabaseConnection() {
-  try {
-    const result = await pool.query("SELECT NOW()");
-
-    console.log(
-      `[Database] PostgreSQL connected successfully at ${result.rows[0].now}`
-    );
-
-    return true;
-  } catch (error) {
-    console.error(
-      "[Database] PostgreSQL connection failed:",
-      error.message
-    );
-
-    return false;
-  }
-}
-
 module.exports = {
   pool,
-  testDatabaseConnection,
 };

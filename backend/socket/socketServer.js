@@ -1,6 +1,10 @@
 const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
 const config = require("../config/config");
-const { getAllVehicles } = require("../services/vehicleState");
+const {
+  getVehiclesForDashboard,
+  getVisibleVehicles,
+} = require("../services/vehicleState");
 const {
   getVehicleForDevice,
 } = require("../services/deviceRegistry");
@@ -8,11 +12,15 @@ const {
 const {
   findUserByUsername,
 } = require("../services/authService");
-const {
-  getPairing,
-} = require("../services/pairingService");
 
 let io = null;
+
+// Also checked by the website, which then asks the driver to log in again
+const NOT_AUTHORIZED = "Not authorized";
+
+function userRoom(username) {
+  return `user:${username}`;
+}
 
 function initSocketServer(httpServer) {
   io = new Server(httpServer, {
@@ -21,17 +29,35 @@ function initSocketServer(httpServer) {
       methods: ["GET", "POST"],
       credentials: false,
     },
-    allowEIO3: true,
+  });
+
+  // Live positions are only for logged-in drivers. The username comes from
+  // the login token, so nobody can claim to be someone else.
+  io.use((socket, next) => {
+    try {
+      const { username } = jwt.verify(
+        socket.handshake.auth?.token,
+        process.env.JWT_SECRET
+      );
+
+      if (!username) {
+        throw new Error("Not a driver's token");
+      }
+
+      socket.data.username = username;
+
+      next();
+    } catch {
+      next(new Error(NOT_AUTHORIZED));
+    }
   });
 
   io.on("connection", (socket) => {
+    socket.join(userRoom(socket.data.username));
+
     console.log(
       `[Socket.IO] Dashboard connected: ${socket.id}`
     );
-
-    socket.emit("vehicles:update", {
-      vehicles: getAllVehicles(),
-    });
 
     // --------------------------------------------------
     // AUTOMATIC USERNAME → DEVICE → VEHICLE IDENTIFICATION
@@ -39,41 +65,11 @@ function initSocketServer(httpServer) {
 
     socket.on(
       "session:identify",
-      async (payload) => {
-        const username = payload?.username;
+      async () => {
+        const normalizedUsername = socket.data.username;
 
-        console.log(
-          `[Socket.IO] session:identify received from ${socket.id}:`,
-          username
-        );
-
-        if (
-          !username ||
-          typeof username !== "string"
-        ) {
-          socket.emit("session:error", {
-            message: "Invalid username",
-          });
-
-          return;
-        }
-
-        const normalizedUsername =
-          username.trim();
-
-        if (!normalizedUsername) {
-          socket.emit("session:error", {
-            message: "Invalid username",
-          });
-
-          return;
-        }
-
-        // A dashboard can identify again on an existing socket,
-        // so it needs the current fleet here as well.
-        socket.emit("vehicles:update", {
-          vehicles: getAllVehicles(),
-        });
+        // Set again below, if this account still has a vehicle
+        socket.data.vehicleId = null;
 
         try {
           // ----------------------------------------------
@@ -86,10 +82,6 @@ function initSocketServer(httpServer) {
             );
 
           if (!user) {
-            console.warn(
-              `[Socket.IO] User not found: ${normalizedUsername}`
-            );
-
             socket.emit("session:error", {
               message: "User not found",
             });
@@ -104,17 +96,7 @@ function initSocketServer(httpServer) {
           const deviceId =
             user.device_id;
 
-          console.log(
-            `[Socket.IO] User lookup: ${normalizedUsername} → ${
-              deviceId || "NO DEVICE"
-            }`
-          );
-
           if (!deviceId) {
-            console.warn(
-              `[Socket.IO] No device associated with user: ${normalizedUsername}`
-            );
-
             socket.emit("session:error", {
               message:
                 "No device is associated with this account",
@@ -132,17 +114,7 @@ function initSocketServer(httpServer) {
               deviceId
             );
 
-          console.log(
-            `[Socket.IO] Device lookup: ${deviceId} → ${
-              vehicleId || "NOT FOUND"
-            }`
-          );
-
           if (!vehicleId) {
-            console.warn(
-              `[Socket.IO] Device not registered: ${deviceId}`
-            );
-
             socket.emit("session:error", {
               message:
                 "Device is not currently connected",
@@ -155,18 +127,24 @@ function initSocketServer(httpServer) {
           // Dashboard successfully identified
           // ----------------------------------------------
 
-          console.log(
-            `[Socket.IO] Dashboard ${socket.id} identified as ${vehicleId} for user ${normalizedUsername}`
-          );
+          socket.data.vehicleId = vehicleId;
 
           socket.emit(
             "session:assigned",
             {
-              deviceId,
               vehicleId,
               username: normalizedUsername,
             }
           );
+
+          // A dashboard can identify again on an existing socket,
+          // so it needs the current vehicles here as well.
+          socket.emit("vehicles:update", {
+            vehicles: getVisibleVehicles(
+              getVehiclesForDashboard(),
+              vehicleId
+            ),
+          });
 
         } catch (error) {
           console.error(
@@ -179,65 +157,6 @@ function initSocketServer(httpServer) {
               "Failed to identify dashboard",
           });
         }
-      }
-    );
-
-    // --------------------------------------------------
-    // OPTIONAL MANUAL PAIRING
-    // --------------------------------------------------
-
-    socket.on(
-      "session:pair",
-      (payload) => {
-        const pairingCode = payload?.pairingCode;
-
-        if (
-          !pairingCode ||
-          typeof pairingCode !== "string"
-        ) {
-          socket.emit("session:error", {
-            message:
-              "Invalid pairing code",
-          });
-
-          return;
-        }
-
-        const normalizedCode =
-          pairingCode.trim();
-
-        const pairing =
-          getPairing(normalizedCode);
-
-        if (!pairing) {
-          console.warn(
-            `[Socket.IO] Invalid pairing code ${normalizedCode}`
-          );
-
-          socket.emit("session:error", {
-            message:
-              "Invalid or expired pairing code",
-          });
-
-          return;
-        }
-
-        const {
-          deviceId,
-          vehicleId,
-        } = pairing;
-
-        console.log(
-          `[Socket.IO] Dashboard ${socket.id} paired with ${vehicleId} via code ${normalizedCode}`
-        );
-
-        socket.emit(
-          "session:assigned",
-          {
-            deviceId,
-            vehicleId,
-          }
-        );
       }
     );
 
@@ -259,15 +178,37 @@ function initSocketServer(httpServer) {
 // Broadcast full fleet to all dashboards
 // --------------------------------------------------
 
+// This account's phone changed, so its car screens must look it up again
+function notifyDeviceChanged(username) {
+  io?.to(userRoom(username)).emit("session:changed");
+}
+
+// Also closes the HTTP server, then calls onClosed
+function closeSocketServer(onClosed) {
+  if (!io) {
+    onClosed();
+    return;
+  }
+
+  io.close(onClosed);
+}
+
+// Each dashboard gets its own list, containing only what that driver may see
 function broadcastFleetUpdate() {
   if (!io) return;
 
-  io.emit("vehicles:update", {
-    vehicles: getAllVehicles(),
-  });
+  const vehicles = getVehiclesForDashboard();
+
+  for (const socket of io.of("/").sockets.values()) {
+    socket.emit("vehicles:update", {
+      vehicles: getVisibleVehicles(vehicles, socket.data.vehicleId),
+    });
+  }
 }
 
 module.exports = {
   initSocketServer,
   broadcastFleetUpdate,
+  notifyDeviceChanged,
+  closeSocketServer,
 };

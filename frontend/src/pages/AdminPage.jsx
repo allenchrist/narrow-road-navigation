@@ -14,9 +14,7 @@ import "leaflet/dist/leaflet.css";
 
 import Icon from "../components/common/Icon";
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5000";
+import { adminFetch } from "../services/adminApi";
 
 // --------------------------------------------------
 // Map click handler
@@ -76,7 +74,7 @@ function MapController({ onReady }) {
 // Admin Page
 // --------------------------------------------------
 
-function AdminPage() {
+function AdminPage({ onSignOut }) {
   // --------------------------------------------------
   // Saved official narrow roads
   // --------------------------------------------------
@@ -179,9 +177,14 @@ function AdminPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/api/narrow-roads`
+      const response = await adminFetch(
+        "/api/narrow-roads"
       );
+
+      // The login expired, and this page is about to close
+      if (response.status === 401) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -221,9 +224,14 @@ function AdminPage() {
       setSuggestionsLoading(true);
       setSuggestionsError("");
 
-      const response = await fetch(
-        `${API_URL}/api/narrow-road-suggestions`
+      const response = await adminFetch(
+        "/api/narrow-road-suggestions"
       );
+
+      // The login expired, and this page is about to close
+      if (response.status === 401) {
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -467,10 +475,10 @@ function AdminPage() {
         editingRoadId !== null;
 
       const url = isEditing
-        ? `${API_URL}/api/narrow-roads/${editingRoadId}`
-        : `${API_URL}/api/narrow-roads`;
+        ? `/api/narrow-roads/${editingRoadId}`
+        : "/api/narrow-roads";
 
-      const response = await fetch(url, {
+      const response = await adminFetch(url, {
         method: isEditing
           ? "PUT"
           : "POST",
@@ -546,8 +554,8 @@ function AdminPage() {
 
     try {
       const response =
-        await fetch(
-          `${API_URL}/api/narrow-roads/${id}`,
+        await adminFetch(
+          `/api/narrow-roads/${id}`,
           {
             method: "DELETE",
           }
@@ -636,8 +644,8 @@ function AdminPage() {
       setSuggestionsError("");
 
       const response =
-        await fetch(
-          `${API_URL}/api/narrow-road-suggestions/${suggestion.id}/status`,
+        await adminFetch(
+          `/api/narrow-road-suggestions/${suggestion.id}/status`,
           {
             method: "PUT",
 
@@ -780,6 +788,14 @@ function AdminPage() {
         ------------------------------------------------ */}
 
         <div className="admin-actions">
+
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="admin-secondary-button"
+          >
+            Sign out
+          </button>
 
           {!drawing ? (
 
@@ -1281,6 +1297,7 @@ function AdminPage() {
               <input
                 type="text"
                 value={roadName}
+                maxLength={100}
                 onChange={(event) =>
                   setRoadName(
                     event.target.value
