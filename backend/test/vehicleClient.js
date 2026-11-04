@@ -9,7 +9,7 @@
  *
  * Behaviour mirrors the real Android app:
  *
- *   1. Connect to ws://localhost:5000/vehicle
+ *   1. Connect to ws://127.0.0.1:5000/vehicle
  *   2. Send:  { type: "register", deviceId: "<persistent-id>" }
  *   3. Wait for: { type: "registered", deviceId: "...", vehicleId: "VEHICLE_001" }
  *   4. Store the assigned vehicleId for this session
@@ -27,7 +27,7 @@
 const WebSocket = require("ws");
 
 const BACKEND_WS_URL =
-  process.env.BACKEND_WS_URL || "ws://localhost:5000/vehicle";
+  process.env.BACKEND_WS_URL || "ws://127.0.0.1:5000/vehicle";
 
 const RECONNECT_DELAY_MS = 3000;
 const TELEMETRY_INTERVAL_MS = 1000;

@@ -12,7 +12,7 @@
  *   npm run simulate -- --loop      repeat until stopped with Ctrl+C
  *
  * Environment:
- *   BACKEND_URL         default http://localhost:5000
+ *   BACKEND_URL         default http://127.0.0.1:5000
  *   SIMULATOR_PASSWORD  set this when using any database other people can reach
  *
  * Uses the demo accounts sim_car_a and sim_car_b, creating them on first run.
@@ -22,7 +22,7 @@ const WebSocket = require("ws");
 const { isPointInsidePolygon } = require("../services/geofenceService");
 const { nearestPointOnPolygon } = require("../utils/geo");
 
-const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:5000").replace(/\/$/, "");
+const BACKEND_URL = (process.env.BACKEND_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
 const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 
 // This account can only see its own demo dashboard, so a fixed password is fine

@@ -1,0 +1,79 @@
+# Runs on every push. None of this touches the real database: the server
+# checks use a throwaway Postgres, and the values below are only for it.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: checks-only
+          POSTGRES_DB: connected_vehicle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:checks-only@localhost:5432/connected_vehicle
+      JWT_SECRET: checks-only-not-a-real-secret-0123456789
+      ADMIN_PASSWORD: checks-only-admin
+      PORT: 5000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Alert rules
+        run: npm run test:alerts
+      - name: Input validation
+        run: npm run test:validation
+      - name: Set up the database
+        run: npm run db:init
+      - name: Start the server
+        run: |
+          npm start > server.log 2>&1 &
+          curl --silent --fail --retry 30 --retry-delay 1 --retry-connrefused http://127.0.0.1:5000/health
+      - name: Smoke test
+        run: npm test
+      - name: Two-car simulator
+        run: npm run simulate
+      - name: Server log
+        if: failure()
+        run: cat server.log

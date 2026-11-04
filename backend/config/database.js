@@ -16,6 +16,17 @@ function withoutSslMode(connectionString) {
   return url.toString();
 }
 
+// A database on this same machine, such as for automatic checks, has no SSL
+function isOnThisMachine(connectionString) {
+  if (!connectionString) {
+    return false;
+  }
+
+  return ["localhost", "127.0.0.1", "[::1]"].includes(
+    new URL(connectionString).hostname
+  );
+}
+
 const pool = new Pool({
   connectionString: withoutSslMode(process.env.DATABASE_URL),
 
@@ -23,9 +34,9 @@ const pool = new Pool({
   connectionTimeoutMillis: 15000,
 
   // Encrypted, and checks the server really is who it claims to be
-  ssl: {
-    rejectUnauthorized: true,
-  },
+  ssl: isOnThisMachine(process.env.DATABASE_URL)
+    ? false
+    : { rejectUnauthorized: true },
 });
 
 pool.on("error", (err) => {
