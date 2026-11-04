@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "lint": "eslint .",
     "dev": "nodemon server.js",
     "db:init": "node database/init.js",
     "simulate": "node test/simulator.js",
@@ -23,6 +24,9 @@
     "ws": "^8.17.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
     "nodemon": "^3.1.4"
   }
 }

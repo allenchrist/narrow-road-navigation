@@ -15,7 +15,8 @@ import {
 
 const VehicleContext = createContext(null);
 
-const IDENTIFY_RETRY_MS = 5000;
+// A backup only: the server says when this account's phone connects
+const IDENTIFY_RETRY_MS = 60000;
 
 const EMPTY_VEHICLE = {
   vehicleId: null,
@@ -184,8 +185,8 @@ export function VehicleProvider({ children }) {
   }, [username, navigate]);
 
   // --------------------------------------------------
-  // Keep trying until this dashboard has a vehicle.
-  // The phone may connect after the dashboard opens.
+  // Keep checking until this dashboard has a vehicle,
+  // in case a message from the server was missed.
   // --------------------------------------------------
 
   useEffect(() => {

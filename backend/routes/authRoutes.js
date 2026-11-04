@@ -7,7 +7,7 @@ const {
   findUserByUsername,
   isUsernameTaken,
   isEmailTaken,
-  findUserByDeviceId,
+  findUserForLogin,
   linkDeviceToUser,
   unlinkDeviceFromUser,
 } = require("../services/authService");
@@ -137,7 +137,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const user = await findUserByUsername(username);
+    const user = await findUserForLogin(username.trim());
 
     const passwordMatches =
       user && (await bcrypt.compare(password, user.password_hash));

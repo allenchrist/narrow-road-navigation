@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const { pool } = require("../config/database");
 
 // Telemetry checks every road on each GPS packet, so all roads are kept
@@ -60,7 +62,7 @@ async function createNarrowRoad(
     RETURNING *;
     `,
     [
-      `NR_${Date.now()}`,
+      `NR_${crypto.randomUUID()}`,
       String(name).trim(),
       JSON.stringify(polygon),
     ]

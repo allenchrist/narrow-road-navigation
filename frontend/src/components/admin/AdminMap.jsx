@@ -1,55 +1,19 @@
-import { useEffect } from "react";
-
 import {
   MapContainer,
   TileLayer,
   Polygon,
   Polyline,
   CircleMarker,
-  useMap,
-  useMapEvents,
 } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
 
-function DrawingLayer({ drawing, onPointAdded }) {
-  useMapEvents({
-    click(event) {
-      if (!drawing) return;
-
-      const { lat, lng } = event.latlng;
-
-      onPointAdded([lat, lng]);
-    },
-  });
-
-  return null;
-}
-
-function SearchController({ searchLocation }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!searchLocation) return;
-
-    map.flyTo([searchLocation.lat, searchLocation.lon], 17, {
-      duration: 1.2,
-    });
-  }, [searchLocation, map]);
-
-  return null;
-}
-
-// Hands the map to the page, which moves it from the road and suggestion lists
-function MapController({ onReady }) {
-  const map = useMap();
-
-  useEffect(() => {
-    onReady(map);
-  }, [map, onReady]);
-
-  return null;
-}
+import SearchMatches from "../common/SearchMatches";
+import {
+  DrawingLayer,
+  FlyToLocation,
+  MapController,
+} from "../map/mapHelpers";
 
 function AdminMap({ search, editor, review, onMapReady }) {
   const { searchLocation, searchError } = search;
@@ -73,7 +37,11 @@ function AdminMap({ search, editor, review, onMapReady }) {
 
         <MapController onReady={onMapReady} />
 
-        <SearchController searchLocation={searchLocation} />
+        <FlyToLocation
+          location={searchLocation}
+          zoom={17}
+          duration={1.2}
+        />
 
         <DrawingLayer
           drawing={drawing}
@@ -178,6 +146,8 @@ function AdminMap({ search, editor, review, onMapReady }) {
           {searchError}
         </div>
       )}
+
+      <SearchMatches search={search} />
 
       {drawing && (
 

@@ -12,12 +12,13 @@ import { useSuggestionReview } from "../hooks/useSuggestionReview";
 function AdminPage({ onSignOut }) {
   const [map, setMap] = useState(null);
 
-  const search = useLocationSearch();
+  const search = useLocationSearch(map);
   const editor = useRoadEditor(map);
   const review = useSuggestionReview(map, editor.loadRoads);
 
   // Marking a road takes over the map, so no suggestion stays selected
   function startDrawing() {
+    search.clearMatches();
     editor.startDrawing();
     review.clearSelection();
   }

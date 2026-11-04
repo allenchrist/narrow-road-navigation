@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const { pool } = require("../config/database");
 const {
   loadNarrowRoads,
@@ -50,7 +52,7 @@ async function createSuggestion({ name, polygon, reason, submittedBy }) {
     RETURNING *;
     `,
     [
-      `SUG_${Date.now()}`,
+      `SUG_${crypto.randomUUID()}`,
       name.trim(),
       JSON.stringify(polygon),
       typeof reason === "string" ? reason.trim() : "",

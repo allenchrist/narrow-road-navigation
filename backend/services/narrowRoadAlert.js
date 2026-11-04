@@ -13,6 +13,10 @@ const BEHIND_ANGLE = 100;
 // Closer than this, GPS error can't show which vehicle is ahead
 const BEHIND_MIN_DISTANCE_M = 15;
 
+// After a longer gap in updates, the car may have left and come back, so it
+// counts as entering again. A short gap, like a weak signal, keeps its place.
+const ENTRY_MEMORY_MS = 60000;
+
 /**
  * How another vehicle is moving relative to this one:
  * ONCOMING, SAME_DIRECTION, or UNKNOWN when either is stopped
@@ -49,6 +53,20 @@ function isBehind(vehicle, other) {
 
 function sharedRoadIds(vehicle, other) {
   return vehicle.insideRoadIds.filter((id) => other.insideRoadIds.includes(id));
+}
+
+/**
+ * When the vehicle entered each road it's now inside, as roadId → time.
+ */
+function updateRoadEntries(previousEntries, insideRoadIds, lastCheckedAt, now) {
+  const remembered =
+    lastCheckedAt !== null && now - lastCheckedAt <= ENTRY_MEMORY_MS
+      ? previousEntries
+      : {};
+
+  return Object.fromEntries(
+    insideRoadIds.map((id) => [id, remembered[id] ?? now])
+  );
 }
 
 /**
@@ -198,4 +216,9 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   return alert("IN_NARROW_ROAD", "caution");
 }
 
-module.exports = { buildNarrowRoadAlert, createRightOfWayTracker, NO_ALERT };
+module.exports = {
+  buildNarrowRoadAlert,
+  createRightOfWayTracker,
+  updateRoadEntries,
+  NO_ALERT,
+};

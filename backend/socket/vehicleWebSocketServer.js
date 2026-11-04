@@ -28,10 +28,11 @@ const {
   updateVehicleTelemetry,
   setVehicleConnected,
 } = require("../services/vehicleState");
-const { broadcastFleetUpdate } = require("./socketServer");
+const { broadcastFleetUpdate, notifyDeviceChanged } = require("./socketServer");
 const { allocateVehicleId } = require("../services/vehicleIdAllocator");
 const {
   validateDeviceId,
+  areDevicesLoaded,
   registerDevice,
   hasDevice,
   getVehicleForDevice,
@@ -42,6 +43,7 @@ const {
   getDeviceCount,
 } = require("../services/deviceRegistry");
 
+const { findUserByDeviceId } = require("../services/authService");
 const { isDeviceAuthorized } = require("../services/vehicleAuth");
 const { createRateLimiter, getClientIp } = require("../utils/rateLimit");
 
@@ -82,6 +84,9 @@ const CLOSE_SERVER_RESTARTING = 1001;
 
 // A temporary server fault. Phones reconnect after this too.
 const CLOSE_SERVER_ERROR = 1011;
+
+// The server is still starting. Phones reconnect after this too.
+const CLOSE_TRY_AGAIN_LATER = 1013;
 
 // The phone must log in again. It doesn't reconnect after this.
 const CLOSE_NOT_AUTHORIZED = 4004;
@@ -170,6 +175,11 @@ function initVehicleWebSocketServer(httpServer, path) {
           return;
         }
 
+        if (!areDevicesLoaded()) {
+          ws.close(CLOSE_TRY_AGAIN_LATER, "Server is starting");
+          return;
+        }
+
         const clientAddress = getClientIp(req);
 
         if (
@@ -234,6 +244,17 @@ function initVehicleWebSocketServer(httpServer, path) {
           newDevicesOverall.record("all");
           registerVehicle(vehicleId);
           console.log(`[Vehicle WS] New device ${deviceId} → ${vehicleId} (allocated)`);
+
+          // Its car screen may be open and waiting for this vehicle
+          findUserByDeviceId(deviceId)
+            .then((user) => {
+              if (user) {
+                notifyDeviceChanged(user.username);
+              }
+            })
+            .catch((error) => {
+              console.error(`[Vehicle WS] Couldn't notify the car screen: ${error.message}`);
+            });
         }
 
         registered = true;

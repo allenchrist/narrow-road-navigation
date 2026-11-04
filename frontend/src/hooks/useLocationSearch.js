@@ -1,12 +1,43 @@
 import { useState } from "react";
 
+// Search results within about this distance of the map are preferred
+const SEARCH_AREA_DEGREES = 0.5;
+
+function searchUrl(query, map) {
+  const center = map?.getCenter();
+
+  // A preference only, so a place in another city can still be found
+  const area = center
+    ? `&viewbox=${[
+        center.lng - SEARCH_AREA_DEGREES,
+        center.lat + SEARCH_AREA_DEGREES,
+        center.lng + SEARCH_AREA_DEGREES,
+        center.lat - SEARCH_AREA_DEGREES,
+      ].join(",")}`
+    : "";
+
+  return (
+    `https://nominatim.openstreetmap.org/search` +
+    `?format=json&limit=5${area}&q=${encodeURIComponent(query)}`
+  );
+}
+
+const toLocation = (result) => ({
+  lat: Number(result.lat),
+  lon: Number(result.lon),
+  displayName: result.display_name,
+});
+
 /**
- * The admin page's location search, using OpenStreetMap.
+ * Finds a place using OpenStreetMap, preferring results near the map.
+ * The best match goes on the map, and the others are offered in case
+ * it's the wrong place.
  */
-export function useLocationSearch() {
+export function useLocationSearch(map) {
   const [searchText, setSearchText] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchLocation, setSearchLocation] = useState(null);
+  const [otherMatches, setOtherMatches] = useState([]);
   const [searchError, setSearchError] = useState("");
 
   async function searchLocationOnMap() {
@@ -17,15 +48,16 @@ export function useLocationSearch() {
       return;
     }
 
+    if (searching) {
+      return;
+    }
+
     try {
       setSearching(true);
       setSearchError("");
+      setOtherMatches([]);
 
-      const url =
-        `https://nominatim.openstreetmap.org/search` +
-        `?format=json&limit=1&q=${encodeURIComponent(query)}`;
-
-      const response = await fetch(url, {
+      const response = await fetch(searchUrl(query, map), {
         headers: {
           Accept: "application/json",
         },
@@ -42,17 +74,22 @@ export function useLocationSearch() {
         return;
       }
 
-      const lat = Number(results[0].lat);
-      const lon = Number(results[0].lon);
+      const [best, ...others] = results
+        .map(toLocation)
+        .filter(
+          (location) =>
+            Number.isFinite(location.lat) && Number.isFinite(location.lon)
+        );
 
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      if (!best) {
         setSearchError("Invalid location returned");
         return;
       }
 
-      setSearchLocation({ lat, lon });
+      setSearchLocation(best);
+      setOtherMatches(others);
     } catch (err) {
-      console.error("[Admin] Location search failed:", err);
+      console.error("[Location Search] Search failed:", err);
 
       setSearchError("Unable to search location");
     } finally {
@@ -60,12 +97,21 @@ export function useLocationSearch() {
     }
   }
 
+  function chooseMatch(match) {
+    setSearchLocation(match);
+    setOtherMatches([]);
+  }
+
   return {
     searchText,
     setSearchText,
     searching,
     searchLocation,
+    setSearchLocation,
+    otherMatches,
     searchError,
     searchLocationOnMap,
+    chooseMatch,
+    clearMatches: () => setOtherMatches([]),
   };
 }

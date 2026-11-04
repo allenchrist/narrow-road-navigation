@@ -16,6 +16,7 @@ import "leaflet/dist/leaflet.css";
 import { useVehicle } from "../../context/VehicleContext";
 import { haversineDistance } from "../../utils/haversine";
 import Icon from "../common/Icon";
+import { MapController } from "./mapHelpers";
 import VehicleMarker from "./VehicleMarker";
 
 const DRIVING_ZOOM = 17;
@@ -82,16 +83,6 @@ function FollowEgo({
       duration: 0.8,
     });
   }, [lat, lon, following, map]);
-
-  return null;
-}
-
-function MapController({ onReady }) {
-  const map = useMap();
-
-  useEffect(() => {
-    onReady(map);
-  }, [map, onReady]);
 
   return null;
 }

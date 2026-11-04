@@ -92,7 +92,7 @@ function createSimulatedPhone({ label, deviceId, startPos }) {
       }
     });
 
-    ws.on("close", (code, reason) => {
+    ws.on("close", (code) => {
       stopTelemetry();
       const prev = assignedVehicleId;
       assignedVehicleId = null;

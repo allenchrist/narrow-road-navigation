@@ -26,6 +26,28 @@ async function findUserByUsername(username) {
   return result.rows[0] || null;
 }
 
+/**
+ * Phone keyboards often capitalise the first letter, so a login ignores
+ * capitals. Older accounts might differ only by capitals, so an exact match wins.
+ */
+async function findUserForLogin(username) {
+  const result = await pool.query(
+    `
+    SELECT id, username, email, password_hash, device_id
+    FROM users
+    WHERE LOWER(username) = LOWER($1)
+    ORDER BY id;
+    `,
+    [username]
+  );
+
+  return (
+    result.rows.find((user) => user.username === username) ??
+    result.rows[0] ??
+    null
+  );
+}
+
 // Accounts that differ only by capital letters would be easy to confuse
 async function isUsernameTaken(username) {
   const result = await pool.query(
@@ -124,6 +146,7 @@ async function unlinkDeviceFromUser(userId, deviceId) {
 module.exports = {
   registerUser,
   findUserByUsername,
+  findUserForLogin,
   isUsernameTaken,
   isEmailTaken,
   findUserByDeviceId,

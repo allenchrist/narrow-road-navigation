@@ -57,6 +57,7 @@ backend/    Node.js server: login, live connections, road checks, alert rules
   test/                         tests and the two-car simulator
   data/                         the first set of roads for a new database
 frontend/   React website: dashboard, login, road suggestions, admin page
+e2e/        browser tests of the whole system
 .github/    automatic checks that run on every push
 ```
 
@@ -143,7 +144,7 @@ For the most reliable updates with the screen locked, turn Battery Saver off and
 
 **Server, for example on Render:** set the root folder to `backend`, the build command to `npm install` and the start command to `npm start`, then add the [settings](#settings). The address is set in the app's `ServerConfig.kt` and the website's `frontend/src/config.js`, so update both if yours is different.
 
-**Website:** set `VITE_BACKEND_URL` to your server's address, run `npm run build` in `frontend`, and host the `dist` folder. Send unknown addresses to `index.html`, because pages such as `/your-username` are handled by the website. Add the website's address to `CORS_ORIGIN` on the server.
+**Website, for example on Vercel:** set the root folder to `frontend`. Set `VITE_BACKEND_URL` if your server's address is different, and add the website's address to `CORS_ORIGIN` on the server. `frontend/vercel.json` sends every address to `index.html`, because pages such as `/your-username` are handled by the website. Other hosts need the same rule.
 
 ## Settings
 
@@ -177,8 +178,9 @@ These go in `backend/.env`, or in the host's environment settings.
 | `npm run test:validation` | `backend` | Input checks | Nothing else |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
 | `npm run simulate` | `backend` | Every alert, using two simulated cars | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
-| `npm run lint` | `frontend` | Common code mistakes | Nothing else |
+| `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |
 | `npm run build` | `frontend` | That the website builds | Nothing else |
+| `npm test` | `e2e` | Every page in Chrome, using a temporary database. Takes a few minutes | Chrome, and `npm install` in `backend`, `frontend` and `e2e` |
 
 GitHub runs all of these on every push, using a temporary database. Results are in the repository's **Actions** tab.
 
@@ -197,6 +199,7 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 |---|---|
 | Server exits on start | `DATABASE_URL` or `JWT_SECRET` is missing from `backend/.env` |
 | First load is slow on a hosted server | Free hosts and databases can take a little while to wake up |
+| "Not Found" when opening or refreshing a page online | The host must send every address to `index.html`. See [Host it online](#host-it-online) |
 | Dashboard says "Log in on your phone" | The app isn't logged in with this account or can't reach the server |
 | Website can't reach the server | Check `VITE_BACKEND_URL`, and that the website's address is in `CORS_ORIGIN` |
 | Admin page won't log in | `ADMIN_PASSWORD` isn't set on the server |

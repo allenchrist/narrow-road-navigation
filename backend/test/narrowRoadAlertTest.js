@@ -10,6 +10,7 @@ const { computeGeofenceState } = require("../services/geofenceService");
 const {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
+  updateRoadEntries,
 } = require("../services/narrowRoadAlert");
 
 // An east-west road about 220 m long and 22 m wide
@@ -142,6 +143,24 @@ const tests = {
       { ...b, roadEnteredAt: tied },
     ]);
     assert.deepStrictEqual([...kinds].sort(), ["GIVE_WAY", "RIGHT_OF_WAY"]);
+  },
+  "a car entering a road gets the current time": () => {
+    assert.deepStrictEqual(updateRoadEntries({}, ["R1"], 900, 1000), { R1: 1000 });
+  },
+  "a car still in the road keeps its entry time": () => {
+    assert.deepStrictEqual(updateRoadEntries({ R1: 500 }, ["R1"], 900, 1000), { R1: 500 });
+  },
+  "a car that left the road loses its entry time": () => {
+    assert.deepStrictEqual(updateRoadEntries({ R1: 500 }, [], 900, 1000), {});
+  },
+  "a short gap in updates keeps the entry time": () => {
+    assert.deepStrictEqual(updateRoadEntries({ R1: 500 }, ["R1"], 1000, 31000), { R1: 500 });
+  },
+  "after a long gap the car counts as entering again": () => {
+    assert.deepStrictEqual(updateRoadEntries({ R1: 500 }, ["R1"], 1000, 62000), { R1: 62000 });
+  },
+  "a first update has no old entry time": () => {
+    assert.deepStrictEqual(updateRoadEntries({}, ["R1"], null, 1000), { R1: 1000 });
   },
   "the instruction stays when the car giving way stops": () => {
     const tracker = createRightOfWayTracker();

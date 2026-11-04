@@ -475,7 +475,7 @@
 }
 
 .admin-search-error,
-.suggest-search-matches {
+.search-matches {
   position: absolute;
   z-index: 1040;
   top: 14px;
@@ -492,7 +492,7 @@
   transform: translateX(-50%);
 }
 
-.suggest-search-matches-title {
+.search-matches-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -500,7 +500,7 @@
   font-size: 13px;
 }
 
-.suggest-search-matches button {
+.search-matches button {
   overflow: hidden;
   padding: 8px;
   border: 0;
@@ -515,12 +515,12 @@
   cursor: pointer;
 }
 
-.suggest-search-matches-title button {
+.search-matches-title button {
   display: flex;
   padding: 4px;
 }
 
-.suggest-search-matches button:hover {
+.search-matches button:hover {
   background: rgba(255, 255, 255, 0.07);
   color: var(--cv-text-1);
 }

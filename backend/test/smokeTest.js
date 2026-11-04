@@ -12,6 +12,7 @@
  *   TEST 7 — Disconnect marks vehicle connected=false, others unaffected
  *   TEST 8 — /health endpoint returns deviceCount and vehicleCount
  *   TEST 9 — Malformed input is rejected without crashing the server
+ *   TEST 10 — A login ignores capitals and spaces
  *
  * Usage:
  *   node backend/test/smokeTest.js
@@ -282,6 +283,28 @@ async function runTests() {
   assert(noLoginStatus === 401, `suggestion without a login rejected (status ${noLoginStatus})`);
   const badPolygonStatus = await postJson("/api/narrow-road-suggestions", suggestion, adminToken);
   assert(badPolygonStatus === 400, `invalid polygon rejected (status ${badPolygonStatus})`);
+  console.log("");
+
+  console.log("TEST 10 — A login ignores capitals and spaces");
+  const smokeUser = `Smoke_${Date.now() % 1000000}`;
+  const smokePassword = "smoke-test-password";
+  const login = (username, password) =>
+    fetch(new URL("/api/auth/login", HEALTH_URL), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+  await postJson("/api/auth/register", {
+    username: smokeUser,
+    email: `${smokeUser}@example.com`,
+    password: smokePassword,
+  });
+  const lowerCase = await login(` ${smokeUser.toLowerCase()} `, smokePassword);
+  const lowerCaseBody = await lowerCase.json();
+  assert(lowerCase.status === 200, `different capitals log in (status ${lowerCase.status})`);
+  assert(lowerCaseBody.user?.username === smokeUser, "the account keeps its own capitals");
+  const wrongPassword = await login(smokeUser.toLowerCase(), "not-the-password");
+  assert(wrongPassword.status === 401, `a wrong password is still refused (status ${wrongPassword.status})`);
   console.log("");
 
   // ── Cleanup ─────────────────────────────────────────────────────────────

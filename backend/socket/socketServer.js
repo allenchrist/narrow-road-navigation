@@ -183,6 +183,11 @@ function notifyDeviceChanged(username) {
   io?.to(userRoom(username)).emit("session:changed");
 }
 
+// Saved devices have just loaded, so every car screen should look again
+function notifyAllDashboards() {
+  io?.emit("session:changed");
+}
+
 // Also closes the HTTP server, then calls onClosed
 function closeSocketServer(onClosed) {
   if (!io) {
@@ -210,5 +215,6 @@ module.exports = {
   initSocketServer,
   broadcastFleetUpdate,
   notifyDeviceChanged,
+  notifyAllDashboards,
   closeSocketServer,
 };

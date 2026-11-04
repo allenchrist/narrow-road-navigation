@@ -29,6 +29,8 @@ const { reserveVehicleId } = require("./vehicleIdAllocator");
 // devices map: deviceId → device record
 const devices = new Map();
 
+let devicesLoaded = false;
+
 // ── Validation ────────────────────────────────────────────────────────────────
 
 const DEVICE_ID_MAX_LEN = 128;
@@ -81,7 +83,17 @@ async function loadDevices() {
     }
   }
 
+  devicesLoaded = true;
+
   return result.rows.length;
+}
+
+/**
+ * Until saved devices are loaded, a returning phone would look new, and
+ * could be given a vehicle ID that already belongs to another phone.
+ */
+function areDevicesLoaded() {
+  return devicesLoaded;
 }
 
 /**
@@ -180,6 +192,7 @@ function getDeviceCount() {
 module.exports = {
   validateDeviceId,
   loadDevices,
+  areDevicesLoaded,
   registerDevice,
   hasDevice,
   getVehicleForDevice,

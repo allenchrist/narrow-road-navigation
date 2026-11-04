@@ -1,0 +1,12 @@
+{
+  "name": "connected-vehicle-e2e",
+  "private": true,
+  "description": "Browser tests of the whole system, using a temporary database",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "devDependencies": {
+    "embedded-postgres": "18.6.0-beta.19",
+    "puppeteer-core": "^25.16.0"
+  }
+}

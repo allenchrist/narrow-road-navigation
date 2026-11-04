@@ -60,6 +60,7 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - name: Alert rules
         run: npm run test:alerts
       - name: Input validation
@@ -77,3 +78,26 @@ jobs:
       - name: Server log
         if: failure()
         run: cat server.log
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            e2e/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm ci
+        working-directory: e2e
+      - name: Browser tests
+        run: npm test
+        working-directory: e2e
