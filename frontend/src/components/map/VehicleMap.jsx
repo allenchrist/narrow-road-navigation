@@ -14,7 +14,6 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { useVehicle } from "../../context/VehicleContext";
-import { haversineDistance } from "../../utils/haversine";
 import Icon from "../common/Icon";
 import { MapController } from "./mapHelpers";
 import VehicleMarker from "./VehicleMarker";
@@ -169,27 +168,13 @@ function VehicleMap({
           onZoomed={setZoom}
         />
 
-        {vehicleList.map((v) => {
-          const isEgo = v.vehicleId === myVehicleId;
-
-          return (
-            <VehicleMarker
-              key={v.vehicleId}
-              vehicleData={v}
-              isEgo={isEgo}
-              distanceFromEgo={
-                !isEgo && hasEgoGps
-                  ? haversineDistance(
-                      egoVehicle.lat,
-                      egoVehicle.lon,
-                      v.lat,
-                      v.lon
-                    )
-                  : null
-              }
-            />
-          );
-        })}
+        {vehicleList.map((v) => (
+          <VehicleMarker
+            key={v.vehicleId}
+            vehicleData={v}
+            isEgo={v.vehicleId === myVehicleId}
+          />
+        ))}
       </MapContainer>
 
       {myVehicleId && !soundUnlocked && soundOn && (

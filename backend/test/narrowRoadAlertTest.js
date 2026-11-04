@@ -232,13 +232,50 @@ const tests = {
       ["RIGHT_OF_WAY", "GIVE_WAY", "GIVE_WAY"]
     );
   },
-  "a stopped car ahead outranks having right of way": () => {
+  "walking devices still get opposite instructions": () => {
+    const first = vehicleAt(11, 77.0005, 0.8, EAST);
+    const later = vehicleAt(11, 77.0015, 0.8, WEST);
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "the last in gives way when the first has stopped": () => {
+    const first = insideStopped();
+    const later = insideWestbound();
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "the last in gives way when it has stopped": () => {
+    const first = insideEastbound();
+    const later = insideStopped();
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "the last in gives way when both have stopped": () => {
+    const first = insideStopped();
+    const later = insideStopped();
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "a phone with no direction still gets an instruction": () => {
+    const first = vehicleAt(11, 77.0005, MOVING, null);
+    const later = vehicleAt(11, 77.0015, MOVING, null);
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "directions at an angle still get instructions": () => {
+    const first = vehicleAt(11, 77.0005, MOVING, EAST);
+    const later = vehicleAt(11, 77.0015, MOVING, 190);
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "cars driving apart get instructions if one turns back": () => {
     const tracker = createRightOfWayTracker();
+    const first = vehicleAt(11, 77.0005, MOVING, WEST);
+    const later = vehicleAt(11, 77.0015, MOVING, EAST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, later]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+    const turned = moved(first, 11, 77.0005, MOVING, EAST);
+    const turnedLater = moved(later, 11, 77.0015, MOVING, WEST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [turned, turnedLater]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "a car that entered last gives way to everyone before it": () => {
     const first = insideEastbound();
     const oncoming = insideWestbound();
     const parked = vehicleAt(11, 77.001, 0, null);
-    tracker.update([first, oncoming, parked]);
-    assert.strictEqual(buildNarrowRoadAlert(first, [oncoming, parked], tracker).kind, "VEHICLE_IN_ROAD");
+    assert.strictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, oncoming, parked])[2], "GIVE_WAY");
   },
   "the decision ends when a car leaves, and a new meeting decides again": () => {
     const tracker = createRightOfWayTracker();
@@ -270,22 +307,8 @@ const tests = {
   "same direction inside is not a conflict": () => {
     assert.strictEqual(kind(insideEastbound(), [vehicleAt(11, 77.001, MOVING, EAST)]), "IN_NARROW_ROAD");
   },
-  "stopped vehicle inside is still a hazard": () => {
-    assert.strictEqual(kind(insideEastbound(), [insideStopped()]), "VEHICLE_IN_ROAD");
-  },
   "inside with a vehicle about to enter the far end": () => {
     assert.strictEqual(kind(insideEastbound(), [aheadWestbound()]), "VEHICLE_ENTERING");
-  },
-  "the alert gives the distance to the nearest other vehicle": () => {
-    const alert = alertFor(insideEastbound(), [
-      insideWestbound(),
-      vehicleAt(11, 77.0019, MOVING, WEST),
-    ]);
-    assert.strictEqual(alert.vehicleCount, 2);
-    assert.ok(alert.vehicleDistanceM > 100 && alert.vehicleDistanceM < 120, `distance ${alert.vehicleDistanceM}`);
-  },
-  "alone inside gives no vehicle distance": () => {
-    assert.strictEqual(alertFor(insideEastbound()).vehicleDistanceM, null);
   },
   "a car just outside a thin road shape counts as on it": () => {
     // About 5.5 m beyond the road's northern edge
@@ -329,7 +352,7 @@ const tests = {
         { vehicleId: "V1", lat: 11, lon: 77.001, speed: 0, bearing: null, roadEnteredAt: { R1: 1, R2: 1 }, ...first },
         [{ vehicleId: "V2", lat: 11, lon: 77.001, speed: 0, bearing: null, roadEnteredAt: { R1: 2, R2: 2 }, ...second }]
       ),
-      "VEHICLE_IN_ROAD"
+      "RIGHT_OF_WAY"
     );
   },
 };

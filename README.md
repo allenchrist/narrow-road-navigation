@@ -22,7 +22,7 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
                               (accounts, roads, suggestions)
 ```
 
-1. The driver logs in on the phone. The app sends the car's position about once a second, even with the screen locked.
+1. The driver logs in on the phone and taps **Connect**. The app sends the car's position about once a second, even with the screen locked.
 2. The server checks each position against the saved narrow roads and compares nearby cars.
 3. The driver logs in to the dashboard with the same account and sees their car, nearby cars within 1 km, and any alert.
 
@@ -36,17 +36,16 @@ If a car's position is more than 5 seconds old, the top bar shows **Weak signal*
 |---|---|---|
 | **Narrow road** | You're inside a narrow road and no other car matters | Yellow |
 | **Vehicle about to enter** | Another car is heading for this road | Orange |
-| **You have right of way** | A car coming towards you entered after you | Green, with an arrow |
-| **Give way** | A car coming towards you entered first | Red, with a give-way sign |
-| **Vehicle in this road** | Another car is here, but its direction isn't clear, for example it's stopped | Red |
+| **You have right of way** | Another car in this road entered after you | Green, with an arrow |
+| **Give way** | Another car in this road entered before you | Red, with a give-way sign |
 
 ### Who gives way
 
-The car that entered the road first keeps going, and the later car gives way. The server makes this decision, so the two screens can't disagree.
+The car that entered the road first keeps going, and the car that entered last gives way, whether it's moving or stopped. The server makes this decision, so the two screens can't disagree.
 
 - The decision stays fixed if the car giving way stops or reverses.
 - It ends once the first car has passed, or when a car leaves the road or stops sending updates.
-- Cars travelling the same way aren't a conflict, because they can follow each other.
+- Cars clearly travelling the same way, or already driving apart, aren't a conflict.
 - With three or more cars, every car has one place in the order, so they can't all be told to give way.
 
 ## What's in this repository
@@ -136,7 +135,7 @@ The simulator's password is written in its code. If your database is one other p
 
 The app only makes encrypted connections, so phones need the server hosted online rather than running on a laptop. See the [app's README](https://github.com/allenchrist/VehicleSensorModule) to install it.
 
-1. Create a different account in the app on each phone.
+1. Create a different account in the app on each phone, and tap **Connect**.
 2. Log in to the dashboard with each account, using two browsers or devices.
 3. Drive or walk both phones into the same narrow road from opposite ends.
 
@@ -190,6 +189,7 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 
 - **GPS accuracy:** many narrow roads are about 3 m wide, which is close to GPS error, so a car counts as inside when it's within 8 to 15 m of a road's edge. A car on a parallel road can trigger an alert.
 - **Short reversing:** alerts start inside the road, so the later car may need to reverse a short way.
+- **Split roads:** a street can be saved as several road shapes that touch. Two cars in different shapes of the same street don't count as sharing a road, unless they're close enough to the join to count as inside both.
 - **Only cars using the system count:** other vehicles are invisible to it.
 - **No slope data:** it can't apply the usual rule that favours the car going uphill.
 - **Live state is in memory:** if the server restarts, cars reappear as their next updates arrive and right-of-way decisions start again.

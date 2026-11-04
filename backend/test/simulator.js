@@ -2,7 +2,7 @@
  * DEMO SIMULATOR — two cars meeting on a real narrow road
  *
  * Connects to the backend exactly like the phone app does, then drives
- * Car A and Car B along a road through every narrow-road alert. It checks
+ * Car A and Car B along a road through the narrow-road alerts. It checks
  * both cars' alerts after each phase and exits with an error if one is wrong.
  *
  * Watch it on the dashboard as Car A: /sim_car_a

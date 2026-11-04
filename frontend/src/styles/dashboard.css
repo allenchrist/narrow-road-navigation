@@ -329,81 +329,26 @@
   border-bottom: 0;
 }
 
-.cv-speed-section {
+.cv-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
 }
 
-.cv-speed {
-  position: relative;
-  width: 148px;
-  height: 130px;
-}
-
-.cv-speed svg {
+.cv-heading strong {
   display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.cv-gauge-track,
-.cv-gauge-value {
-  fill: none;
-  stroke-width: 9;
-  stroke-linecap: round;
-}
-
-.cv-gauge-track {
-  stroke: var(--cv-raised);
-}
-
-.cv-gauge-value {
-  stroke: var(--cv-accent);
-  transition: stroke-dasharray 0.5s ease-out;
-}
-
-.cv-speed-value {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 6px;
-}
-
-.cv-speed-value strong {
-  font-size: 46px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.cv-speed-value span {
   margin-top: 2px;
-  color: var(--cv-text-3);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.cv-compass {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: var(--cv-text-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .cv-compass-arrow {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--cv-border);
   border-radius: 50%;
   color: var(--cv-accent);
@@ -530,7 +475,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  width: min(560px, 100%);
+  width: min(480px, 100%);
   padding: 14px 20px 14px 14px;
   border-radius: 16px;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
@@ -602,31 +547,6 @@
   opacity: 0.85;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.cv-alert-distance {
-  flex-shrink: 0;
-  padding-left: 16px;
-  border-left: 1px solid rgba(255, 255, 255, 0.28);
-  text-align: right;
-}
-
-.cv-alert--caution .cv-alert-distance {
-  border-left-color: rgba(0, 0, 0, 0.25);
-}
-
-.cv-alert-distance strong {
-  display: block;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.1;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.cv-alert-distance span {
-  font-size: 13px;
-  opacity: 0.85;
 }
 
 .cv-notice {
@@ -1234,51 +1154,8 @@
     padding: 10px 14px;
   }
 
-  .cv-speed-section {
-    gap: 14px;
+  .cv-heading {
     border-right: 1px solid var(--cv-border);
-  }
-
-  .cv-speed {
-    width: auto;
-    height: auto;
-  }
-
-  .cv-speed svg {
-    display: none;
-  }
-
-  .cv-speed-value {
-    position: static;
-    flex-direction: row;
-    align-items: baseline;
-    gap: 4px;
-    padding: 0;
-  }
-
-  .cv-speed-value strong {
-    font-size: 30px;
-  }
-
-  .cv-speed-value span {
-    margin: 0;
-    font-size: 12px;
-  }
-
-  .cv-compass {
-    flex-direction: row;
-    gap: 6px;
-    font-size: 12px;
-  }
-
-  .cv-compass-arrow {
-    width: 30px;
-    height: 30px;
-  }
-
-  .cv-compass-arrow svg {
-    width: 16px;
-    height: 16px;
   }
 
   .cv-road-status strong {
@@ -1369,14 +1246,6 @@
 
   .cv-alert-text small {
     font-size: 12px;
-  }
-
-  .cv-alert-distance {
-    padding-left: 12px;
-  }
-
-  .cv-alert-distance strong {
-    font-size: 20px;
   }
 
   /* On the right edge, so the car in the middle of the map stays visible */

@@ -88,10 +88,14 @@ function chooseRightOfWay(a, b, roadIds) {
 }
 
 /**
- * Remembers who gives way, for each pair of vehicles that met head on. The
- * decision has to outlast the meeting: a driver who stops or reverses to give
- * way is no longer "oncoming", but must not lose the instruction. It ends when
- * they no longer share a road, or once the vehicle with right of way has passed.
+ * Remembers who gives way, for each pair of vehicles sharing a road. The
+ * vehicle that entered last gives way, whether it's moving or stopped, as a
+ * phone's direction is unreliable at low speed. The only exceptions are
+ * vehicles clearly travelling the same way, or already driving apart.
+ *
+ * The decision has to last: a driver who stops or reverses to give way must
+ * not lose the instruction. It ends when they no longer share a road, or once
+ * the vehicle with right of way has passed.
  */
 function createRightOfWayTracker() {
   const pairs = new Map();
@@ -106,14 +110,18 @@ function createRightOfWayTracker() {
     const pair = pairs.get(key);
 
     if (!pair) {
-      if (getRelation(a, b) === "ONCOMING") {
-        // Already driving away from each other, so they will never meet
-        pairs.set(
-          key,
-          isBehind(a, b) || isBehind(b, a)
-            ? { passed: true }
-            : { winnerId: chooseRightOfWay(a, b, roadIds), passed: false }
-        );
+      const relation = getRelation(a, b);
+
+      // Checked again on each update, in case either of them turns
+      const noConflict =
+        relation === "SAME_DIRECTION" ||
+        (relation === "ONCOMING" && isBehind(a, b) && isBehind(b, a));
+
+      if (!noConflict) {
+        pairs.set(key, {
+          winnerId: chooseRightOfWay(a, b, roadIds),
+          passed: false,
+        });
       }
     } else if (!pair.passed) {
       const [winner, other] = pair.winnerId === a.vehicleId ? [a, b] : [b, a];
@@ -153,8 +161,7 @@ function createRightOfWayTracker() {
 
 /**
  * Decides what the infotainment screen should tell this driver. Alerts
- * start once the vehicle is inside a narrow road. A vehicle travelling
- * the same way is never a conflict, because the two can follow each other.
+ * start once the vehicle is inside a narrow road.
  */
 function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   if (vehicle.insideRoadIds.length === 0) {
@@ -163,56 +170,39 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
   const roadIds = new Set(vehicle.insideRoadIds);
 
-  const mustGiveWayTo = [];
-  const givingWay = [];
-  const otherInside = [];
-  const approaching = [];
+  let mustGiveWay = false;
+  let hasRightOfWay = false;
+  let vehicleEntering = false;
 
   for (const other of others) {
     const pair = rightOfWay.get(vehicle, other);
 
     if (pair) {
       if (!pair.passed) {
-        (pair.winnerId === vehicle.vehicleId ? givingWay : mustGiveWayTo).push(other);
+        if (pair.winnerId === vehicle.vehicleId) {
+          hasRightOfWay = true;
+        } else {
+          mustGiveWay = true;
+        }
       }
-      continue;
-    }
-
-    if (getRelation(vehicle, other) === "SAME_DIRECTION") {
-      continue;
-    }
-
-    if (other.insideRoadIds.some((id) => roadIds.has(id))) {
-      otherInside.push(other);
-    } else if (other.approachingRoads.some((road) => roadIds.has(road.id))) {
-      approaching.push(other);
+    } else if (
+      getRelation(vehicle, other) !== "SAME_DIRECTION" &&
+      other.approachingRoads.some((road) => roadIds.has(road.id))
+    ) {
+      vehicleEntering = true;
     }
   }
 
-  const alert = (kind, level, conflicts = []) => ({
+  const alert = (kind, level) => ({
     kind,
     level,
     roadId: vehicle.narrowRoadId,
     roadName: vehicle.narrowRoadName,
-    vehicleCount: conflicts.length,
-    vehicleDistanceM:
-      conflicts.length === 0
-        ? null
-        : Math.round(
-            Math.min(
-              ...conflicts.map((other) =>
-                distanceBetween(vehicle.lat, vehicle.lon, other.lat, other.lon)
-              )
-            )
-          ),
   });
 
-  const inRoad = [...mustGiveWayTo, ...otherInside, ...givingWay];
-
-  if (mustGiveWayTo.length > 0) return alert("GIVE_WAY", "danger", inRoad);
-  if (otherInside.length > 0) return alert("VEHICLE_IN_ROAD", "danger", inRoad);
-  if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", inRoad);
-  if (approaching.length > 0) return alert("VEHICLE_ENTERING", "warning", approaching);
+  if (mustGiveWay) return alert("GIVE_WAY", "danger");
+  if (hasRightOfWay) return alert("RIGHT_OF_WAY", "warning");
+  if (vehicleEntering) return alert("VEHICLE_ENTERING", "warning");
   return alert("IN_NARROW_ROAD", "caution");
 }
 

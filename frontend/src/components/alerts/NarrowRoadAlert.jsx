@@ -1,4 +1,3 @@
-import { formatDistance } from "../../utils/haversine";
 import { hasRoadName } from "../../utils/display";
 import Icon from "../common/Icon";
 
@@ -9,20 +8,14 @@ const MESSAGES = {
     tone: "stop",
     title: "Give way",
     detail: "Suggested: stop and let the other vehicle pass",
-    note: "Oncoming vehicle entered first",
+    note: "The other vehicle entered first",
   },
   RIGHT_OF_WAY: {
     icon: "arrowUp",
     tone: "go",
     title: "You have right of way",
     detail: "Suggested: continue slowly",
-    note: "Oncoming vehicle should give way",
-  },
-  VEHICLE_IN_ROAD: {
-    icon: "car",
-    tone: "stop",
-    title: "Vehicle in this road",
-    detail: "It may be stopped. Proceed slowly",
+    note: "The other vehicle should give way",
   },
   VEHICLE_ENTERING: {
     icon: "car",
@@ -44,8 +37,6 @@ function NarrowRoadAlert({ alert }) {
   if (!message) {
     return null;
   }
-
-  const distance = alert.vehicleDistanceM;
 
   const note = [
     message.note,
@@ -69,13 +60,6 @@ function NarrowRoadAlert({ alert }) {
 
         {note && <small>{note}</small>}
       </div>
-
-      {distance != null && (
-        <div className="cv-alert-distance">
-          <strong>{formatDistance(distance)}</strong>
-          <span>away</span>
-        </div>
-      )}
     </div>
   );
 }

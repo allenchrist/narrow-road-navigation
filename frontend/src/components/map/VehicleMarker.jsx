@@ -1,15 +1,13 @@
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { formatDistance } from "../../utils/haversine";
 import {
   displayVehicleName,
+  isMoving,
   travelDirection,
 } from "../../utils/display";
 
 const ANIM_DURATION = 600;
-
-const KMH_PER_MPS = 3.6;
 
 // Small compass changes shouldn't redraw the marker
 const ROTATION_STEP_DEGREES = 5;
@@ -91,8 +89,8 @@ function buildIcon(rotation, isEgo, faded) {
 /* ---------------------------------------------------------
    VehicleMarker — renders one vehicle on the map
 --------------------------------------------------------- */
-function VehicleMarker({ vehicleData, isEgo, distanceFromEgo }) {
-  const { vehicleId, lat, lon, speed, active } = vehicleData;
+function VehicleMarker({ vehicleData, isEgo }) {
+  const { vehicleId, lat, lon, active } = vehicleData;
 
   const displayPos = useSmoothPosition(lat, lon);
 
@@ -115,20 +113,9 @@ function VehicleMarker({ vehicleData, isEgo, distanceFromEgo }) {
             {isEgo ? "Your vehicle" : displayVehicleName(vehicleId)}
           </strong>
 
-          {distanceFromEgo !== null && (
-            <div>
-              <span>Distance</span>
-              <b>{formatDistance(distanceFromEgo)}</b>
-            </div>
-          )}
-
           <div>
-            <span>Speed</span>
-            <b>
-              {speed === null
-                ? "–"
-                : `${Math.round(speed * KMH_PER_MPS)} km/h`}
-            </b>
+            <span>Status</span>
+            <b>{isMoving(vehicleData) ? "Moving" : "Stopped"}</b>
           </div>
         </div>
       </Popup>

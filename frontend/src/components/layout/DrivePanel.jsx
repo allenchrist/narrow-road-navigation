@@ -1,8 +1,5 @@
 import { useVehicle } from "../../context/VehicleContext";
-import {
-  formatDistance,
-  haversineDistance,
-} from "../../utils/haversine";
+import { haversineDistance } from "../../utils/haversine";
 import {
   displayRoadName,
   displayVehicleName,
@@ -11,9 +8,7 @@ import {
 } from "../../utils/display";
 import Icon from "../common/Icon";
 
-const KMH_PER_MPS = 3.6;
 const MAX_NEARBY_SHOWN = 4;
-const GAUGE_MAX_KMH = 80;
 
 const COMPASS_POINTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
@@ -32,11 +27,6 @@ function DrivePanel({ alert }) {
 
   const hasPosition =
     egoVehicle.active && egoVehicle.lat !== null;
-
-  const speed =
-    hasPosition && egoVehicle.speed !== null
-      ? Math.round(egoVehicle.speed * KMH_PER_MPS)
-      : null;
 
   const direction = hasPosition
     ? travelDirection(egoVehicle)
@@ -64,49 +54,24 @@ function DrivePanel({ alert }) {
 
   const inNarrowRoad = Boolean(alert?.roadId);
 
-  const gaugePercent = Math.min(
-    100,
-    ((speed ?? 0) / GAUGE_MAX_KMH) * 100
-  );
-
   return (
     <aside className="cv-panel cv-drive-panel">
-      <section className="cv-speed-section">
-        <div className="cv-speed">
-          <svg viewBox="0 0 140 124" aria-hidden="true">
-            <path
-              className="cv-gauge-track"
-              pathLength="100"
-              d="M29 111 A58 58 0 1 1 111 111"
-            />
-            <path
-              className="cv-gauge-value"
-              pathLength="100"
-              strokeDasharray={`${gaugePercent} 100`}
-              d="M29 111 A58 58 0 1 1 111 111"
-            />
-          </svg>
+      <section className="cv-heading">
+        <span
+          className="cv-compass-arrow"
+          style={{
+            transform: `rotate(${direction ?? 0}deg)`,
+            opacity: direction === null ? 0.3 : 1,
+          }}
+        >
+          <Icon name="navigation" size={22} />
+        </span>
 
-          <div className="cv-speed-value">
-            <strong>{speed ?? "–"}</strong>
-            <span>km/h</span>
-          </div>
-        </div>
-
-        <div className="cv-compass">
-          <span
-            className="cv-compass-arrow"
-            style={{
-              transform: `rotate(${direction ?? 0}deg)`,
-              opacity: direction === null ? 0.3 : 1,
-            }}
-          >
-            <Icon name="navigation" size={22} />
-          </span>
-
-          <span>
+        <div>
+          <span className="cv-section-label">Heading</span>
+          <strong>
             {direction === null ? "–" : compassPoint(direction)}
-          </span>
+          </strong>
         </div>
       </section>
 
@@ -151,8 +116,6 @@ function DrivePanel({ alert }) {
                     {isMoving(v) ? "Moving" : "Stopped"}
                   </span>
                 </div>
-
-                <b>{formatDistance(v.distance)}</b>
               </li>
             ))}
           </ul>

@@ -24,7 +24,7 @@ const SESSION_MESSAGES = {
     icon: "phone",
     title: "Waiting for your phone",
     detail: () =>
-      "Open the Connected Vehicle app on your phone. This screen connects by itself.",
+      "Open the Connected Vehicle app on your phone and tap Connect. This screen connects by itself.",
     waiting: true,
   },
 };
