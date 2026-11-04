@@ -10,7 +10,7 @@ const MATCHES = [
   { lat: "28.61", lon: "77.2", display_name: "Gandhi Road, New Delhi, a very long address that has to be shortened to fit" },
 ];
 
-module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createDriver, newPage }) => {
+module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createDriver, newPage, logIn }) => {
   const username = "road_suggester";
   const token = await createDriver(username);
 
@@ -86,17 +86,7 @@ module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createD
       }
     });
 
-    await page.goto(`${SITE}/`, { waitUntil: "domcontentloaded" });
-
-    await page.evaluate(
-      (sessionToken, name) =>
-        localStorage.setItem(
-          "driverSession",
-          JSON.stringify({ token: sessionToken, username: name })
-        ),
-      token,
-      username
-    );
+    await logIn(page, username, token);
 
     await page.goto(`${SITE}/${username}/suggest-narrow-road`, {
       waitUntil: "domcontentloaded",

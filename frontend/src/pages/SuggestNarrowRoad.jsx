@@ -8,11 +8,14 @@ import SuggestSidebar from "../components/suggest/SuggestSidebar";
 
 import { BACKEND_URL } from "../config";
 import { useLocationSearch } from "../hooks/useLocationSearch";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { getDriverSession } from "../services/driverSession";
 
 function SuggestNarrowRoad() {
   const navigate = useNavigate();
   const { username } = useParams();
+
+  usePageTitle("Suggest a narrow road");
 
   const [map, setMap] = useState(null);
   const search = useLocationSearch(map);

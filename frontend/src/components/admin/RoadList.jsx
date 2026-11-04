@@ -16,13 +16,6 @@ function RoadList({ editor, onEditRoad }) {
   return (
     <>
 
-      <div className="admin-section-title">
-        Saved narrow roads
-        <span className="admin-count">
-          {roads.length}
-        </span>
-      </div>
-
       <input
         type="search"
         className="admin-road-filter"

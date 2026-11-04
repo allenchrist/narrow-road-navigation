@@ -10,7 +10,7 @@
  *   OLD: releaseVehicleId() returned the slot to the pool on disconnect.
  *        A reconnecting device could get a different ID.
  *
- *   NEW: reserveVehicleId() permanently marks the slot.
+ *   reserveVehicleId() permanently marks the slot.
  *        Only brand-new devices consume a new slot.
  *        Reconnecting devices are handled by deviceRegistry, not here.
  *

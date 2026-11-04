@@ -74,6 +74,19 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
     }
   };
 
+  const showTab = async (label) => {
+    await page.evaluate((target) => {
+      [...document.querySelectorAll(".admin-tabs button")]
+        .find((tab) => tab.innerText.includes(target))
+        .click();
+    }, label);
+
+    await sleep(200);
+  };
+
+  const showRoads = () => showTab("Saved roads");
+  const showSuggestions = () => showTab("Suggestions");
+
   const clickInItem = async (itemName, label) => {
     const clicked = await page.evaluate(
       (name, target) => {
@@ -131,6 +144,9 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   check("the pending suggestions load", (await pending()) === 3);
 
   // ---------- Filter ----------
+  check("suggestions show first", (await text()).includes("Sent by admin_test_driver"));
+  await showRoads();
+  check("the other tab shows the roads", Boolean(await page.$(".admin-road-filter")));
   await setInput(".admin-road-filter", "zzzz");
   check("a filter with no match says so", (await text()).includes("No roads match that name."));
   await setInput(".admin-road-filter", "");
@@ -170,8 +186,13 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   await clickMap(0.35, 0.4);
   await clickMap(0.5, 0.4);
   await clickMap(0.5, 0.55);
-  await clickMap(0.35, 0.55);
+
+  // This point lands on a suggestion's shape
+  await clickMap(0.545, 0.47);
   check("points are counted", (await text()).includes("Points: 4"));
+  await showSuggestions();
+  check("marking over a suggestion doesn't select it", !(await text()).includes("Selected"));
+  await showRoads();
   await clickText("Undo");
   await sleep(200);
   check("undo removes a point", (await text()).includes("Points: 3"));
@@ -226,6 +247,7 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   await setInput(".admin-road-filter", "");
 
   // ---------- Suggestions ----------
+  await showSuggestions();
   await clickInItem("Leave Me", "View");
   check("a suggestion can be selected", (await text()).includes("Selected"));
   await clickText("Mark narrow road");
@@ -253,8 +275,9 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   check("approving removes the suggestion", (await pending()) === 1);
   check("approving adds the road", (await roads()) === startRoads + 1);
 
+  await showRoads();
   await setInput(".admin-road-filter", "Approve Me");
-  check("the approved road is in the saved list", (await page.$$(".admin-road-item")).length === 2);
+  check("the approved road is in the saved list", (await page.$$(".admin-road-item")).length === 1);
 
   // ---------- Staying and leaving ----------
   await page.reload({ waitUntil: "domcontentloaded" });

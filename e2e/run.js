@@ -140,6 +140,7 @@ async function main() {
       CORS_ORIGIN: SITE,
       PORT: String(API_PORT),
       REQUIRE_VEHICLE_TOKEN: "true",
+      STALE_THRESHOLD_MS: "15000",
     };
 
     const setup = spawnSync(process.execPath, ["database/init.js"], {
@@ -202,10 +203,7 @@ async function main() {
       return page;
     }
 
-    // A page already logged in as this driver, showing their dashboard
-    async function openDashboard(username, token, options) {
-      const page = await newPage(options);
-
+    async function logIn(page, username, token) {
       await page.goto(`${SITE}/`, { waitUntil: "domcontentloaded" });
 
       await page.evaluate(
@@ -217,6 +215,13 @@ async function main() {
         token,
         username
       );
+    }
+
+    // A page already logged in as this driver, showing their dashboard
+    async function openDashboard(username, token, options) {
+      const page = await newPage(options);
+
+      await logIn(page, username, token);
 
       await page.goto(`${SITE}/${username}`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector(".cv-topbar");
@@ -238,6 +243,7 @@ async function main() {
       check,
       createDriver,
       newPage,
+      logIn,
       openDashboard,
       runSimulator,
     };

@@ -8,6 +8,7 @@ import Icon from "../common/Icon";
 
 const GPS_LABELS = {
   ACTIVE: { text: "Live", tone: "good" },
+  WEAK: { text: "Weak signal", tone: "warn" },
   WAITING: { text: "Searching", tone: "warn" },
   STALE: { text: "No update", tone: "warn" },
   OFFLINE: { text: "Phone offline", tone: "bad" },

@@ -67,7 +67,7 @@ async function isEmailTaken(email) {
   return result.rowCount > 0;
 }
 
-// NEW: Find a user using the Android device UUID
+// Find a user using the Android device UUID
 async function findUserByDeviceId(deviceId) {
   const result = await pool.query(
     `

@@ -60,9 +60,8 @@ function validateDeviceId(deviceId) {
 // ── Registry operations ───────────────────────────────────────────────────────
 
 /**
- * Load saved device→vehicle mappings. A device already in memory is kept
- * as it is, because it may have connected while the database was waking.
- * Returns the number of saved devices.
+ * Load saved device→vehicle mappings. Phones can't register until this has
+ * finished. Returns the number of saved devices.
  */
 async function loadDevices() {
   const result = await pool.query(

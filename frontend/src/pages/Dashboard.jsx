@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useVehicle } from "../context/VehicleContext";
 import { useAlertSound } from "../hooks/useAlertSound";
 import { useKeepScreenAwake } from "../hooks/useKeepScreenAwake";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 import TopBar from "../components/layout/TopBar";
 import DrivePanel from "../components/layout/DrivePanel";
@@ -25,6 +26,7 @@ function Dashboard() {
   const soundUnlocked = useAlertSound(alert?.level, soundOn);
 
   useKeepScreenAwake();
+  usePageTitle("Car screen");
 
   return (
     <div className="cv-dashboard">

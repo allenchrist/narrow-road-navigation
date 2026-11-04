@@ -22,6 +22,9 @@ const NEARBY_RADIUS_M = 1000;
 // Positions less accurate than this do not change geofence state
 const MAX_GEOFENCE_ACCURACY_M = 50;
 
+// A car still counts for longer than this, but its position is getting old
+const WEAK_SIGNAL_MS = 5000;
+
 // Stay "inside" this long after leaving, so GPS jitter at
 // the edge of a road does not make the warning flicker
 const INSIDE_HOLD_MS = 3000;
@@ -272,6 +275,8 @@ function getAllVehicles() {
  * internal road calculations stay on the server.
  */
 function getVehiclesForDashboard() {
+  const now = Date.now();
+
   return getAllVehicles().map((vehicle) => ({
     vehicleId: vehicle.vehicleId,
     lat: vehicle.lat,
@@ -281,6 +286,8 @@ function getVehiclesForDashboard() {
     bearing: vehicle.bearing,
     connected: vehicle.connected,
     active: vehicle.active,
+    weakSignal:
+      vehicle.active && now - vehicle.lastReceivedAt > WEAK_SIGNAL_MS,
     narrowRoadAlert: vehicle.narrowRoadAlert,
   }));
 }

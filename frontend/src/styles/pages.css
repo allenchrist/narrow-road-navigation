@@ -24,8 +24,8 @@
   flex-shrink: 0;
   align-items: center;
   gap: 18px;
-  min-height: 72px;
-  padding: 12px 20px;
+  min-height: 64px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--cv-border);
   background: var(--cv-surface-solid);
 }
@@ -37,7 +37,7 @@
 
 .admin-title,
 .suggest-road-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -65,10 +65,10 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 12px;
   border: 1px solid var(--cv-border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--cv-bg);
   color: var(--cv-text-3);
   transition: border-color 0.15s;
@@ -120,10 +120,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
+  min-height: 40px;
+  padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
@@ -165,9 +165,8 @@
 }
 
 .admin-delete-button {
-  border-color: rgba(255, 92, 99, 0.35);
   background: transparent;
-  color: var(--cv-bad);
+  color: #ff8e94;
 }
 
 .admin-delete-button:hover:not(:disabled) {
@@ -175,9 +174,10 @@
 }
 
 .admin-road-buttons button {
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 10px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
   font-size: 13px;
 }
 
@@ -261,37 +261,78 @@
 .suggest-road-sidebar {
   flex-shrink: 0;
   width: 380px;
-  padding: 20px;
   border-left: 1px solid var(--cv-border);
   background: var(--cv-surface-solid);
+}
+
+.suggest-road-sidebar {
+  padding: 20px;
   overflow-y: auto;
 }
 
-.admin-section-title,
-.suggest-section-title {
+/* The tabs stay in place while a long list scrolls */
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 16px 0;
+}
+
+.admin-tabs {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--cv-bg);
+}
+
+.admin-tabs button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-tabs button.is-active {
+  background: var(--cv-raised);
+  color: var(--cv-text);
+}
+
+.admin-tab-panel {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -16px;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.suggest-section-title {
+  margin-bottom: 4px;
   font-size: 15px;
   font-weight: 600;
 }
 
 .admin-count {
-  min-width: 26px;
-  padding: 2px 8px;
+  min-width: 22px;
+  padding: 1px 7px;
   border-radius: 999px;
-  background: var(--cv-raised);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--cv-text-2);
   font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: center;
-}
-
-.admin-divider {
-  height: 1px;
-  margin: 22px 0;
-  background: var(--cv-border);
 }
 
 /* ---------------------------------------------------------
@@ -307,16 +348,25 @@
 .admin-road-item {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 8px;
+  padding: 12px;
   border: 1px solid var(--cv-border);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--cv-bg);
   transition: border-color 0.15s;
 }
 
 .admin-road-item:hover {
-  border-color: #33424f;
+  border-color: #3a4a58;
+}
+
+.admin-road-item.is-selected {
+  border-color: var(--cv-accent);
+}
+
+.admin-road-item .admin-road-reason {
+  margin: 4px 0;
+  color: var(--cv-text-2);
 }
 
 .admin-road-item strong {
@@ -328,9 +378,9 @@
 
 .admin-road-item span {
   display: block;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--cv-text-3);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .admin-road-buttons {
@@ -341,11 +391,11 @@
 
 .admin-road-filter {
   width: 100%;
-  min-height: 42px;
-  margin-bottom: 12px;
-  padding: 0 14px;
+  min-height: 38px;
+  margin-bottom: 10px;
+  padding: 0 12px;
   border: 1px solid var(--cv-border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--cv-bg);
   color: var(--cv-text);
   font: inherit;
@@ -358,9 +408,9 @@
 }
 
 .admin-empty {
-  padding: 18px;
+  padding: 28px 18px;
   border: 1px dashed var(--cv-border);
-  border-radius: 14px;
+  border-radius: 10px;
   color: var(--cv-text-3);
   font-size: 14px;
   text-align: center;
@@ -375,14 +425,19 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin: 16px 0;
 }
 
 .admin-drawing-panel {
-  padding: 14px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding: 12px;
   border: 1px solid var(--cv-accent);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(86, 199, 255, 0.07);
+}
+
+.admin-drawing-panel label {
+  margin-top: 0;
 }
 
 .admin-drawing-panel label,
@@ -397,10 +452,10 @@
 .suggest-form input,
 .suggest-form textarea {
   width: 100%;
-  min-height: 46px;
-  padding: 11px 14px;
+  min-height: 42px;
+  padding: 9px 12px;
   border: 1px solid var(--cv-border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--cv-bg);
   color: var(--cv-text);
   font: inherit;
@@ -424,10 +479,48 @@
 }
 
 .suggest-description {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: var(--cv-text-2);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.5;
+}
+
+.suggest-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggest-step {
+  display: flex;
+  gap: 12px;
+}
+
+.suggest-step-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggest-step-number {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--cv-raised);
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.suggest-step-number.is-done {
+  background: rgba(67, 209, 122, 0.16);
+  color: var(--cv-good);
 }
 
 .suggest-road-sidebar .suggest-primary-button,
@@ -442,22 +535,10 @@
 }
 
 .suggest-notice {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 16px;
-  padding: 14px;
-  border-radius: 14px;
-  background: var(--cv-raised);
-  color: var(--cv-text-2);
+  margin: 10px 0 0;
+  color: var(--cv-text-3);
   font-size: 13px;
   line-height: 1.5;
-}
-
-.suggest-notice strong {
-  color: var(--cv-text);
-  font-size: 13px;
-  font-weight: 600;
 }
 
 /* ---------------------------------------------------------
@@ -466,15 +547,15 @@
 
 .admin-error,
 .suggest-error {
-  margin: 12px 0;
-  padding: 12px 14px;
-  border-radius: 12px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
   background: rgba(255, 92, 99, 0.12);
   color: #ff9ca4;
   font-size: 14px;
 }
 
-.admin-search-error,
 .search-matches {
   position: absolute;
   z-index: 1040;
@@ -522,9 +603,10 @@
 
 .search-matches button:hover {
   background: rgba(255, 255, 255, 0.07);
-  color: var(--cv-text-1);
+  color: var(--cv-text);
 }
 
+.admin-search-error,
 .suggest-search-error {
   position: absolute;
   z-index: 1050;
@@ -547,14 +629,14 @@
   bottom: 28px;
   left: 50%;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 12px;
+  width: max-content;
   max-width: calc(100% - 32px);
   transform: translateX(-50%);
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: 1px solid var(--cv-accent);
-  border-radius: 14px;
+  border-radius: 999px;
   background: var(--cv-surface-solid);
   box-shadow: var(--cv-shadow);
   color: var(--cv-text-2);
@@ -652,7 +734,20 @@
   .admin-map,
   .suggest-road-map-wrapper {
     flex: none;
-    height: 45%;
+    height: 40%;
+  }
+
+  .admin-drawing-help,
+  .suggest-drawing-help {
+    bottom: 12px;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 12px;
+  }
+
+  .admin-drawing-help strong,
+  .suggest-drawing-help strong {
+    display: none;
   }
 
   .admin-sidebar,

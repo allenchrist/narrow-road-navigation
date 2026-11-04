@@ -28,15 +28,17 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
 
 Road shapes are never shown to drivers. Alerts only appear once a car is inside a narrow road.
 
+If a car's position is more than 5 seconds old, the top bar shows **Weak signal**. After 15 seconds, the car stops counting.
+
 ## Alerts
 
 | Alert | When it shows | Colour |
 |---|---|---|
-| **Narrow road** | You're inside a narrow road and no other car matters | Caution |
-| **Vehicle about to enter** | Another car is heading for this road | Warning |
-| **You have right of way** | A car coming towards you entered after you | Warning |
-| **Give way** | A car coming towards you entered first | Danger |
-| **Vehicle in this road** | Another car is here, but its direction isn't clear, for example it's stopped | Danger |
+| **Narrow road** | You're inside a narrow road and no other car matters | Yellow |
+| **Vehicle about to enter** | Another car is heading for this road | Orange |
+| **You have right of way** | A car coming towards you entered after you | Green, with an arrow |
+| **Give way** | A car coming towards you entered first | Red, with a give-way sign |
+| **Vehicle in this road** | Another car is here, but its direction isn't clear, for example it's stopped | Red |
 
 ### Who gives way
 
@@ -158,7 +160,7 @@ These go in `backend/.env`, or in the host's environment settings.
 | `CORS_ORIGIN` | If the website is hosted | Website addresses allowed to connect, separated by commas |
 | `REQUIRE_VEHICLE_TOKEN` | Recommended | Set to `true` so only logged-in phones can send positions. Every phone must be on a current app first |
 | `PORT` | No | Server port. Defaults to 5000 |
-| `STALE_THRESHOLD_MS` | No | How long without an update before a car stops counting. Defaults to 5000 |
+| `STALE_THRESHOLD_MS` | No | How long without an update before a car stops counting. Defaults to 15000. Phones without a clear view of the sky can go about 7 seconds between positions, so a much lower value makes working cars drop out |
 | `VEHICLE_WS_PATH` | No | The path phones connect to. Defaults to `/vehicle` |
 
 ## Pages
@@ -203,6 +205,8 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 | Dashboard says "Log in on your phone" | The app isn't logged in with this account or can't reach the server |
 | Website can't reach the server | Check `VITE_BACKEND_URL`, and that the website's address is in `CORS_ORIGIN` |
 | Admin page won't log in | `ADMIN_PASSWORD` isn't set on the server |
+| A road edited directly in the database hasn't changed | The server keeps roads in memory, so restart it. Changes made on the admin page apply straight away |
 | Roads you deleted came back | `npm run db:init` was run again. Delete them again, and don't re-run it |
+| A car keeps dropping out for a second or two | Check `STALE_THRESHOLD_MS` isn't set too low on the server |
 | Car updates lag with the phone locked | Turn Battery Saver off, and allow the app to run without battery limits |
 | Phones are refused after turning on `REQUIRE_VEHICLE_TOKEN` | Install the current app on every phone, or set it back to `false` |

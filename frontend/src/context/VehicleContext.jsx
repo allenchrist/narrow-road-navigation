@@ -39,8 +39,9 @@ function getGpsStatus(backendConnected, myVehicleId, ego) {
   if (!ego.connected) return "OFFLINE";
   if (ego.lat === null || ego.lon === null) return "WAITING";
 
-  // The server decides this, so a wrong clock on this screen can't affect it
-  return ego.active ? "ACTIVE" : "STALE";
+  // The server decides these, so a wrong clock on this screen can't affect them
+  if (!ego.active) return "STALE";
+  return ego.weakSignal ? "WEAK" : "ACTIVE";
 }
 
 export function VehicleProvider({ children }) {

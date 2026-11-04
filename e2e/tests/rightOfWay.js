@@ -1,5 +1,5 @@
 // Two simulated cars, with both dashboards open in Chrome
-module.exports = async ({ SITE, API, check, sleep, post, newPage, runSimulator }) => {
+module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimulator }) => {
   const simulator = runSimulator();
 
   const waitForPhase = async (text) => {
@@ -21,17 +21,7 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, runSimulator }
 
     const page = await newPage();
 
-    await page.goto(`${SITE}/`, { waitUntil: "domcontentloaded" });
-
-    await page.evaluate(
-      (sessionToken, name) =>
-        localStorage.setItem(
-          "driverSession",
-          JSON.stringify({ token: sessionToken, username: name })
-        ),
-      token,
-      username
-    );
+    await logIn(page, username, token);
 
     await page.goto(`${SITE}/${username}`, { waitUntil: "domcontentloaded" });
 
@@ -50,6 +40,14 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, runSimulator }
   await sleep(5500);
   check("the first car in has right of way", (await alertOf(carA)) === "You have right of way");
   check("the later car is told to give way", (await alertOf(carB)) === "Give way");
+
+  // The top bar says when a position is getting old
+  const gpsOf = (page) =>
+    page.evaluate(() => document.querySelector(".cv-topbar-chips").innerText);
+
+  await waitForPhase("phone goes silent");
+  await sleep(7000);
+  check("an old position shows as a weak signal", (await gpsOf(carB)).includes("Weak signal"));
 
   await waitForPhase("Car B stops to give way");
   await sleep(4000);

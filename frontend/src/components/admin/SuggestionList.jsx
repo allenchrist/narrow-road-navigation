@@ -5,10 +5,7 @@ function SuggestionItem({ suggestion, review }) {
   return (
 
     <div
-      className="admin-road-item"
-      style={{
-        border: selected ? "1px solid #56c7ff" : undefined,
-      }}
+      className={`admin-road-item${selected ? " is-selected" : ""}`}
     >
 
       <div>
@@ -24,12 +21,7 @@ function SuggestionItem({ suggestion, review }) {
 
         {suggestion.reason && (
 
-          <span
-            style={{
-              marginTop: "6px",
-              whiteSpace: "normal",
-            }}
-          >
+          <span className="admin-road-reason">
             {suggestion.reason}
           </span>
 
@@ -52,14 +44,7 @@ function SuggestionItem({ suggestion, review }) {
 
       </div>
 
-      <div
-        className="admin-road-buttons"
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "6px",
-        }}
-      >
+      <div className="admin-road-buttons">
 
         <button
           type="button"
@@ -101,21 +86,9 @@ function SuggestionList({ review }) {
   return (
     <>
 
-      <div className="admin-section-title">
-        User suggestions
-        <span className="admin-count">
-          {pendingSuggestions.length}
-        </span>
-      </div>
-
       {suggestionsError && (
 
-        <div
-          className="admin-error"
-          style={{
-            marginBottom: "12px",
-          }}
-        >
+        <div className="admin-error">
           {suggestionsError}
         </div>
 

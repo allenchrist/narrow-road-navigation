@@ -84,7 +84,12 @@ function AdminMap({ search, editor, review, onMapReady }) {
                 fillOpacity: selected ? 0.30 : 0.20,
               }}
               eventHandlers={{
-                click: () => viewSuggestion(suggestion),
+                // While marking, a click here only adds a point
+                click: () => {
+                  if (!drawing) {
+                    viewSuggestion(suggestion);
+                  }
+                },
               }}
             />
 

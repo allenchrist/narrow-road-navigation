@@ -2,19 +2,41 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import Icon from "../components/common/Icon";
+import { usePageTitle } from "../hooks/usePageTitle";
 import {
   getDriverSession,
   signInDriver,
 } from "../services/driverSession";
 
+const FEATURES = [
+  {
+    icon: "car",
+    title: "See who's coming",
+    detail: "Nearby vehicles appear on your car screen as they move.",
+  },
+  {
+    icon: "yield",
+    title: "Know who gives way",
+    detail: "When two cars meet head on, each driver gets a clear instruction.",
+  },
+  {
+    icon: "phone",
+    title: "Your phone connects your car",
+    detail: "The app shares your position, even with the screen locked.",
+  },
+];
+
 function Home() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  usePageTitle("Log in");
 
   const [username, setUsername] = useState(
     location.state?.username ?? ""
   );
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.reason ?? "");
   const [signingIn, setSigningIn] = useState(false);
 
@@ -52,68 +74,113 @@ function Home() {
   }
 
   return (
-    <div className="cv-center-page">
-      <form className="cv-card cv-message-card" onSubmit={logIn}>
-        <div className="cv-brand-mark cv-brand-mark--large">
-          <Icon name="car" size={32} />
+    <div className="cv-auth">
+      <section className="cv-auth-intro">
+        <div className="cv-auth-brand">
+          <div className="cv-brand-mark">
+            <Icon name="car" size={22} />
+          </div>
+
+          <span>Connected Vehicle</span>
         </div>
 
-        <h1>Connected Vehicle</h1>
+        <h1>Pass narrow roads with confidence.</h1>
 
-        <p>
-          Safer passage through narrow roads. Log in with
-          your phone app's account to open your car screen.
-        </p>
+        <ul>
+          {FEATURES.map((feature) => (
+            <li key={feature.title}>
+              <span className="cv-auth-feature-icon">
+                <Icon name={feature.icon} size={20} />
+              </span>
 
-        <label className="cv-field">
-          <span>Username</span>
+              <div>
+                <strong>{feature.title}</strong>
+                <span>{feature.detail}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-          <input
-            type="text"
-            value={username}
-            onChange={(event) =>
-              setUsername(event.target.value)
-            }
-            autoComplete="username"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck="false"
-            autoFocus={!username}
-          />
-        </label>
+      <main className="cv-auth-main">
+        <form className="cv-auth-form" onSubmit={logIn}>
+          <div className="cv-auth-brand cv-auth-brand--compact">
+            <div className="cv-brand-mark">
+              <Icon name="car" size={22} />
+            </div>
 
-        <label className="cv-field cv-field--close">
-          <span>Password</span>
-
-          <input
-            type="password"
-            value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
-            autoComplete="current-password"
-            autoFocus={Boolean(username)}
-          />
-        </label>
-
-        {error && (
-          <div className="cv-form-error" role="alert">
-            {error}
+            <span>Connected Vehicle</span>
           </div>
-        )}
 
-        <button
-          type="submit"
-          className="cv-button"
-          disabled={!username.trim() || !password || signingIn}
-        >
-          {signingIn ? "Logging in…" : "Log in"}
-        </button>
+          <h2>Log in</h2>
 
-        <p className="cv-form-note">
-          New here? Create an account in the phone app.
-        </p>
-      </form>
+          <p>Use your phone app's account to open your car screen.</p>
+
+          <label className="cv-field">
+            <span>Username</span>
+
+            <input
+              type="text"
+              value={username}
+              onChange={(event) =>
+                setUsername(event.target.value)
+              }
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              autoFocus={!username}
+            />
+          </label>
+
+          <label className="cv-field cv-field--close">
+            <span>Password</span>
+
+            <div className="cv-password">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                autoComplete="current-password"
+                autoFocus={Boolean(username)}
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword((previous) => !previous)
+                }
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <Icon
+                  name={showPassword ? "visibilityOff" : "visibility"}
+                  size={20}
+                />
+              </button>
+            </div>
+          </label>
+
+          {error && (
+            <div className="cv-form-error" role="alert">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="cv-button"
+            disabled={!username.trim() || !password || signingIn}
+          >
+            {signingIn ? "Logging in…" : "Log in"}
+          </button>
+
+          <p className="cv-form-note">
+            New here? Create an account in the phone app.
+          </p>
+        </form>
+      </main>
     </div>
   );
 }

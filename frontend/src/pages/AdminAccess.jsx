@@ -7,6 +7,7 @@ import {
   hasAdminToken,
   signInAdmin,
 } from "../services/adminApi";
+import { usePageTitle } from "../hooks/usePageTitle";
 import AdminPage from "./AdminPage";
 
 function AdminLogin({ onSignedIn }) {
@@ -74,6 +75,8 @@ function AdminLogin({ onSignedIn }) {
 }
 
 function AdminAccess() {
+  usePageTitle("Admin");
+
   const [signedIn, setSignedIn] = useState(hasAdminToken);
 
   useEffect(() => {

@@ -303,7 +303,7 @@ function buildPhases(L) {
     {
       title: "Car B's phone goes silent, so it stops counting",
       expected: "IN_NARROW_ROAD",
-      seconds: 8,
+      seconds: 18,
       carA: [L * 0.4, L * 0.5],
       carB: "silent",
     },

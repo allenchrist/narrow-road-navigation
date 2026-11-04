@@ -11,10 +11,20 @@ import { useSuggestionReview } from "../hooks/useSuggestionReview";
 
 function AdminPage({ onSignOut }) {
   const [map, setMap] = useState(null);
+  const [tab, setTab] = useState("suggestions");
 
   const search = useLocationSearch(map);
   const editor = useRoadEditor(map);
-  const review = useSuggestionReview(map, editor.loadRoads);
+  const reviewState = useSuggestionReview(map, editor.loadRoads);
+
+  // Clicking a suggestion on the map also shows it in the list
+  const review = {
+    ...reviewState,
+    viewSuggestion(suggestion) {
+      setTab("suggestions");
+      reviewState.viewSuggestion(suggestion);
+    },
+  };
 
   // Marking a road takes over the map, so no suggestion stays selected
   function startDrawing() {
@@ -48,10 +58,6 @@ function AdminPage({ onSignOut }) {
         />
 
         <aside className="admin-sidebar">
-
-          <SuggestionList review={review} />
-
-          <div className="admin-divider" />
 
           {editor.drawing && (
 
@@ -88,10 +94,35 @@ function AdminPage({ onSignOut }) {
 
           )}
 
-          <RoadList
-            editor={editor}
-            onEditRoad={startEditingRoad}
-          />
+          <div className="admin-tabs" role="tablist">
+            {[
+              ["suggestions", "Suggestions", review.pendingSuggestions.length],
+              ["roads", "Saved roads", editor.roads.length],
+            ].map(([id, label, count]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={tab === id ? "is-active" : ""}
+                onClick={() => setTab(id)}
+              >
+                {label}
+                <span className="admin-count">{count}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="admin-tab-panel" role="tabpanel">
+            {tab === "suggestions" ? (
+              <SuggestionList review={review} />
+            ) : (
+              <RoadList
+                editor={editor}
+                onEditRoad={startEditingRoad}
+              />
+            )}
+          </div>
 
         </aside>
 

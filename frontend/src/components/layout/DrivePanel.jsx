@@ -122,7 +122,7 @@ function DrivePanel({ alert }) {
           <strong>
             {inNarrowRoad
               ? displayRoadName(alert.roadName)
-              : "Normal road"}
+              : "Regular road"}
           </strong>
         </div>
       </section>

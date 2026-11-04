@@ -124,6 +124,12 @@ function VehicleMap({
     following &&
     zoom === DRIVING_ZOOM;
 
+  const myCarLabel = !hasEgoGps
+    ? "Waiting for GPS"
+    : onMyCar
+    ? "On my car"
+    : "Go to my car";
+
   function goToMyCar() {
     if (!map || !hasEgoGps) {
       return;
@@ -199,13 +205,11 @@ function VehicleMap({
         }`}
         onClick={goToMyCar}
         disabled={!hasEgoGps}
+        aria-label={myCarLabel}
+        title={myCarLabel}
       >
         <Icon name="recenter" size={22} />
-        {!hasEgoGps
-          ? "Waiting for GPS"
-          : onMyCar
-          ? "On my car"
-          : "Go to my car"}
+        <span className="cv-mycar-label">{myCarLabel}</span>
       </button>
 
       <div className="cv-map-controls">

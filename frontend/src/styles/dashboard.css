@@ -5,15 +5,15 @@
    ========================================================= */
 
 :root {
-  --cv-bg: #05080c;
-  --cv-surface: rgba(13, 19, 26, 0.92);
-  --cv-surface-solid: #0d131a;
-  --cv-raised: #151d26;
-  --cv-border: #232e3a;
+  --cv-bg: #070b10;
+  --cv-surface: rgba(14, 20, 27, 0.94);
+  --cv-surface-solid: #0e141b;
+  --cv-raised: #18212b;
+  --cv-border: #27323e;
 
   --cv-text: #f2f5f7;
-  --cv-text-2: #a6b1bb;
-  --cv-text-3: #7f8c98;
+  --cv-text-2: #aeb9c3;
+  --cv-text-3: #87949f;
 
   --cv-accent: #56c7ff;
   --cv-on-accent: #04202e;
@@ -24,8 +24,9 @@
   --cv-gap: 16px;
   --cv-panel-width: 300px;
   --cv-topbar-height: 64px;
-  --cv-radius: 16px;
-  --cv-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --cv-radius: 14px;
+  --cv-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --cv-panel-height: 132px;
 
   font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -71,7 +72,7 @@
 
 /* Turns the standard light map into a navy one that matches the dashboard */
 .cv-map--map .leaflet-tile {
-  filter: invert(1) contrast(0.72) brightness(1.18) grayscale(1) sepia(1) hue-rotate(175deg) saturate(2.6);
+  filter: invert(1) contrast(0.68) brightness(1.02) grayscale(1) sepia(1) hue-rotate(175deg) saturate(1.7);
 }
 
 /* ---------------------------------------------------------
@@ -153,7 +154,7 @@
   min-height: 48px;
   padding: 0 20px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--cv-accent);
   color: var(--cv-on-accent);
   font-size: 15px;
@@ -168,8 +169,7 @@
 }
 
 .cv-button:disabled {
-  background: var(--cv-raised);
-  color: var(--cv-text-3);
+  opacity: 0.45;
   cursor: default;
 }
 
@@ -529,29 +529,34 @@
 .cv-alert {
   display: flex;
   align-items: center;
-  gap: 18px;
-  width: min(620px, 100%);
-  padding: 20px 24px;
-  border-radius: 20px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
-  animation: cv-alert-in 0.22s ease-out;
+  gap: 16px;
+  width: min(560px, 100%);
+  padding: 14px 20px 14px 14px;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  animation: cv-alert-in 0.2s ease-out;
 }
 
-.cv-alert--danger {
+.cv-alert--stop {
   background: #c62828;
   color: #ffffff;
   animation:
-    cv-alert-in 0.22s ease-out,
+    cv-alert-in 0.2s ease-out,
     cv-alert-pulse 1.6s ease-in-out infinite;
 }
 
+.cv-alert--go {
+  background: #14713a;
+  color: #ffffff;
+}
+
 .cv-alert--warning {
-  background: #e65100;
+  background: #c74a00;
   color: #ffffff;
 }
 
 .cv-alert--caution {
-  background: #ffc107;
+  background: #f5b90f;
   color: #1a1400;
 }
 
@@ -560,10 +565,10 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.16);
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .cv-alert-text {
@@ -578,15 +583,15 @@
 }
 
 .cv-alert-text strong {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 }
 
 .cv-alert-text span {
-  margin-top: 4px;
-  font-size: 16px;
+  margin-top: 2px;
+  font-size: 15px;
   font-weight: 500;
 }
 
@@ -601,16 +606,20 @@
 
 .cv-alert-distance {
   flex-shrink: 0;
-  padding-left: 18px;
-  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
   text-align: right;
+}
+
+.cv-alert--caution .cv-alert-distance {
+  border-left-color: rgba(0, 0, 0, 0.25);
 }
 
 .cv-alert-distance strong {
   display: block;
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -782,28 +791,38 @@
   height: 64px;
 }
 
-.cv-marker-ego img {
+/* Your own car is the brightest thing on the map */
+.cv-marker-puck {
   position: relative;
-  display: block;
-  width: 26px;
-  height: 46px;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--cv-accent);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.55);
+  color: var(--cv-on-accent);
+}
+
+.cv-marker-puck > div {
+  display: flex;
   transition: transform 0.4s ease-out;
 }
 
 .cv-marker-ring {
   position: absolute;
   inset: 0;
-  border: 2px solid rgba(86, 199, 255, 0.7);
   border-radius: 50%;
-  background: rgba(86, 199, 255, 0.14);
-  animation: cv-marker-pulse 2s ease-out infinite;
+  background: rgba(86, 199, 255, 0.28);
+  animation: cv-marker-pulse 2.2s ease-out infinite;
 }
 
 @keyframes cv-marker-pulse {
   from {
     opacity: 1;
-    transform: scale(0.55);
+    transform: scale(0.6);
   }
 
   to {
@@ -816,12 +835,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border: 2px solid #ffffff;
   border-radius: 50%;
   background: var(--cv-warn);
-  box-shadow: 0 0 14px rgba(242, 184, 75, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   color: #1a1400;
 }
 
@@ -905,7 +924,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: min(440px, 100%);
+  width: min(420px, 100%);
   padding: 32px;
   text-align: center;
 }
@@ -946,6 +965,183 @@
   background: rgba(255, 92, 99, 0.12);
   color: #ff9ca4;
   font-size: 14px;
+}
+
+/* ---------------------------------------------------------
+   Login
+   --------------------------------------------------------- */
+
+.cv-auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cv-bg);
+  color: var(--cv-text);
+  overflow-y: auto;
+}
+
+.cv-auth-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px clamp(40px, 7vw, 96px);
+  border-right: 1px solid var(--cv-border);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(86, 199, 255, 0.1), transparent 45%),
+    var(--cv-surface-solid);
+}
+
+.cv-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cv-auth-brand--compact {
+  display: none;
+  margin-bottom: 28px;
+}
+
+.cv-auth-intro h1 {
+  max-width: 480px;
+  margin: 36px 0 36px;
+  font-size: clamp(32px, 3.4vw, 44px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+.cv-auth-intro ul {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 440px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-auth-intro li {
+  display: flex;
+  gap: 14px;
+}
+
+.cv-auth-intro li strong,
+.cv-auth-intro li div span {
+  display: block;
+}
+
+.cv-auth-intro li strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cv-auth-intro li div span {
+  margin-top: 2px;
+  color: var(--cv-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cv-auth-feature-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--cv-border);
+  border-radius: 10px;
+  background: var(--cv-raised);
+  color: var(--cv-accent);
+}
+
+.cv-auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.cv-auth-form {
+  width: min(380px, 100%);
+}
+
+.cv-auth-form h2 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cv-auth-form p {
+  margin: 0;
+  color: var(--cv-text-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.cv-auth-form .cv-button {
+  margin-top: 22px;
+}
+
+.cv-auth-form .cv-form-note {
+  text-align: center;
+}
+
+.cv-password {
+  position: relative;
+}
+
+.cv-password input {
+  padding-right: 48px;
+}
+
+.cv-password button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cv-text-3);
+  cursor: pointer;
+}
+
+.cv-password button:hover {
+  background: var(--cv-raised);
+  color: var(--cv-text);
+}
+
+.cv-auth :focus-visible {
+  outline: 2px solid var(--cv-accent);
+  outline-offset: 2px;
+}
+
+.cv-auth input:focus-visible {
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .cv-auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cv-auth-intro {
+    display: none;
+  }
+
+  .cv-auth-brand--compact {
+    display: flex;
+  }
 }
 
 .cv-overlay-icon {
@@ -995,7 +1191,7 @@
   min-height: 48px;
   padding: 0 14px;
   border: 1px solid var(--cv-border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--cv-bg);
   color: var(--cv-text);
   font: inherit;
@@ -1007,10 +1203,14 @@
 }
 
 /* ---------------------------------------------------------
-   Smaller screens: the panel moves below the alert
+   Smaller screens: a slim panel keeps the car in view
    --------------------------------------------------------- */
 
 @media (max-width: 900px) {
+  :root {
+    --cv-gap: 12px;
+  }
+
   .cv-topbar-chips {
     display: none;
   }
@@ -1020,38 +1220,129 @@
     left: var(--cv-gap);
     right: var(--cv-gap);
     bottom: var(--cv-gap);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     width: auto;
-    max-height: 42%;
+    height: var(--cv-panel-height);
+    overflow: hidden;
   }
 
   .cv-drive-panel section {
-    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    padding: 10px 14px;
+  }
+
+  .cv-speed-section {
+    gap: 14px;
+    border-right: 1px solid var(--cv-border);
   }
 
   .cv-speed {
-    width: 104px;
-    height: 92px;
+    width: auto;
+    height: auto;
+  }
+
+  .cv-speed svg {
+    display: none;
+  }
+
+  .cv-speed-value {
+    position: static;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 4px;
+    padding: 0;
   }
 
   .cv-speed-value strong {
-    font-size: 32px;
+    font-size: 30px;
   }
 
   .cv-speed-value span {
+    margin: 0;
     font-size: 12px;
+  }
+
+  .cv-compass {
+    flex-direction: row;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .cv-compass-arrow {
+    width: 30px;
+    height: 30px;
+  }
+
+  .cv-compass-arrow svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cv-road-status strong {
+    overflow: hidden;
+    font-size: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .cv-road-status > div {
+    min-width: 0;
+  }
+
+  /* The nearest vehicle only. The map shows the others. */
+  .cv-nearby {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cv-nearby-header {
+    flex-shrink: 0;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .cv-nearby-empty {
+    font-size: 13px;
+  }
+
+  .cv-nearby ul {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cv-nearby li {
+    justify-content: flex-end;
+    padding: 0;
+    background: transparent;
+  }
+
+  .cv-nearby li:nth-child(n + 2),
+  .cv-nearby-icon,
+  .cv-nearby li > div span {
+    display: none;
+  }
+
+  .cv-nearby li > div {
+    flex: none;
   }
 
   .cv-mycar {
     left: auto;
     right: var(--cv-gap);
-    bottom: calc(42% + var(--cv-gap) * 2);
-    min-height: 48px;
+    bottom: calc(var(--cv-panel-height) + var(--cv-gap) * 2);
+    justify-content: center;
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
     transform: none;
   }
 
-  .cv-compass-arrow {
-    width: 36px;
-    height: 36px;
+  .cv-mycar-label {
+    display: none;
   }
 
   .cv-alert-area {
@@ -1060,7 +1351,7 @@
 
   .cv-alert {
     gap: 12px;
-    padding: 14px 16px;
+    padding: 10px 14px 10px 10px;
   }
 
   .cv-alert-icon {
@@ -1076,17 +1367,21 @@
     font-size: 14px;
   }
 
+  .cv-alert-text small {
+    font-size: 12px;
+  }
+
   .cv-alert-distance {
     padding-left: 12px;
   }
 
   .cv-alert-distance strong {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   /* On the right edge, so the car in the middle of the map stays visible */
   .cv-map-controls {
-    bottom: calc(42% + 66px + var(--cv-gap) * 2);
+    bottom: calc(var(--cv-panel-height) + var(--cv-gap) * 2 + 62px);
   }
 
   .cv-segmented,
@@ -1104,7 +1399,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cv-alert,
-  .cv-alert--danger,
+  .cv-alert--stop,
   .cv-marker-ring {
     animation: none;
   }

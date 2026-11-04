@@ -1,7 +1,6 @@
 import { Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { useState, useEffect, useRef, useMemo } from "react";
-import egoCar from "../../assets/ego-car.svg";
 import { formatDistance } from "../../utils/haversine";
 import {
   displayVehicleName,
@@ -15,8 +14,8 @@ const KMH_PER_MPS = 3.6;
 // Small compass changes shouldn't redraw the marker
 const ROTATION_STEP_DEGREES = 5;
 
-const OTHER_VEHICLE_ARROW =
-  '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M12 2 4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>';
+const arrow = (size) =>
+  `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true"><path d="M12 2 4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>`;
 
 /* ---------------------------------------------------------
    Smooth position hook — shared by all vehicle markers
@@ -67,7 +66,9 @@ function buildIcon(rotation, isEgo, faded) {
       html: `
         <div class="cv-marker-ego" style="opacity:${opacity}">
           <span class="cv-marker-ring"></span>
-          <img src="${egoCar}" alt="" draggable="false" style="transform:rotate(${rotation}deg)"/>
+          <div class="cv-marker-puck">
+            <div style="transform:rotate(${rotation}deg)">${arrow(26)}</div>
+          </div>
         </div>`,
       iconSize: [64, 64],
       iconAnchor: [32, 32],
@@ -79,11 +80,11 @@ function buildIcon(rotation, isEgo, faded) {
     className: "cv-marker",
     html: `
       <div class="cv-marker-other" style="opacity:${opacity}">
-        <div style="transform:rotate(${rotation}deg)">${OTHER_VEHICLE_ARROW}</div>
+        <div style="transform:rotate(${rotation}deg)">${arrow(18)}</div>
       </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -22],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -18],
   });
 }
 
