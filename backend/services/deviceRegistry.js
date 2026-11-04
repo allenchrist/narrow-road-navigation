@@ -124,17 +124,6 @@ function hasDevice(deviceId) {
 }
 
 /**
- * Returns the full device record, or null if not found.
- */
-function getDevice(deviceId) {
-  const d = devices.get(deviceId);
-  if (!d) return null;
-  // Return a copy without the ws reference (not safe to serialise)
-  const { ws: _ws, ...rest } = d;
-  return { ...rest };
-}
-
-/**
  * Returns the vehicleId assigned to this device, or null.
  */
 function getVehicleForDevice(deviceId) {
@@ -182,13 +171,6 @@ function removeConnection(deviceId) {
 }
 
 /**
- * Returns all device records (without ws references) as an array.
- */
-function getAllDevices() {
-  return Array.from(devices.values()).map(({ ws: _ws, ...rest }) => ({ ...rest }));
-}
-
-/**
  * Returns the number of registered devices.
  */
 function getDeviceCount() {
@@ -200,12 +182,10 @@ module.exports = {
   loadDevices,
   registerDevice,
   hasDevice,
-  getDevice,
   getVehicleForDevice,
   setDeviceConnected,
   updateLastSeen,
   getConnection,
   removeConnection,
-  getAllDevices,
   getDeviceCount,
 };

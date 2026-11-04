@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useVehicle } from "../../context/VehicleContext";
+import { useFullscreen } from "../../hooks/useFullscreen";
 import { signOutDriver } from "../../services/driverSession";
 import Icon from "../common/Icon";
 
@@ -51,6 +52,7 @@ function TopBar() {
 
   const navigate = useNavigate();
   const clock = useClock();
+  const fullscreen = useFullscreen();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -117,6 +119,27 @@ function TopBar() {
             minute: "2-digit",
           })}
         </time>
+
+        {fullscreen.supported && (
+          <button
+            type="button"
+            className="cv-icon-button"
+            onClick={fullscreen.toggleFullscreen}
+            aria-label={
+              fullscreen.isFullscreen
+                ? "Exit full screen"
+                : "Full screen"
+            }
+          >
+            <Icon
+              name={
+                fullscreen.isFullscreen
+                  ? "fullscreenExit"
+                  : "fullscreen"
+              }
+            />
+          </button>
+        )}
 
         <div className="cv-menu" ref={menuRef}>
           <button

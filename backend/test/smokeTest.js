@@ -144,11 +144,17 @@ async function fetchHealth() {
 /**
  * POST JSON to the backend and return the HTTP status code.
  */
-function postJson(path, body) {
+function postJson(path, body, token) {
   return new Promise((resolve, reject) => {
     const req = http.request(
       new URL(path, HEALTH_URL),
-      { method: "POST", headers: { "Content-Type": "application/json" } },
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      },
       (res) => {
         res.resume();
         res.on("end", () => resolve(res.statusCode));
@@ -271,10 +277,10 @@ async function runTests() {
   const health9 = await fetchHealth();
   assert(health9.status === "ok", "server still running after null messages");
   await closeAndWait(probe);
-  const badPolygonStatus = await postJson("/api/narrow-road-suggestions", {
-    name: "smoke-test",
-    polygon: [1, 2, 3],
-  });
+  const suggestion = { name: "smoke-test", polygon: [1, 2, 3] };
+  const noLoginStatus = await postJson("/api/narrow-road-suggestions", suggestion);
+  assert(noLoginStatus === 401, `suggestion without a login rejected (status ${noLoginStatus})`);
+  const badPolygonStatus = await postJson("/api/narrow-road-suggestions", suggestion, adminToken);
   assert(badPolygonStatus === 400, `invalid polygon rejected (status ${badPolygonStatus})`);
   console.log("");
 

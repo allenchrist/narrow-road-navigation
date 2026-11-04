@@ -3,7 +3,7 @@
  *
  * Connects to the backend exactly like the phone app does, then drives
  * Car A and Car B along a road through every narrow-road alert. It checks
- * Car A's alert after each phase and exits with an error if one is wrong.
+ * both cars' alerts after each phase and exits with an error if one is wrong.
  *
  * Watch it on the dashboard as Car A: /sim_car_a
  *
@@ -12,7 +12,8 @@
  *   npm run simulate -- --loop      repeat until stopped with Ctrl+C
  *
  * Environment:
- *   BACKEND_URL   default http://localhost:5000
+ *   BACKEND_URL         default http://localhost:5000
+ *   SIMULATOR_PASSWORD  set this when using any database other people can reach
  *
  * Uses the demo accounts sim_car_a and sim_car_b, creating them on first run.
  */
@@ -25,7 +26,7 @@ const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:5000").replace
 const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 
 // This account can only see its own demo dashboard, so a fixed password is fine
-const DEMO_PASSWORD = "simulator-demo-only";
+const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 
 const CAR_A = { username: "sim_car_a", deviceId: "simulator-car-a" };
 const CAR_B = { username: "sim_car_b", deviceId: "simulator-car-b" };
@@ -292,31 +293,49 @@ function buildPhases(L) {
       carB: [L + 60, L + 10],
     },
     {
-      title: "Car B enters, coming towards Car A",
-      expected: "ONCOMING_VEHICLE",
+      title: "Car B enters after Car A, coming towards it, so Car B gives way",
+      expected: "RIGHT_OF_WAY",
+      expectedCarB: "GIVE_WAY",
       seconds: 8,
       carA: [L * 0.3, L * 0.4],
       carB: [L + 10, L * 0.75],
     },
     {
-      title: "Car B stops in the road",
-      expected: "VEHICLE_IN_ROAD",
-      seconds: 8,
-      carA: [L * 0.4, L * 0.5],
-      carB: [L * 0.75, L * 0.75],
-    },
-    {
       title: "Car B's phone goes silent, so it stops counting",
       expected: "IN_NARROW_ROAD",
       seconds: 8,
-      carA: [L * 0.5, L * 0.6],
+      carA: [L * 0.4, L * 0.5],
       carB: "silent",
+    },
+    {
+      title: "Car B comes back and Car A still has right of way",
+      expected: "RIGHT_OF_WAY",
+      expectedCarB: "GIVE_WAY",
+      seconds: 5,
+      carA: [L * 0.5, L * 0.56],
+      carB: [L * 0.75, L * 0.65],
+    },
+    {
+      title: "Car B stops to give way and keeps its instruction",
+      expected: "RIGHT_OF_WAY",
+      expectedCarB: "GIVE_WAY",
+      seconds: 8,
+      carA: [L * 0.56, L * 0.6],
+      carB: [L * 0.65, L * 0.65],
+    },
+    {
+      title: "Car A passes Car B, which ends both instructions",
+      expected: "IN_NARROW_ROAD",
+      expectedCarB: "IN_NARROW_ROAD",
+      seconds: 10,
+      carA: [L * 0.6, L * 0.95],
+      carB: [L * 0.65, L * 0.65],
     },
     {
       title: "Car A leaves the road",
       expected: "NONE",
       seconds: 30,
-      carA: [L * 0.6, L + CLEARANCE_M],
+      carA: [L * 0.95, L + CLEARANCE_M],
       carB: "away",
     },
   ];
@@ -358,15 +377,25 @@ async function runPhase(phase, route, carA, carB) {
     await delay(TICK_MS);
   }
 
-  const alert = await getAlert(carA.token);
-  const passed = alert === phase.expected;
+  const checkAlert = async (name, car, expected) => {
+    const alert = await getAlert(car.token);
+    const passed = alert === expected;
 
-  console.log(
-    `  ${passed ? "✓" : "✗"} Car A alert: ${alert}` +
-      (passed ? "" : ` (expected ${phase.expected})`)
-  );
+    console.log(
+      `  ${passed ? "✓" : "✗"} ${name} alert: ${alert}` +
+        (passed ? "" : ` (expected ${expected})`)
+    );
 
-  return passed;
+    return passed;
+  };
+
+  const carAPassed = await checkAlert("Car A", carA, phase.expected);
+
+  const carBPassed =
+    !phase.expectedCarB ||
+    (await checkAlert("Car B", carB, phase.expectedCarB));
+
+  return carAPassed && carBPassed;
 }
 
 async function runScenario(route, carA, carB) {
@@ -400,6 +429,7 @@ async function main() {
   const carA = await connectCar(CAR_A, carAToken);
   carA.token = carAToken;
   const carB = await connectCar(CAR_B, carBToken);
+  carB.token = carBToken;
 
   const stop = () => {
     carA.ws.close();

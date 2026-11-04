@@ -1188,6 +1188,12 @@ function AdminPage({ onSignOut }) {
 
                         )}
 
+                        <span>
+                          {suggestion.submittedBy
+                            ? `Sent by ${suggestion.submittedBy}`
+                            : "Sender not recorded"}
+                        </span>
+
                         {suggestion.submittedAt && (
 
                           <span>

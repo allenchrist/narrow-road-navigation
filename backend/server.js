@@ -219,6 +219,7 @@ app.get(
 
 app.post(
   "/api/narrow-road-suggestions",
+  authenticateToken,
   async (req, res) => {
     try {
       const address = getClientIp(req);
@@ -266,6 +267,7 @@ app.post(
           name,
           polygon,
           reason,
+          submittedBy: req.user.username ?? null,
         });
 
       suggestionsByAddress.record(address);

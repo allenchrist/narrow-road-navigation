@@ -3,9 +3,13 @@ import { hasRoadName } from "../../utils/display";
 import Icon from "../common/Icon";
 
 const MESSAGES = {
-  ONCOMING_VEHICLE: {
-    title: "Oncoming vehicle",
-    detail: "Slow down and find a place to pass",
+  GIVE_WAY: {
+    title: "Give way",
+    detail: "Oncoming vehicle entered first. Suggested: stop and let it pass",
+  },
+  RIGHT_OF_WAY: {
+    title: "You have right of way",
+    detail: "Oncoming vehicle should give way. Suggested: continue slowly",
   },
   VEHICLE_IN_ROAD: {
     title: "Vehicle in this road",

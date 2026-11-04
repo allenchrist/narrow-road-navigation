@@ -1,8 +1,8 @@
 const { pool } = require("../config/database");
 
 /**
- * Creates any missing tables. Safe to run on every server start:
- * nothing here changes or removes existing data.
+ * Creates any missing tables and columns. Safe to run on every server
+ * start: nothing here changes or removes existing data.
  */
 async function ensureSchema() {
   await pool.query(`
@@ -46,6 +46,12 @@ async function ensureSchema() {
       submitted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
       reviewed_at TIMESTAMP WITH TIME ZONE
     );
+  `);
+
+  // Empty for suggestions sent before this was recorded
+  await pool.query(`
+    ALTER TABLE narrow_road_suggestions
+    ADD COLUMN IF NOT EXISTS submitted_by TEXT;
   `);
 
   await pool.query(`

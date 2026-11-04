@@ -14,6 +14,16 @@ import "leaflet/dist/leaflet.css";
 import Icon from "../components/common/Icon";
 
 import { BACKEND_URL } from "../config";
+import { getDriverSession } from "../services/driverSession";
+
+// Search results within about this distance of the map are preferred
+const SEARCH_AREA_DEGREES = 0.5;
+
+const toLocation = (result) => ({
+  lat: Number(result.lat),
+  lon: Number(result.lon),
+  displayName: result.display_name,
+});
 
 // --------------------------------------------------
 // Map click handler
@@ -102,6 +112,10 @@ function SuggestNarrowRoad() {
   const [searchLocation, setSearchLocation] =
     useState(null);
 
+  // Other matches, in case the best one is the wrong place
+  const [otherMatches, setOtherMatches] =
+    useState([]);
+
   const [submitting, setSubmitting] =
     useState(false);
 
@@ -113,6 +127,48 @@ function SuggestNarrowRoad() {
 
   const mapRef =
     useRef(null);
+
+  // --------------------------------------------------
+  // Start at the driver's car, if it's connected
+  // --------------------------------------------------
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function showCarArea() {
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/api/auth/vehicle`,
+          {
+            headers: {
+              Authorization: `Bearer ${getDriverSession()?.token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const { vehicle } = await response.json();
+
+        if (!cancelled && vehicle?.lat != null) {
+          // Doesn't move a map the driver has already searched
+          setSearchLocation(
+            (current) => current ?? { lat: vehicle.lat, lon: vehicle.lon }
+          );
+        }
+      } catch {
+        // The map stays at its default area
+      }
+    }
+
+    showCarArea();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // --------------------------------------------------
   // Search OpenStreetMap
@@ -130,13 +186,29 @@ function SuggestNarrowRoad() {
       return;
     }
 
+    if (searching) {
+      return;
+    }
+
     try {
       setSearching(true);
       setSearchError("");
+      setOtherMatches([]);
+
+      const { lat, lng } =
+        mapRef.current.getCenter();
+
+      // A preference only, so a place in another city can still be found
+      const area = [
+        lng - SEARCH_AREA_DEGREES,
+        lat + SEARCH_AREA_DEGREES,
+        lng + SEARCH_AREA_DEGREES,
+        lat - SEARCH_AREA_DEGREES,
+      ].join(",");
 
       const response =
         await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=5&viewbox=${area}&q=${encodeURIComponent(
             query
           )}`,
           {
@@ -167,15 +239,13 @@ function SuggestNarrowRoad() {
         return;
       }
 
-      const result =
-        results[0];
+      setSearchLocation(
+        toLocation(results[0])
+      );
 
-      setSearchLocation({
-        lat: Number(result.lat),
-        lon: Number(result.lon),
-        displayName:
-          result.display_name,
-      });
+      setOtherMatches(
+        results.slice(1).map(toLocation)
+      );
 
     } catch (err) {
       console.error(
@@ -212,6 +282,7 @@ function SuggestNarrowRoad() {
   // --------------------------------------------------
 
   function startDrawing() {
+    setOtherMatches([]);
     setCurrentPolygon([]);
     setError("");
     setDrawing(true);
@@ -291,6 +362,8 @@ function SuggestNarrowRoad() {
             headers: {
               "Content-Type":
                 "application/json",
+              Authorization:
+                `Bearer ${getDriverSession()?.token}`,
             },
 
             body: JSON.stringify({
@@ -549,6 +622,42 @@ function SuggestNarrowRoad() {
           {searchError && (
             <div className="suggest-search-error">
               {searchError}
+            </div>
+          )}
+
+          {otherMatches.length > 0 && (
+            <div className="suggest-search-matches">
+
+              <div className="suggest-search-matches-title">
+                <strong>
+                  Not the right place?
+                </strong>
+
+                <button
+                  type="button"
+                  aria-label="Close other matches"
+                  onClick={() =>
+                    setOtherMatches([])
+                  }
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+
+              {otherMatches.map((match) => (
+                <button
+                  type="button"
+                  key={`${match.lat},${match.lon}`}
+                  title={match.displayName}
+                  onClick={() => {
+                    setSearchLocation(match);
+                    setOtherMatches([]);
+                  }}
+                >
+                  {match.displayName}
+                </button>
+              ))}
+
             </div>
           )}
 

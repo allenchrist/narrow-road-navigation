@@ -11,6 +11,7 @@ function rowToSuggestion(row) {
     polygon: row.polygon,
     reason: row.reason,
     status: row.status,
+    submittedBy: row.submitted_by,
     submittedAt: row.submitted_at.toISOString(),
     reviewedAt: row.reviewed_at ? row.reviewed_at.toISOString() : null,
   };
@@ -41,11 +42,11 @@ async function getSuggestionById(id) {
 // Create suggestion
 // --------------------------------------------------
 
-async function createSuggestion({ name, polygon, reason }) {
+async function createSuggestion({ name, polygon, reason, submittedBy }) {
   const result = await pool.query(
     `
-    INSERT INTO narrow_road_suggestions (id, name, polygon, reason)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO narrow_road_suggestions (id, name, polygon, reason, submitted_by)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
     `,
     [
@@ -53,6 +54,7 @@ async function createSuggestion({ name, polygon, reason }) {
       name.trim(),
       JSON.stringify(polygon),
       typeof reason === "string" ? reason.trim() : "",
+      submittedBy,
     ]
   );
 

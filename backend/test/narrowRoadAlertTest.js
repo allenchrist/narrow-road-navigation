@@ -7,7 +7,10 @@
 
 const assert = require("assert");
 const { computeGeofenceState } = require("../services/geofenceService");
-const { buildNarrowRoadAlert } = require("../services/narrowRoadAlert");
+const {
+  buildNarrowRoadAlert,
+  createRightOfWayTracker,
+} = require("../services/narrowRoadAlert");
 
 // An east-west road about 220 m long and 22 m wide
 const ROAD = {
@@ -25,10 +28,31 @@ const EAST = 90;
 const WEST = 270;
 const MOVING = 5;
 
+let nextId = 1;
+
+// Each new vehicle counts as entering after the ones made before it
 function vehicleAt(lat, lon, speed, bearing) {
+  const travelBearing = speed >= 1 ? bearing : null;
+  const id = nextId++;
+  const geofence = computeGeofenceState(lat, lon, travelBearing, [ROAD]);
+
+  return {
+    vehicleId: `V${String(id).padStart(3, "0")}`,
+    lat,
+    lon,
+    speed,
+    bearing,
+    ...geofence,
+    roadEnteredAt: Object.fromEntries(geofence.insideRoadIds.map((road) => [road, id])),
+  };
+}
+
+// Moves a vehicle, keeping when it entered the road
+function moved(vehicle, lat, lon, speed, bearing) {
   const travelBearing = speed >= 1 ? bearing : null;
 
   return {
+    ...vehicle,
     lat,
     lon,
     speed,
@@ -43,8 +67,27 @@ const insideStopped = () => vehicleAt(11, 77.001, 0, null);
 const aheadEastbound = () => vehicleAt(11, 76.9995, MOVING, EAST);
 const aheadWestbound = () => vehicleAt(11, 77.0025, MOVING, WEST);
 
-const kind = (vehicle, others = []) =>
-  buildNarrowRoadAlert(vehicle, others).kind;
+const alertFor = (vehicle, others = [], tracker = createRightOfWayTracker()) => {
+  tracker.update([vehicle, ...others]);
+
+  return buildNarrowRoadAlert(vehicle, others, tracker);
+};
+
+const kind = (vehicle, others = [], tracker) => alertFor(vehicle, others, tracker).kind;
+
+// Each vehicle's alert after one server update, using a shared tracker
+function kindsAfterUpdate(tracker, vehicles) {
+  tracker.update(vehicles);
+
+  return vehicles.map(
+    (vehicle) =>
+      buildNarrowRoadAlert(
+        vehicle,
+        vehicles.filter((other) => other !== vehicle),
+        tracker
+      ).kind
+  );
+}
 
 const tests = {
   "far away gets no alert": () => {
@@ -74,8 +117,136 @@ const tests = {
   "alone inside the road": () => {
     assert.strictEqual(kind(insideEastbound()), "IN_NARROW_ROAD");
   },
-  "opposite direction inside is oncoming": () => {
-    assert.strictEqual(kind(insideEastbound(), [insideWestbound()]), "ONCOMING_VEHICLE");
+  "head on: the first in keeps going and the later car gives way": () => {
+    const first = insideEastbound();
+    const later = insideWestbound();
+    assert.deepStrictEqual(
+      kindsAfterUpdate(createRightOfWayTracker(), [first, later]),
+      ["RIGHT_OF_WAY", "GIVE_WAY"]
+    );
+  },
+  "head on: the result doesn't depend on which car is checked first": () => {
+    const first = insideEastbound();
+    const later = insideWestbound();
+    assert.deepStrictEqual(
+      kindsAfterUpdate(createRightOfWayTracker(), [later, first]),
+      ["GIVE_WAY", "RIGHT_OF_WAY"]
+    );
+  },
+  "entering at the same moment still gives opposite instructions": () => {
+    const a = insideEastbound();
+    const b = insideWestbound();
+    const tied = { R1: 1000 };
+    const kinds = kindsAfterUpdate(createRightOfWayTracker(), [
+      { ...a, roadEnteredAt: tied },
+      { ...b, roadEnteredAt: tied },
+    ]);
+    assert.deepStrictEqual([...kinds].sort(), ["GIVE_WAY", "RIGHT_OF_WAY"]);
+  },
+  "the instruction stays when the car giving way stops": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const stopped = moved(later, 11, 77.0015, 0, null);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, stopped]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "the instruction stays when the car giving way reverses": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const reversing = moved(later, 11, 77.0016, 2, EAST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, reversing]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "the decision doesn't flip if the first car stops": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const stopped = moved(first, 11, 77.0005, 0, null);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [stopped, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "both alerts end once the first car has passed": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const waiting = moved(later, 11, 77.0015, 0, null);
+    const past = moved(first, 11, 77.0018, MOVING, EAST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [past, waiting]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+    // Stays over, even though they are still in the same road
+    const stillPast = moved(past, 11, 77.0019, MOVING, EAST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [stillPast, waiting]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+  },
+  "cars side by side while passing keep their instructions": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const beside = moved(first, 11, 77.00151, MOVING, EAST);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [beside, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "cars already driving apart are not told to give way": () => {
+    const west = vehicleAt(11, 77.0005, MOVING, WEST);
+    const east = vehicleAt(11, 77.0015, MOVING, EAST);
+    assert.deepStrictEqual(
+      kindsAfterUpdate(createRightOfWayTracker(), [west, east]),
+      ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]
+    );
+  },
+  "a later car following the first gives way to the same oncoming car": () => {
+    const oncoming = insideWestbound();
+    const a = vehicleAt(11, 77.0002, MOVING, EAST);
+    const b = vehicleAt(11, 77.0004, MOVING, EAST);
+    assert.deepStrictEqual(
+      kindsAfterUpdate(createRightOfWayTracker(), [oncoming, a, b]),
+      ["RIGHT_OF_WAY", "GIVE_WAY", "GIVE_WAY"]
+    );
+  },
+  "with three cars, only the earliest keeps going": () => {
+    const a = vehicleAt(11, 77.0002, MOVING, EAST);
+    const c = vehicleAt(11, 77.0015, MOVING, WEST);
+    const b = vehicleAt(11, 77.0004, MOVING, EAST);
+    assert.deepStrictEqual(
+      kindsAfterUpdate(createRightOfWayTracker(), [a, c, b]),
+      ["RIGHT_OF_WAY", "GIVE_WAY", "GIVE_WAY"]
+    );
+  },
+  "a stopped car ahead outranks having right of way": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const oncoming = insideWestbound();
+    const parked = vehicleAt(11, 77.001, 0, null);
+    tracker.update([first, oncoming, parked]);
+    assert.strictEqual(buildNarrowRoadAlert(first, [oncoming, parked], tracker).kind, "VEHICLE_IN_ROAD");
+  },
+  "the decision ends when a car leaves, and a new meeting decides again": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    const gone = moved(first, 11, 76.99, MOVING, WEST);
+    assert.strictEqual(kindsAfterUpdate(tracker, [gone, later])[1], "IN_NARROW_ROAD");
+    assert.strictEqual(tracker.get(gone, later), null);
+  },
+  "a car that goes silent stops counting": () => {
+    const tracker = createRightOfWayTracker();
+    const first = insideEastbound();
+    const later = insideWestbound();
+    kindsAfterUpdate(tracker, [first, later]);
+    // The server leaves stale vehicles out of its active list
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first]), ["IN_NARROW_ROAD"]);
+    assert.strictEqual(tracker.get(first, later), null);
+  },
+  "an overlap of two road shapes uses the earliest entry": () => {
+    const a = insideEastbound();
+    const b = insideWestbound();
+    const kinds = kindsAfterUpdate(createRightOfWayTracker(), [
+      { ...a, insideRoadIds: ["R1", "R2"], roadEnteredAt: { R1: 500, R2: 100 } },
+      { ...b, insideRoadIds: ["R1", "R2"], roadEnteredAt: { R1: 200, R2: 300 } },
+    ]);
+    assert.deepStrictEqual(kinds, ["RIGHT_OF_WAY", "GIVE_WAY"]);
   },
   "same direction inside is not a conflict": () => {
     assert.strictEqual(kind(insideEastbound(), [vehicleAt(11, 77.001, MOVING, EAST)]), "IN_NARROW_ROAD");
@@ -87,7 +258,7 @@ const tests = {
     assert.strictEqual(kind(insideEastbound(), [aheadWestbound()]), "VEHICLE_ENTERING");
   },
   "the alert gives the distance to the nearest other vehicle": () => {
-    const alert = buildNarrowRoadAlert(insideEastbound(), [
+    const alert = alertFor(insideEastbound(), [
       insideWestbound(),
       vehicleAt(11, 77.0019, MOVING, WEST),
     ]);
@@ -95,7 +266,7 @@ const tests = {
     assert.ok(alert.vehicleDistanceM > 100 && alert.vehicleDistanceM < 120, `distance ${alert.vehicleDistanceM}`);
   },
   "alone inside gives no vehicle distance": () => {
-    assert.strictEqual(buildNarrowRoadAlert(insideEastbound(), []).vehicleDistanceM, null);
+    assert.strictEqual(alertFor(insideEastbound()).vehicleDistanceM, null);
   },
   "a car just outside a thin road shape counts as on it": () => {
     // About 5.5 m beyond the road's northern edge
@@ -135,7 +306,10 @@ const tests = {
     assert.deepStrictEqual(first.insideRoadIds, ["R1", "R2"]);
     assert.deepStrictEqual(second.insideRoadIds, ["R2", "R1"]);
     assert.strictEqual(
-      kind({ lat: 11, lon: 77.001, speed: 0, bearing: null, ...first }, [{ lat: 11, lon: 77.001, speed: 0, bearing: null, ...second }]),
+      kind(
+        { vehicleId: "V1", lat: 11, lon: 77.001, speed: 0, bearing: null, roadEnteredAt: { R1: 1, R2: 1 }, ...first },
+        [{ vehicleId: "V2", lat: 11, lon: 77.001, speed: 0, bearing: null, roadEnteredAt: { R1: 2, R2: 2 }, ...second }]
+      ),
       "VEHICLE_IN_ROAD"
     );
   },

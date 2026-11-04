@@ -145,11 +145,6 @@
   cursor: default;
 }
 
-.cv-icon-button.is-highlighted {
-  background: var(--cv-accent);
-  color: var(--cv-on-accent);
-}
-
 .cv-button {
   display: flex;
   align-items: center;
@@ -215,6 +210,7 @@
 
 .cv-topbar-title span {
   display: block;
+  white-space: nowrap;
   color: var(--cv-text-3);
   font-size: 12px;
 }
@@ -1095,6 +1091,13 @@
 
   .cv-segmented,
   .cv-sound-hint {
+    display: none;
+  }
+}
+
+/* A phone already shows the time, and the name needs the room */
+@media (max-width: 480px) {
+  .cv-clock {
     display: none;
   }
 }

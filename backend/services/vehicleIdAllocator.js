@@ -18,9 +18,6 @@
  * Numeric format chosen over letters to support arbitrary scale cleanly.
  */
 
-// Set of permanently reserved vehicle IDs (never cleared)
-const reservedIds = new Set();
-
 let nextCounter = 1;
 
 /**
@@ -31,7 +28,6 @@ let nextCounter = 1;
 function allocateVehicleId() {
   const id = `VEHICLE_${String(nextCounter).padStart(3, "0")}`;
   nextCounter++;
-  reservedIds.add(id);
   return id;
 }
 
@@ -39,8 +35,6 @@ function allocateVehicleId() {
  * Mark a saved vehicle ID as taken, so new devices never receive it.
  */
 function reserveVehicleId(vehicleId) {
-  reservedIds.add(vehicleId);
-
   const number = parseInt(vehicleId.replace("VEHICLE_", ""), 10);
 
   if (number >= nextCounter) {
@@ -48,18 +42,4 @@ function reserveVehicleId(vehicleId) {
   }
 }
 
-/**
- * Check if a vehicle ID has been permanently reserved.
- */
-function isVehicleIdReserved(vehicleId) {
-  return reservedIds.has(vehicleId);
-}
-
-/**
- * Returns the count of permanently allocated vehicle IDs.
- */
-function getAllocatedCount() {
-  return reservedIds.size;
-}
-
-module.exports = { allocateVehicleId, reserveVehicleId, isVehicleIdReserved, getAllocatedCount };
+module.exports = { allocateVehicleId, reserveVehicleId };

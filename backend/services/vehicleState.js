@@ -10,6 +10,7 @@ const {
 } = require("./geofenceService");
 const {
   buildNarrowRoadAlert,
+  createRightOfWayTracker,
   NO_ALERT,
 } = require("./narrowRoadAlert");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
@@ -26,6 +27,8 @@ const INSIDE_HOLD_MS = 3000;
 
 // vehicles map: vehicleId → vehicle state object
 const vehicles = new Map();
+
+const rightOfWay = createRightOfWayTracker();
 
 function registerVehicle(vehicleId) {
   if (vehicles.has(vehicleId)) {
@@ -69,6 +72,10 @@ function registerVehicle(vehicleId) {
       narrowRoadId: null,
       narrowRoadName: null,
       insideRoadIds: [],
+
+      // roadId → when this vehicle entered it
+      roadEnteredAt: {},
+
       approachingRoads: [],
       lastInsideAt: null,
 
@@ -133,6 +140,7 @@ function resolveGeofenceState(existing, data, now) {
     narrowRoadId: existing.narrowRoadId,
     narrowRoadName: existing.narrowRoadName,
     insideRoadIds: existing.insideRoadIds,
+    roadEnteredAt: existing.roadEnteredAt,
     lastInsideAt: existing.lastInsideAt,
   };
 
@@ -164,6 +172,12 @@ function resolveGeofenceState(existing, data, now) {
 
   return {
     ...geofence,
+    roadEnteredAt: Object.fromEntries(
+      geofence.insideRoadIds.map((id) => [
+        id,
+        existing.roadEnteredAt[id] ?? now,
+      ])
+    ),
     lastInsideAt: geofence.insideNarrowRoad
       ? now
       : existing.lastInsideAt,
@@ -182,14 +196,6 @@ function setVehicleConnected(
     ...existing,
     connected,
   });
-}
-
-function removeVehicle(vehicleId) {
-  vehicles.delete(vehicleId);
-
-  console.log(
-    `[Vehicle Registry] ${vehicleId} removed`
-  );
 }
 
 /**
@@ -221,6 +227,8 @@ function updateNarrowRoadAlerts() {
 
   const activeVehicles = allVehicles.filter((v) => v.active);
 
+  rightOfWay.update(activeVehicles);
+
   for (const vehicle of allVehicles) {
     if (!vehicle.active) {
       vehicle.narrowRoadAlert = NO_ALERT;
@@ -232,20 +240,12 @@ function updateNarrowRoadAlerts() {
       (other) => other.vehicleId !== vehicle.vehicleId
     );
 
-    vehicle.narrowRoadAlert = buildNarrowRoadAlert(vehicle, others);
+    vehicle.narrowRoadAlert = buildNarrowRoadAlert(vehicle, others, rightOfWay);
 
     vehicle.otherVehiclesInSameNarrowRoad = others.filter((other) =>
       other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id))
     ).length;
   }
-}
-
-function getVehicle(vehicleId) {
-  const v = vehicles.get(vehicleId);
-
-  return v
-    ? { ...v }
-    : null;
 }
 
 function getAllVehicles() {
@@ -313,19 +313,12 @@ function getVehicleCount() {
   return vehicles.size;
 }
 
-function hasVehicle(vehicleId) {
-  return vehicles.has(vehicleId);
-}
-
 module.exports = {
   registerVehicle,
   updateVehicleTelemetry,
   setVehicleConnected,
-  removeVehicle,
-  getVehicle,
   getAllVehicles,
   getVehiclesForDashboard,
   getVisibleVehicles,
   getVehicleCount,
-  hasVehicle,
 };

@@ -19,6 +19,16 @@ function distanceBetween(latA, lonA, latB, lonB) {
 }
 
 /**
+ * Compass bearing from one point to another, from 0 to 360.
+ */
+function bearingBetween(latA, lonA, latB, lonB) {
+  const north = latB - latA;
+  const east = (lonB - lonA) * Math.cos(toRadians(latA));
+
+  return ((Math.atan2(east, north) * 180) / Math.PI + 360) % 360;
+}
+
+/**
  * Smallest angle between two compass bearings, from 0 to 180.
  */
 function angleDifference(a, b) {
@@ -85,6 +95,7 @@ function nearestPointOnPolygon(lat, lon, polygon) {
 
 module.exports = {
   distanceBetween,
+  bearingBetween,
   angleDifference,
   getTravelBearing,
   nearestPointOnPolygon,
