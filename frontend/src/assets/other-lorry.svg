@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="480" viewBox="0 0 200 480">
+<defs>
+<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe08a"/><stop offset=".28" stop-color="#fbbf24"/><stop offset=".6" stop-color="#f59e0b"/><stop offset=".85" stop-color="#c26f06"/><stop offset="1" stop-color="#7c4503"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40566a"/><stop offset=".35" stop-color="#172635"/><stop offset="1" stop-color="#02070c"/></linearGradient>
+<linearGradient id="light" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#7fd6ff"/></linearGradient>
+<linearGradient id="tail" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ff7777"/><stop offset="1" stop-color="#b30c20"/></linearGradient>
+</defs>
+<rect x="4" y="56" width="20" height="62" rx="7" fill="#0c1218"/><rect x="176" y="56" width="20" height="62" rx="7" fill="#0c1218"/><rect x="4" y="300" width="20" height="62" rx="7" fill="#0c1218"/><rect x="176" y="300" width="20" height="62" rx="7" fill="#0c1218"/><rect x="4" y="392" width="20" height="62" rx="7" fill="#0c1218"/><rect x="176" y="392" width="20" height="62" rx="7" fill="#0c1218"/>
+<rect x="0" y="40" width="22" height="10" rx="4" fill="#7c4503"/><rect x="178" y="40" width="22" height="10" rx="4" fill="#7c4503"/>
+<rect x="84" y="126" width="32" height="34" fill="#0c1218"/>
+<path d="M22 44C24 22 42 8 64 8H136C158 8 176 22 178 44V124C178 132 172 138 164 138H36C28 138 22 132 22 124Z" fill="url(#body)" stroke="#7c4503" stroke-width="4"/>
+<path d="M36 62C38 40 52 26 70 24H130C148 26 162 40 164 62C122 52 78 52 36 62Z" fill="url(#glass)"/>
+<rect x="24" y="12" width="26" height="8" rx="4" fill="url(#light)"/><rect x="150" y="12" width="26" height="8" rx="4" fill="url(#light)"/>
+<rect x="14" y="150" width="172" height="320" rx="8" fill="url(#body)" stroke="#7c4503" stroke-width="4"/>
+<rect x="28" y="164" width="144" height="292" rx="4" fill="#5b3c1e"/>
+<path d="M28 196H172M28 228H172M28 260H172M28 292H172M28 324H172M28 356H172M28 388H172M28 420H172" stroke="#3b260f" stroke-width="4"/>
+<rect x="46" y="190" width="108" height="104" rx="8" fill="#8a6239" stroke="#3b260f" stroke-width="3"/>
+<path d="M46 242H154M100 190V294" stroke="#3b260f" stroke-width="3"/>
+<rect x="24" y="460" width="26" height="8" rx="4" fill="url(#tail)"/><rect x="150" y="460" width="26" height="8" rx="4" fill="url(#tail)"/>
+</svg>

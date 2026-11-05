@@ -36,8 +36,24 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimu
       () => document.querySelector(".cv-alert strong")?.innerText ?? "none"
     );
 
+  const listedIn = (page) =>
+    page.$$eval(".cv-nearby li strong", (names) => names.length);
+
+  const hasRoadList = async (page) => Boolean(await page.$(".cv-nearby"));
+
+  // Car B is nearby by now, but hasn't entered the road
+  await waitForPhase("Car B is about to enter");
+  await sleep(5000);
+  check("a car outside the road isn't listed", (await listedIn(carA)) === 0);
+  check("a car outside any narrow road has no list", !(await hasRoadList(carB)));
+  check("a nearby car still shows on the map", (await carA.$$(".cv-marker-other")).length === 1);
+
   await waitForPhase("Car B enters after Car A");
   await sleep(5500);
+  check("a car in the same road is listed", (await listedIn(carA)) === 1);
+  check("your own car is a car image on the map", Boolean(await carA.$(".cv-marker-ego[data-vehicle='car'] img")));
+  check("another driver shows as their own vehicle type", Boolean(await carA.$(".cv-marker-other[data-vehicle='bus'] img")));
+  check("the alert names the other vehicle", (await carA.evaluate(() => document.querySelector(".cv-alert").innerText)).includes("The bus should give way"));
   check("the first car in has right of way", (await alertOf(carA)) === "You have right of way");
   check("the later car is told to give way", (await alertOf(carB)) === "Give way");
 

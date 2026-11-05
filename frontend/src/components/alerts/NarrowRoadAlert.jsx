@@ -1,4 +1,4 @@
-import { hasRoadName } from "../../utils/display";
+import { hasRoadName, VEHICLE_LABELS } from "../../utils/display";
 import Icon from "../common/Icon";
 
 // Each has its own icon, so an alert doesn't rely on colour alone
@@ -8,14 +8,14 @@ const MESSAGES = {
     tone: "stop",
     title: "Give way",
     detail: "Suggested: stop and let the other vehicle pass",
-    note: "The other vehicle entered first",
+    note: (other) => `The ${other} entered first`,
   },
   RIGHT_OF_WAY: {
     icon: "arrowUp",
     tone: "go",
     title: "You have right of way",
     detail: "Suggested: continue slowly",
-    note: "The other vehicle should give way",
+    note: (other) => `The ${other} should give way`,
   },
   VEHICLE_ENTERING: {
     icon: "car",
@@ -38,8 +38,11 @@ function NarrowRoadAlert({ alert }) {
     return null;
   }
 
+  const otherVehicle =
+    VEHICLE_LABELS[alert.otherVehicleType]?.toLowerCase() ?? "other vehicle";
+
   const note = [
-    message.note,
+    message.note?.(otherVehicle),
     hasRoadName(alert.roadName) ? alert.roadName : null,
   ]
     .filter(Boolean)

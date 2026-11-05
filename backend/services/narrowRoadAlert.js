@@ -170,8 +170,8 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
   const roadIds = new Set(vehicle.insideRoadIds);
 
-  let mustGiveWay = false;
-  let hasRightOfWay = false;
+  const mustGiveWayTo = [];
+  const givingWay = [];
   let vehicleEntering = false;
 
   for (const other of others) {
@@ -179,11 +179,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
     if (pair) {
       if (!pair.passed) {
-        if (pair.winnerId === vehicle.vehicleId) {
-          hasRightOfWay = true;
-        } else {
-          mustGiveWay = true;
-        }
+        (pair.winnerId === vehicle.vehicleId ? givingWay : mustGiveWayTo).push(other);
       }
     } else if (
       getRelation(vehicle, other) !== "SAME_DIRECTION" &&
@@ -193,15 +189,19 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
     }
   }
 
-  const alert = (kind, level) => ({
+  const alert = (kind, level, conflicts = []) => ({
     kind,
     level,
     roadId: vehicle.narrowRoadId,
     roadName: vehicle.narrowRoadName,
+
+    // Only when there's one other vehicle, so the screen can name it
+    otherVehicleType:
+      conflicts.length === 1 ? conflicts[0].vehicleType ?? null : null,
   });
 
-  if (mustGiveWay) return alert("GIVE_WAY", "danger");
-  if (hasRightOfWay) return alert("RIGHT_OF_WAY", "warning");
+  if (mustGiveWayTo.length > 0) return alert("GIVE_WAY", "danger", mustGiveWayTo);
+  if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", givingWay);
   if (vehicleEntering) return alert("VEHICLE_ENTERING", "warning");
   return alert("IN_NARROW_ROAD", "caution");
 }

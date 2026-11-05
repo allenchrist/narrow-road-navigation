@@ -24,7 +24,7 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
 
 1. The driver logs in on the phone and taps **Connect**. The app sends the car's position about once a second, even with the screen locked.
 2. The server checks each position against the saved narrow roads and compares nearby cars.
-3. The driver logs in to the dashboard with the same account and sees their car, nearby cars within 1 km, and any alert.
+3. The driver logs in to the dashboard with the same account. The map shows their car and other cars within 2 km. Inside a narrow road, the panel lists the vehicles in that road.
 
 Road shapes are never shown to drivers. Alerts only appear once a car is inside a narrow road.
 
@@ -38,6 +38,10 @@ If a car's position is more than 5 seconds old, the top bar shows **Weak signal*
 | **Vehicle about to enter** | Another car is heading for this road | Orange |
 | **You have right of way** | Another car in this road entered after you | Green, with an arrow |
 | **Give way** | Another car in this road entered before you | Red, with a give-way sign |
+
+### Vehicle types
+
+Each driver chooses a car, truck, lorry, bus or auto when signing up in the app, and can change it later. Older accounts count as cars. The type sets the vehicle's image on the map and how the panel and alerts name it, and it doesn't affect who gives way.
 
 ### Who gives way
 
@@ -193,7 +197,7 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 - **Only cars using the system count:** other vehicles are invisible to it.
 - **No slope data:** it can't apply the usual rule that favours the car going uphill.
 - **Live state is in memory:** if the server restarts, cars reappear as their next updates arrive and right-of-way decisions start again.
-- **Faked positions:** a logged-in user who fakes their GPS could see cars within 1 km of the faked position.
+- **Faked positions:** a logged-in user who fakes their GPS could see cars within 2 km of the faked position.
 
 ## Common problems
 

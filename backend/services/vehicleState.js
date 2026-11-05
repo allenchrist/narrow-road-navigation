@@ -15,9 +15,10 @@ const {
   NO_ALERT,
 } = require("./narrowRoadAlert");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
+const { DEFAULT_VEHICLE_TYPE } = require("../utils/vehicleTypes");
 
 // Drivers only receive other vehicles within this distance
-const NEARBY_RADIUS_M = 1000;
+const NEARBY_RADIUS_M = 2000;
 
 // Positions less accurate than this do not change geofence state
 const MAX_GEOFENCE_ACCURACY_M = 50;
@@ -50,6 +51,7 @@ function registerVehicle(vehicleId) {
   } else {
     vehicles.set(vehicleId, {
       vehicleId,
+      vehicleType: DEFAULT_VEHICLE_TYPE,
       lat: null,
       lon: null,
       heading: null,
@@ -196,6 +198,14 @@ function resolveGeofenceState(existing, data, now) {
   };
 }
 
+function setVehicleType(vehicleId, vehicleType) {
+  const vehicle = vehicles.get(vehicleId);
+
+  if (vehicle) {
+    vehicle.vehicleType = vehicleType;
+  }
+}
+
 function setVehicleConnected(
   vehicleId,
   connected
@@ -279,6 +289,7 @@ function getVehiclesForDashboard() {
 
   return getAllVehicles().map((vehicle) => ({
     vehicleId: vehicle.vehicleId,
+    vehicleType: vehicle.vehicleType,
     lat: vehicle.lat,
     lon: vehicle.lon,
     heading: vehicle.heading,
@@ -296,10 +307,11 @@ function getVehiclesForDashboard() {
  * What one driver may see: their own vehicle, plus other active vehicles
  * nearby. A driver has to be sharing their own position to see anyone, so
  * an account alone can't be used to look around. Another vehicle's alert
- * is left out, because it's only meant for that driver.
+ * is left out, because it's only meant for that driver. Each other vehicle
+ * says whether it shares a narrow road with this driver, but not which road.
  */
-function getVisibleVehicles(vehicles, ownVehicleId) {
-  const own = vehicles.find(
+function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
+  const own = dashboardVehicles.find(
     (vehicle) => vehicle.vehicleId === ownVehicleId
   );
 
@@ -311,7 +323,9 @@ function getVisibleVehicles(vehicles, ownVehicleId) {
     return [own];
   }
 
-  const others = vehicles
+  const ownRoadIds = vehicles.get(ownVehicleId)?.insideRoadIds ?? [];
+
+  const others = dashboardVehicles
     .filter(
       (vehicle) =>
         vehicle.vehicleId !== ownVehicleId &&
@@ -320,7 +334,12 @@ function getVisibleVehicles(vehicles, ownVehicleId) {
         distanceBetween(own.lat, own.lon, vehicle.lat, vehicle.lon) <=
           NEARBY_RADIUS_M
     )
-    .map(({ narrowRoadAlert: _alert, ...vehicle }) => vehicle);
+    .map(({ narrowRoadAlert: _alert, ...vehicle }) => ({
+      ...vehicle,
+      inSameRoad: (vehicles.get(vehicle.vehicleId)?.insideRoadIds ?? []).some(
+        (id) => ownRoadIds.includes(id)
+      ),
+    }));
 
   return [own, ...others];
 }
@@ -332,6 +351,7 @@ function getVehicleCount() {
 module.exports = {
   registerVehicle,
   updateVehicleTelemetry,
+  setVehicleType,
   setVehicleConnected,
   getAllVehicles,
   getVehiclesForDashboard,

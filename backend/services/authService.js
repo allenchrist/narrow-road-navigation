@@ -1,13 +1,13 @@
 const { pool } = require("../config/database");
 
-async function registerUser(username, email, passwordHash) {
+async function registerUser(username, email, passwordHash, vehicleType) {
   const result = await pool.query(
     `
-    INSERT INTO users (username, email, password_hash)
-    VALUES ($1, $2, $3)
-    RETURNING id, username, email, created_at;
+    INSERT INTO users (username, email, password_hash, vehicle_type)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, username, email, vehicle_type, created_at;
     `,
-    [username, email, passwordHash]
+    [username, email, passwordHash, vehicleType]
   );
 
   return result.rows[0];
@@ -16,7 +16,7 @@ async function registerUser(username, email, passwordHash) {
 async function findUserByUsername(username) {
   const result = await pool.query(
     `
-    SELECT id, username, email, password_hash, device_id
+    SELECT id, username, email, password_hash, device_id, vehicle_type
     FROM users
     WHERE username = $1;
     `,
@@ -33,7 +33,7 @@ async function findUserByUsername(username) {
 async function findUserForLogin(username) {
   const result = await pool.query(
     `
-    SELECT id, username, email, password_hash, device_id
+    SELECT id, username, email, password_hash, device_id, vehicle_type
     FROM users
     WHERE LOWER(username) = LOWER($1)
     ORDER BY id;
@@ -71,7 +71,7 @@ async function isEmailTaken(email) {
 async function findUserByDeviceId(deviceId) {
   const result = await pool.query(
     `
-    SELECT id, username, email, device_id
+    SELECT id, username, email, device_id, vehicle_type
     FROM users
     WHERE device_id = $1;
     `,
@@ -143,8 +143,16 @@ async function unlinkDeviceFromUser(userId, deviceId) {
   return result.rowCount > 0;
 }
 
+async function updateVehicleType(userId, vehicleType) {
+  await pool.query(
+    "UPDATE users SET vehicle_type = $1 WHERE id = $2;",
+    [vehicleType, userId]
+  );
+}
+
 module.exports = {
   registerUser,
+  updateVehicleType,
   findUserByUsername,
   findUserForLogin,
   isUsernameTaken,

@@ -11,9 +11,19 @@ export function hasRoadName(name) {
   return displayRoadName(name) !== "Narrow road";
 }
 
-// VEHICLE_002 becomes Vehicle 002
-export function displayVehicleName(vehicleId) {
-  return vehicleId.replace("VEHICLE_", "Vehicle ");
+export const VEHICLE_LABELS = {
+  car: "Car",
+  truck: "Truck",
+  lorry: "Lorry",
+  bus: "Bus",
+  auto: "Auto",
+};
+
+// VEHICLE_002 on a bus account becomes Bus 002
+export function displayVehicleName({ vehicleId, vehicleType }) {
+  const label = VEHICLE_LABELS[vehicleType] ?? "Vehicle";
+
+  return vehicleId.replace("VEHICLE_", `${label} `);
 }
 
 const MOVING_SPEED_MPS = 1;

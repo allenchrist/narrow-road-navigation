@@ -86,13 +86,14 @@ async function post(urlPath, body, token) {
 }
 
 // A new driver account, returning its login token
-async function createDriver(username) {
+async function createDriver(username, vehicleType) {
   const password = `${username}-password`;
 
   const created = await post("/api/auth/register", {
     username,
     email: `${username}@example.com`,
     password,
+    vehicleType,
   });
 
   if (created.status !== 201) {

@@ -707,27 +707,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 84px;
+  height: 84px;
 }
 
-/* Your own car is the brightest thing on the map */
-.cv-marker-puck {
+.cv-marker-ego img,
+.cv-marker-other img {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border: 3px solid #ffffff;
-  border-radius: 50%;
-  background: var(--cv-accent);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.55);
-  color: var(--cv-on-accent);
-}
-
-.cv-marker-puck > div {
-  display: flex;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.65));
   transition: transform 0.4s ease-out;
 }
 
@@ -755,18 +744,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: var(--cv-warn);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  color: #1a1400;
-}
-
-.cv-marker-other > div {
-  display: flex;
-  transition: transform 0.4s ease-out;
+  width: 72px;
+  height: 72px;
 }
 
 .cv-map-canvas .leaflet-popup-content-wrapper,
@@ -1143,7 +1122,7 @@
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     width: auto;
-    height: var(--cv-panel-height);
+    max-height: var(--cv-panel-height);
     overflow: hidden;
   }
 

@@ -2,13 +2,14 @@ import { useVehicle } from "../../context/VehicleContext";
 import { haversineDistance } from "../../utils/haversine";
 import {
   displayRoadName,
+  VEHICLE_LABELS,
   displayVehicleName,
   isMoving,
   travelDirection,
 } from "../../utils/display";
 import Icon from "../common/Icon";
 
-const MAX_NEARBY_SHOWN = 4;
+const MAX_VEHICLES_SHOWN = 4;
 
 const COMPASS_POINTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
@@ -32,13 +33,15 @@ function DrivePanel({ alert }) {
     ? travelDirection(egoVehicle)
     : null;
 
-  const nearby = hasPosition
+  const inNarrowRoad = Boolean(alert?.roadId);
+
+  const inThisRoad = hasPosition && inNarrowRoad
     ? Object.values(vehicles)
         .filter(
           (v) =>
             v.vehicleId !== myVehicleId &&
             v.active &&
-            v.lat !== null
+            v.inSameRoad
         )
         .map((v) => ({
           ...v,
@@ -51,8 +54,6 @@ function DrivePanel({ alert }) {
         }))
         .sort((a, b) => a.distance - b.distance)
     : [];
-
-  const inNarrowRoad = Boolean(alert?.roadId);
 
   return (
     <aside className="cv-panel cv-drive-panel">
@@ -92,35 +93,37 @@ function DrivePanel({ alert }) {
         </div>
       </section>
 
-      <section className="cv-nearby">
-        <div className="cv-nearby-header">
-          <span className="cv-section-label">Nearby vehicles</span>
-          <span className="cv-count">{nearby.length}</span>
-        </div>
+      {inNarrowRoad && (
+        <section className="cv-nearby">
+          <div className="cv-nearby-header">
+            <span className="cv-section-label">In this road</span>
+            <span className="cv-count">{inThisRoad.length}</span>
+          </div>
 
-        {nearby.length === 0 ? (
-          <p className="cv-nearby-empty">
-            No other vehicles nearby
-          </p>
-        ) : (
-          <ul>
-            {nearby.slice(0, MAX_NEARBY_SHOWN).map((v) => (
-              <li key={v.vehicleId}>
-                <span className="cv-nearby-icon">
-                  <Icon name="car" size={16} />
-                </span>
-
-                <div>
-                  <strong>{displayVehicleName(v.vehicleId)}</strong>
-                  <span>
-                    {isMoving(v) ? "Moving" : "Stopped"}
+          {inThisRoad.length === 0 ? (
+            <p className="cv-nearby-empty">
+              No other vehicles in this road
+            </p>
+          ) : (
+            <ul>
+              {inThisRoad.slice(0, MAX_VEHICLES_SHOWN).map((v) => (
+                <li key={v.vehicleId}>
+                  <span className="cv-nearby-icon">
+                    <Icon name={VEHICLE_LABELS[v.vehicleType] ? v.vehicleType : "car"} size={16} />
                   </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+
+                  <div>
+                    <strong>{displayVehicleName(v)}</strong>
+                    <span>
+                      {isMoving(v) ? "Moving" : "Stopped"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </aside>
   );
 }

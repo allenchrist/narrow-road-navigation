@@ -20,6 +20,12 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS device_id VARCHAR(128);
   `);
 
+  // Accounts from before vehicle types become cars
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS vehicle_type TEXT NOT NULL DEFAULT 'car';
+  `);
+
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS users_device_id_unique
     ON users(device_id)

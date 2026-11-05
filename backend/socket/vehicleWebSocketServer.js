@@ -26,6 +26,7 @@ const { validateVehicleData } = require("../utils/validateVehicleData");
 const {
   registerVehicle,
   updateVehicleTelemetry,
+  setVehicleType,
   setVehicleConnected,
 } = require("../services/vehicleState");
 const { broadcastFleetUpdate, notifyDeviceChanged } = require("./socketServer");
@@ -230,8 +231,10 @@ function initVehicleWebSocketServer(httpServer, path) {
           existingWs.close(4002, "Replaced by new connection");
         }
 
+        const isNewDevice = !hasDevice(deviceId);
+
         // ── KNOWN DEVICE: restore existing vehicleId ─────────────────────────
-        if (hasDevice(deviceId)) {
+        if (!isNewDevice) {
           vehicleId = getVehicleForDevice(deviceId);
           setDeviceConnected(deviceId, true, ws);
           registerVehicle(vehicleId); // marks connected:true in vehicleState
@@ -244,18 +247,26 @@ function initVehicleWebSocketServer(httpServer, path) {
           newDevicesOverall.record("all");
           registerVehicle(vehicleId);
           console.log(`[Vehicle WS] New device ${deviceId} → ${vehicleId} (allocated)`);
-
-          // Its car screen may be open and waiting for this vehicle
-          findUserByDeviceId(deviceId)
-            .then((user) => {
-              if (user) {
-                notifyDeviceChanged(user.username);
-              }
-            })
-            .catch((error) => {
-              console.error(`[Vehicle WS] Couldn't notify the car screen: ${error.message}`);
-            });
         }
+
+        const connectedVehicleId = vehicleId;
+
+        findUserByDeviceId(deviceId)
+          .then((user) => {
+            if (!user) {
+              return;
+            }
+
+            setVehicleType(connectedVehicleId, user.vehicle_type);
+
+            // Its car screen may be open and waiting for this vehicle
+            if (isNewDevice) {
+              notifyDeviceChanged(user.username);
+            }
+          })
+          .catch((error) => {
+            console.error(`[Vehicle WS] Couldn't load the account's details: ${error.message}`);
+          });
 
         registered = true;
 

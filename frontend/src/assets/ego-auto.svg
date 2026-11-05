@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="300" viewBox="0 0 180 300">
+<defs>
+<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".28" stop-color="#f5f7fa"/><stop offset=".6" stop-color="#d9dee4"/><stop offset=".85" stop-color="#aeb7c0"/><stop offset="1" stop-color="#707a84"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40566a"/><stop offset=".35" stop-color="#172635"/><stop offset="1" stop-color="#02070c"/></linearGradient>
+<linearGradient id="light" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#7fd6ff"/></linearGradient>
+<linearGradient id="tail" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ff7777"/><stop offset="1" stop-color="#b30c20"/></linearGradient>
+</defs>
+<rect x="79" y="0" width="22" height="42" rx="8" fill="#0c1218"/>
+<rect x="4" y="196" width="22" height="66" rx="8" fill="#0c1218"/><rect x="154" y="196" width="22" height="66" rx="8" fill="#0c1218"/>
+<path d="M90 12C64 12 50 38 44 76L22 226C18 266 42 292 90 292C138 292 162 266 158 226L136 76C130 38 116 12 90 12Z" fill="url(#body)" stroke="#707a84" stroke-width="4"/>
+<path d="M58 78C62 56 72 44 90 44C108 44 118 56 122 78C100 70 80 70 58 78Z" fill="url(#glass)"/>
+<path d="M50 92C76 78 104 78 130 92L148 236C110 262 70 262 32 236Z" fill="#161d25" stroke="#050709" stroke-width="3"/>
+<path d="M46 130C74 118 106 118 134 130M41 170C72 158 108 158 139 170M36 210C70 198 110 198 144 210" fill="none" stroke="#39444f" stroke-width="3"/>
+<circle cx="90" cy="24" r="9" fill="url(#light)"/>
+<rect x="44" y="278" width="22" height="7" rx="3" fill="url(#tail)"/><rect x="114" y="278" width="22" height="7" rx="3" fill="url(#tail)"/>
+</svg>

@@ -8,6 +8,7 @@ const {
   isUsernameTaken,
   isEmailTaken,
   findUserForLogin,
+  updateVehicleType,
   linkDeviceToUser,
   unlinkDeviceFromUser,
 } = require("../services/authService");
@@ -18,10 +19,17 @@ const {
   getVehicleForDevice,
   validateDeviceId,
 } = require("../services/deviceRegistry");
-const { getVehiclesForDashboard } = require("../services/vehicleState");
+const {
+  getVehiclesForDashboard,
+  setVehicleType,
+} = require("../services/vehicleState");
 const { notifyDeviceChanged } = require("../socket/socketServer");
 const { disconnectDevice } = require("../socket/vehicleWebSocketServer");
 const { validateRegistration } = require("../utils/validateAccount");
+const {
+  VEHICLE_TYPE_ERROR,
+  isValidVehicleType,
+} = require("../utils/vehicleTypes");
 const { createRateLimiter, getClientIp } = require("../utils/rateLimit");
 
 const router = express.Router();
@@ -60,7 +68,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const { username, email, password } = account;
+    const { username, email, password, vehicleType } = account;
 
     if (await isUsernameTaken(username)) {
       return res.status(409).json({
@@ -81,7 +89,8 @@ router.post("/register", async (req, res) => {
     const user = await registerUser(
       username,
       email,
-      passwordHash
+      passwordHash,
+      vehicleType
     );
 
     accountsByAddress.record(address);
@@ -92,6 +101,7 @@ router.post("/register", async (req, res) => {
       user: {
         username: user.username,
         email: user.email,
+        vehicleType: user.vehicle_type,
       },
     });
   } catch (error) {
@@ -167,6 +177,7 @@ router.post("/login", async (req, res) => {
       user: {
         username: user.username,
         email: user.email,
+        vehicleType: user.vehicle_type,
       },
     });
   } catch (error) {
@@ -287,6 +298,76 @@ router.post("/device/unlink", authenticateToken, async (req, res) => {
 
     res.status(500).json({
       message: "Failed to unlink device.",
+    });
+  }
+});
+
+// The driver's saved details, as a phone that's already logged in may not have them
+router.get("/profile", authenticateToken, async (req, res) => {
+  try {
+    const user = req.user.username
+      ? await findUserByUsername(req.user.username)
+      : null;
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid authentication token.",
+      });
+    }
+
+    res.json({
+      user: {
+        username: user.username,
+        email: user.email,
+        vehicleType: user.vehicle_type,
+      },
+    });
+  } catch (error) {
+    console.error("[Auth] Profile lookup failed:", error.message);
+
+    res.status(500).json({
+      message: "Failed to load your details.",
+    });
+  }
+});
+
+router.put("/vehicle-type", authenticateToken, async (req, res) => {
+  try {
+    const vehicleType = req.body?.vehicleType;
+
+    if (!isValidVehicleType(vehicleType)) {
+      return res.status(400).json({
+        message: VEHICLE_TYPE_ERROR,
+      });
+    }
+
+    const user = req.user.username
+      ? await findUserByUsername(req.user.username)
+      : null;
+
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid authentication token.",
+      });
+    }
+
+    await updateVehicleType(user.id, vehicleType);
+
+    // Shows on the map straight away if this driver's phone is connected
+    const vehicleId = user.device_id
+      ? getVehicleForDevice(user.device_id)
+      : null;
+
+    if (vehicleId) {
+      setVehicleType(vehicleId, vehicleType);
+    }
+
+    res.json({ vehicleType });
+  } catch (error) {
+    console.error("[Auth] Vehicle type update failed:", error.message);
+
+    res.status(500).json({
+      message: "Failed to save your vehicle type.",
     });
   }
 });

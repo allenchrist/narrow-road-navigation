@@ -271,6 +271,27 @@ const tests = {
     const turnedLater = moved(later, 11, 77.0015, MOVING, WEST);
     assert.deepStrictEqual(kindsAfterUpdate(tracker, [turned, turnedLater]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
   },
+  "the alert names the one other vehicle": () => {
+    const first = { ...insideEastbound(), vehicleType: "car" };
+    const later = { ...insideWestbound(), vehicleType: "bus" };
+    const tracker = createRightOfWayTracker();
+    tracker.update([first, later]);
+    assert.strictEqual(buildNarrowRoadAlert(first, [later], tracker).otherVehicleType, "bus");
+    assert.strictEqual(buildNarrowRoadAlert(later, [first], tracker).otherVehicleType, "car");
+  },
+  "a bigger vehicle that entered last still gives way": () => {
+    const first = { ...insideEastbound(), vehicleType: "auto" };
+    const later = { ...insideWestbound(), vehicleType: "truck" };
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "several other vehicles aren't named": () => {
+    const oncoming = { ...insideWestbound(), vehicleType: "bus" };
+    const a = { ...vehicleAt(11, 77.0002, MOVING, EAST), vehicleType: "car" };
+    const b = { ...vehicleAt(11, 77.0004, MOVING, EAST), vehicleType: "car" };
+    const tracker = createRightOfWayTracker();
+    tracker.update([oncoming, a, b]);
+    assert.strictEqual(buildNarrowRoadAlert(oncoming, [a, b], tracker).otherVehicleType, null);
+  },
   "a car that entered last gives way to everyone before it": () => {
     const first = insideEastbound();
     const oncoming = insideWestbound();

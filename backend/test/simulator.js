@@ -29,7 +29,7 @@ const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 
 const CAR_A = { username: "sim_car_a", deviceId: "simulator-car-a" };
-const CAR_B = { username: "sim_car_b", deviceId: "simulator-car-b" };
+const CAR_B = { username: "sim_car_b", deviceId: "simulator-car-b", vehicleType: "bus" };
 
 const TICK_MS = 1000;
 const START_DELAY_MS = 5000;
@@ -62,11 +62,12 @@ async function postJson(path, body, token) {
 /**
  * Creates the account if needed, links its device, and returns its login token.
  */
-async function prepareDemoAccount({ username, deviceId }) {
+async function prepareDemoAccount({ username, deviceId, vehicleType }) {
   const registered = await postJson("/api/auth/register", {
     username,
     email: `${username}@example.com`,
     password: DEMO_PASSWORD,
+    vehicleType,
   });
 
   if (registered.status !== 201 && registered.status !== 409) {

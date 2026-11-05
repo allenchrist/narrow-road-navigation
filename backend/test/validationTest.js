@@ -27,6 +27,19 @@ const tests = {
     assert.strictEqual(account.username, "allen");
     assert.strictEqual(account.email, "a@b.co");
   },
+  "a vehicle type is optional, and defaults to a car": () => {
+    assert.strictEqual(validateRegistration(good).vehicleType, "car");
+  },
+  "every vehicle type is accepted": () => {
+    for (const vehicleType of ["car", "truck", "lorry", "bus", "auto"]) {
+      assert.strictEqual(validateRegistration({ ...good, vehicleType }).vehicleType, vehicleType);
+    }
+  },
+  "an unknown vehicle type is refused": () => {
+    assert.ok(errorFor({ vehicleType: "plane" }));
+    assert.ok(errorFor({ vehicleType: 5 }));
+    assert.ok(errorFor({ vehicleType: null }));
+  },
   "short or invalid passwords are refused": () => {
     assert.ok(errorFor({ password: "1234567" }));
     assert.ok(errorFor({ password: 12345678 }));

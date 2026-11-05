@@ -1,3 +1,9 @@
+const {
+  DEFAULT_VEHICLE_TYPE,
+  VEHICLE_TYPE_ERROR,
+  isValidVehicleType,
+} = require("./vehicleTypes");
+
 const USERNAME_PATTERN = /^[A-Za-z0-9_-][A-Za-z0-9_.-]{2,49}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,7 +25,12 @@ const RESERVED_USERNAMES = new Set([
 /**
  * Returns the cleaned-up account details, or an error message to show.
  */
-function validateRegistration({ username, email, password }) {
+function validateRegistration({
+  username,
+  email,
+  password,
+  vehicleType = DEFAULT_VEHICLE_TYPE,
+}) {
   if (
     typeof username !== "string" ||
     typeof email !== "string" ||
@@ -59,10 +70,15 @@ function validateRegistration({ username, email, password }) {
     return { error: "Password is too long." };
   }
 
+  if (!isValidVehicleType(vehicleType)) {
+    return { error: VEHICLE_TYPE_ERROR };
+  }
+
   return {
     username: cleanUsername,
     email: cleanEmail,
     password,
+    vehicleType,
   };
 }
 
