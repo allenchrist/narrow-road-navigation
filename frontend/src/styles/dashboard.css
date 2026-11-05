@@ -173,6 +173,17 @@
   cursor: default;
 }
 
+.cv-button--quiet {
+  border: 1px solid var(--cv-border);
+  background: transparent;
+  color: var(--cv-text);
+}
+
+.cv-button--quiet:hover:not(:disabled) {
+  background: var(--cv-raised);
+  filter: none;
+}
+
 .cv-dashboard :focus-visible,
 .cv-center-page :focus-visible {
   outline: 2px solid var(--cv-accent);
@@ -266,6 +277,25 @@
   font-size: 22px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.cv-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--cv-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cv-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cv-logout:hover {
+  background: var(--cv-raised);
 }
 
 .cv-menu {
@@ -846,6 +876,10 @@
   margin-top: 22px;
 }
 
+.cv-message-card .cv-button + .cv-button {
+  margin-top: 10px;
+}
+
 .cv-field--close {
   margin-top: 12px;
 }
@@ -1241,6 +1275,23 @@
 /* A phone already shows the time, and the name needs the room */
 @media (max-width: 480px) {
   .cv-clock {
+    display: none;
+  }
+
+  .cv-topbar-right {
+    gap: 4px;
+  }
+
+  .cv-logout {
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    color: var(--cv-text-2);
+  }
+
+  .cv-logout span {
     display: none;
   }
 }

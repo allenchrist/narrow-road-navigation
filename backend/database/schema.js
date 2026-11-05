@@ -26,6 +26,25 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS vehicle_type TEXT NOT NULL DEFAULT 'car';
   `);
 
+  // Raised when a password changes, which ends every older login
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_codes (
+      email TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}',
+      attempts INTEGER NOT NULL DEFAULT 0,
+      expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      last_sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (email, purpose)
+    );
+  `);
+
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS users_device_id_unique
     ON users(device_id)

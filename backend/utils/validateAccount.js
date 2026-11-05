@@ -22,6 +22,19 @@ const RESERVED_USERNAMES = new Set([
   "socket.io",
 ]);
 
+// Returns an error message to show, or null if the password is fine
+function validatePassword(password) {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+
+  if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) {
+    return "Password is too long.";
+  }
+
+  return null;
+}
+
 /**
  * Returns the cleaned-up account details, or an error message to show.
  */
@@ -60,14 +73,10 @@ function validateRegistration({
     return { error: "Enter a valid email address." };
   }
 
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return {
-      error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
-    };
-  }
+  const passwordError = validatePassword(password);
 
-  if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) {
-    return { error: "Password is too long." };
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   if (!isValidVehicleType(vehicleType)) {
@@ -82,4 +91,4 @@ function validateRegistration({
   };
 }
 
-module.exports = { validateRegistration };
+module.exports = { validateRegistration, validatePassword };

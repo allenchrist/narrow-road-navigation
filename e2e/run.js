@@ -12,6 +12,7 @@
  */
 
 const fs = require("fs");
+const http = require("http");
 const os = require("os");
 const path = require("path");
 const { spawn, spawnSync } = require("child_process");
@@ -24,6 +25,8 @@ const FRONTEND = path.join(ROOT, "frontend");
 const DATABASE_PORT = 55440;
 const API_PORT = 55441;
 const SITE_PORT = 55442;
+const MAIL_PORT = 55443;
+const PLAIN_API_PORT = 55444;
 
 const API = `http://127.0.0.1:${API_PORT}`;
 const SITE = `http://127.0.0.1:${SITE_PORT}`;
@@ -72,12 +75,28 @@ async function waitFor(url, child) {
   throw new Error(`${url} didn't start:\n${child.output.slice(-1500)}`);
 }
 
-async function post(urlPath, body, token) {
+// Stands in for the email service, so tests can read the codes it was sent
+const sentEmails = [];
+
+const mailServer = http.createServer((request, response) => {
+  let body = "";
+
+  request.on("data", (chunk) => (body += chunk));
+
+  request.on("end", () => {
+    sentEmails.push({ ...JSON.parse(body), apiKey: request.headers["api-key"] });
+    response.writeHead(201, { "Content-Type": "application/json" });
+    response.end("{}");
+  });
+});
+
+async function post(urlPath, body, token, headers) {
   const response = await fetch(API + urlPath, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...headers,
     },
     body: JSON.stringify(body),
   });
@@ -142,6 +161,10 @@ async function main() {
       PORT: String(API_PORT),
       REQUIRE_VEHICLE_TOKEN: "true",
       STALE_THRESHOLD_MS: "15000",
+      ALLOW_TEST_SIGNUP: "true",
+      BREVO_API_KEY: "e2e-only-key",
+      BREVO_API_URL: `http://127.0.0.1:${MAIL_PORT}/`,
+      MAIL_FROM_ADDRESS: "sender@example.com",
     };
 
     const setup = spawnSync(process.execPath, ["database/init.js"], {
@@ -154,8 +177,23 @@ async function main() {
       throw new Error(`db:init failed:\n${setup.stdout}${setup.stderr}`);
     }
 
+    await new Promise((resolve) => mailServer.listen(MAIL_PORT, "127.0.0.1", resolve));
+
     const server = start(["server.js"], BACKEND, serverEnv);
     await waitFor(`${API}/health`, server);
+
+    // A server set up like a real one, for checking the test-only signup is off
+    async function startRealServer() {
+      const realServer = start(["server.js"], BACKEND, {
+        ...serverEnv,
+        PORT: String(PLAIN_API_PORT),
+        ALLOW_TEST_SIGNUP: "false",
+      });
+
+      await waitFor(`http://127.0.0.1:${PLAIN_API_PORT}/health`, realServer);
+
+      return { url: `http://127.0.0.1:${PLAIN_API_PORT}`, stop: () => realServer.kill() };
+    }
 
     const site = start(
       ["node_modules/vite/bin/vite.js", "--port", String(SITE_PORT), "--strictPort", "--host", "127.0.0.1"],
@@ -243,6 +281,8 @@ async function main() {
       post,
       check,
       createDriver,
+      sentEmails,
+      startRealServer,
       newPage,
       logIn,
       openDashboard,
@@ -279,6 +319,8 @@ async function main() {
     for (const child of children) {
       child.kill();
     }
+
+    mailServer.close();
 
     await database.stop().catch(() => {});
     await sleep(500);

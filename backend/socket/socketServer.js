@@ -11,6 +11,7 @@ const {
 
 const {
   findUserByUsername,
+  isSessionCurrent,
 } = require("../services/authService");
 
 let io = null;
@@ -33,23 +34,35 @@ function initSocketServer(httpServer) {
 
   // Live positions are only for logged-in drivers. The username comes from
   // the login token, so nobody can claim to be someone else.
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
+    let decoded;
+
     try {
-      const { username } = jwt.verify(
+      decoded = jwt.verify(
         socket.handshake.auth?.token,
         process.env.JWT_SECRET
       );
-
-      if (!username) {
-        throw new Error("Not a driver's token");
-      }
-
-      socket.data.username = username;
-
-      next();
     } catch {
       next(new Error(NOT_AUTHORIZED));
+      return;
     }
+
+    try {
+      if (!decoded.username || !(await isSessionCurrent(decoded))) {
+        next(new Error(NOT_AUTHORIZED));
+        return;
+      }
+    } catch (error) {
+      // A database problem isn't a bad login, so the screen just retries
+      console.error("[Socket.IO] Login check failed:", error.message);
+
+      next(new Error("Server busy"));
+      return;
+    }
+
+    socket.data.username = decoded.username;
+
+    next();
   });
 
   io.on("connection", (socket) => {
@@ -183,6 +196,11 @@ function notifyDeviceChanged(username) {
   io?.to(userRoom(username)).emit("session:changed");
 }
 
+// This login has ended, so its car screens must connect again and be refused
+function disconnectUser(username) {
+  io?.in(userRoom(username)).disconnectSockets(true);
+}
+
 // Saved devices have just loaded, so every car screen should look again
 function notifyAllDashboards() {
   io?.emit("session:changed");
@@ -215,6 +233,7 @@ module.exports = {
   initSocketServer,
   broadcastFleetUpdate,
   notifyDeviceChanged,
+  disconnectUser,
   notifyAllDashboards,
   closeSocketServer,
 };

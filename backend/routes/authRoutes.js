@@ -47,8 +47,15 @@ const accountsOverall = createRateLimiter({ max: 100, windowMs: HOUR_MS });
 const failedLoginsByAddress = createRateLimiter({ max: 20, windowMs: LOGIN_WINDOW_MS });
 const failedLoginsByUsername = createRateLimiter({ max: 10, windowMs: LOGIN_WINDOW_MS });
 
+// Only for simulators and tests. Real accounts go through /register/start.
 router.post("/register", async (req, res) => {
   try {
+    if (process.env.ALLOW_TEST_SIGNUP !== "true") {
+      return res.status(410).json({
+        message: "Please update the app to create an account.",
+      });
+    }
+
     const address = getClientIp(req);
 
     if (
@@ -164,6 +171,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       {
         username: user.username,
+        sv: user.session_version,
       },
       process.env.JWT_SECRET,
       {

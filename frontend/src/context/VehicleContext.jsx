@@ -94,8 +94,13 @@ export function VehicleProvider({ children }) {
       identifyDashboard();
     }
 
-    function onDisconnect() {
+    function onDisconnect(reason) {
       setBackendConnected(false);
+
+      // The server ended this login. Connecting again finds out why.
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
 
       setVehicles((previous) => {
         const updated = {};

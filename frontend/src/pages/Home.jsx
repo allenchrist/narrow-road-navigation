@@ -177,7 +177,7 @@ function Home() {
           </button>
 
           <p className="cv-form-note">
-            New here? Create an account in the phone app.
+            New here, or forgot your password? Use the phone app.
           </p>
         </form>
       </main>

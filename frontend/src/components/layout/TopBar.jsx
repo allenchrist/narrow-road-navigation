@@ -171,20 +171,22 @@ function TopBar() {
                 Suggest a narrow road
               </button>
 
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  signOutDriver();
-                  navigate("/", { replace: true });
-                }}
-              >
-                <Icon name="close" size={18} />
-                Log out
-              </button>
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          className="cv-logout"
+          onClick={() => {
+            signOutDriver();
+            navigate("/", { replace: true });
+          }}
+          aria-label="Log out"
+        >
+          <Icon name="logout" size={18} />
+          <span>Log out</span>
+        </button>
       </div>
     </header>
   );

@@ -21,6 +21,12 @@ if (!process.env.ADMIN_PASSWORD) {
   );
 }
 
+if (!process.env.BREVO_API_KEY || !process.env.MAIL_FROM_ADDRESS) {
+  console.warn(
+    "[Server] BREVO_API_KEY or MAIL_FROM_ADDRESS is not set, so nobody can sign up or reset a password"
+  );
+}
+
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -28,6 +34,7 @@ const config = require("./config/config");
 const { pool } = require("./config/database");
 const { ensureSchema } = require("./database/schema");
 const authRoutes = require("./routes/authRoutes");
+const accountRoutes = require("./routes/accountRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const roadRoutes = require("./routes/roadRoutes");
 const suggestionRoutes = require("./routes/suggestionRoutes");
@@ -69,6 +76,7 @@ app.use(
 
 app.use(express.json());
 
+app.use("/api/auth", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/narrow-roads", roadRoutes);

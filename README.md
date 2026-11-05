@@ -79,6 +79,8 @@ cd backend
 npm install
 ```
 
+Signing up and resetting passwords send emails through [Brevo](https://www.brevo.com), which has a free plan. Create an account, verify a sender address under **Senders**, and create an API key under **SMTP & API**. Render's free plan blocks normal mail ports, so the server uses Brevo's web API instead.
+
 Copy `backend/.env.example` to `backend/.env` and fill it in. See [Settings](#settings) for what each value means. Then:
 
 ```
@@ -110,7 +112,7 @@ Open <http://localhost:5173>.
 
 ## Demo without phones
 
-The simulator drives two cars through a real road and checks every alert. It needs the server from the steps above, and it creates two accounts, `sim_car_a` and `sim_car_b`, the first time it runs.
+The simulator drives two cars through a real road and checks every alert. It needs the server from the steps above, and it creates two accounts, `sim_car_a` and `sim_car_b`, the first time it runs. To allow that, set `ALLOW_TEST_SIGNUP=true` in `backend/.env` on a test database only.
 
 In a third terminal:
 
@@ -160,6 +162,9 @@ These go in `backend/.env`, or in the host's environment settings.
 | `DATABASE_URL` | Yes | The Postgres connection address. The connection must use verified SSL, unless the database is on the same machine |
 | `JWT_SECRET` | Yes | Signs login tokens. Use a long random value and keep it private |
 | `ADMIN_PASSWORD` | For the admin page | The password for `/admin`. The admin page can't be used without it |
+| `BREVO_API_KEY` | For signups | Sends the emailed codes. Without it, nobody can sign up or reset a password. Existing accounts can still log in |
+| `MAIL_FROM_ADDRESS` | For signups | The sender address you verified in Brevo |
+| `ALLOW_TEST_SIGNUP` | No | Set to `true` only on a test server, so the simulator and tests can create accounts without an emailed code. Leave it off everywhere else |
 | `CORS_ORIGIN` | If the website is hosted | Website addresses allowed to connect, separated by commas |
 | `REQUIRE_VEHICLE_TOKEN` | Recommended | Set to `true` so only logged-in phones can send positions. Every phone must be on a current app first |
 | `PORT` | No | Server port. Defaults to 5000 |
@@ -170,7 +175,7 @@ These go in `backend/.env`, or in the host's environment settings.
 
 | Address | What it is |
 |---|---|
-| `/` | Driver login. Accounts are created in the phone app |
+| `/` | Driver login. Accounts are created, passwords reset and accounts deleted in the phone app |
 | `/your-username` | The dashboard. The full-screen button is in the top bar, and the menu has Suggest a narrow road and Log out |
 | `/your-username/suggest-narrow-road` | Mark a narrow road on the map and send it for review |
 | `/admin` | Mark, edit and delete roads, and approve or reject suggestions |
@@ -208,6 +213,8 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 | "Not Found" when opening or refreshing a page online | The host must send every address to `index.html`. See [Host it online](#host-it-online) |
 | Dashboard says "Log in on your phone" | The app isn't logged in with this account or can't reach the server |
 | Website can't reach the server | Check `VITE_BACKEND_URL`, and that the website's address is in `CORS_ORIGIN` |
+| "Email isn't set up on the server" when signing up | Set `BREVO_API_KEY` and `MAIL_FROM_ADDRESS` on the server |
+| Emailed codes don't arrive | Check the spam folder, and Brevo's logs. A Gmail sender address can be filtered as spam, so a sender on your own domain is more reliable |
 | Admin page won't log in | `ADMIN_PASSWORD` isn't set on the server |
 | A road edited directly in the database hasn't changed | The server keeps roads in memory, so restart it. Changes made on the admin page apply straight away |
 | Roads you deleted came back | `npm run db:init` was run again. Delete them again, and don't re-run it |

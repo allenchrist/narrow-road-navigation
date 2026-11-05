@@ -70,7 +70,8 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
     vehicleType,
   });
 
-  if (registered.status !== 201 && registered.status !== 409) {
+  // 410 means this server needs emailed codes, so the account must already exist
+  if (![201, 409, 410].includes(registered.status)) {
     throw new Error(`Could not create the demo account: ${registered.body.message}`);
   }
 
@@ -78,6 +79,12 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
     username,
     password: DEMO_PASSWORD,
   });
+
+  if (login.status !== 200) {
+    throw new Error(
+      `Could not log in as ${username}. To create it, set ALLOW_TEST_SIGNUP=true on the server.`
+    );
+  }
 
   if (login.status !== 200) {
     throw new Error(`Could not log in to the demo account: ${login.body.message}`);

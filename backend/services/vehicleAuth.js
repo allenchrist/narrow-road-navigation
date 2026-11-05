@@ -26,21 +26,25 @@ async function isDeviceAuthorized(request, deviceId) {
     return !config.requireVehicleToken;
   }
 
-  let username;
+  let decoded;
 
   try {
-    username = jwt.verify(token, process.env.JWT_SECRET).username;
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     return false;
   }
 
-  if (!username) {
+  if (!decoded.username) {
     return false;
   }
 
-  const user = await findUserByUsername(username);
+  const user = await findUserByUsername(decoded.username);
 
-  return Boolean(user) && user.device_id === deviceId;
+  return (
+    Boolean(user) &&
+    user.device_id === deviceId &&
+    user.session_version === (decoded.sv ?? 0)
+  );
 }
 
 module.exports = { isDeviceAuthorized };

@@ -16,7 +16,7 @@ async function registerUser(username, email, passwordHash, vehicleType) {
 async function findUserByUsername(username) {
   const result = await pool.query(
     `
-    SELECT id, username, email, password_hash, device_id, vehicle_type
+    SELECT id, username, email, password_hash, device_id, vehicle_type, session_version
     FROM users
     WHERE username = $1;
     `,
@@ -33,7 +33,7 @@ async function findUserByUsername(username) {
 async function findUserForLogin(username) {
   const result = await pool.query(
     `
-    SELECT id, username, email, password_hash, device_id, vehicle_type
+    SELECT id, username, email, password_hash, device_id, vehicle_type, session_version
     FROM users
     WHERE LOWER(username) = LOWER($1)
     ORDER BY id;
@@ -143,6 +143,66 @@ async function unlinkDeviceFromUser(userId, deviceId) {
   return result.rowCount > 0;
 }
 
+async function findUserByEmail(email) {
+  const result = await pool.query(
+    `
+    SELECT id, username, email, device_id
+    FROM users
+    WHERE LOWER(email) = LOWER($1);
+    `,
+    [email.trim()]
+  );
+
+  return result.rows[0] || null;
+}
+
+/**
+ * Whether a login token is still valid for its account. False if the
+ * account was deleted, or its password has changed since the token was made.
+ */
+async function isSessionCurrent({ username, sv = 0 }) {
+  const result = await pool.query(
+    "SELECT session_version FROM users WHERE username = $1;",
+    [username]
+  );
+
+  return result.rows[0]?.session_version === sv;
+}
+
+async function updatePassword(userId, passwordHash) {
+  await pool.query(
+    `
+    UPDATE users
+    SET password_hash = $1, session_version = session_version + 1
+    WHERE id = $2;
+    `,
+    [passwordHash, userId]
+  );
+}
+
+// The driver's name also comes off any suggestions they sent
+async function deleteUser(user) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      "UPDATE narrow_road_suggestions SET submitted_by = NULL WHERE submitted_by = $1;",
+      [user.username]
+    );
+
+    await client.query("DELETE FROM users WHERE id = $1;", [user.id]);
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function updateVehicleType(userId, vehicleType) {
   await pool.query(
     "UPDATE users SET vehicle_type = $1 WHERE id = $2;",
@@ -154,6 +214,10 @@ module.exports = {
   registerUser,
   updateVehicleType,
   findUserByUsername,
+  findUserByEmail,
+  isSessionCurrent,
+  updatePassword,
+  deleteUser,
   findUserForLogin,
   isUsernameTaken,
   isEmailTaken,

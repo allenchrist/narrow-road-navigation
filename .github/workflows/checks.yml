@@ -51,6 +51,7 @@ jobs:
       DATABASE_URL: postgres://postgres:checks-only@localhost:5432/connected_vehicle
       JWT_SECRET: checks-only-not-a-real-secret-0123456789
       ADMIN_PASSWORD: checks-only-admin
+      ALLOW_TEST_SIGNUP: "true"
       PORT: 5000
     steps:
       - uses: actions/checkout@v4
