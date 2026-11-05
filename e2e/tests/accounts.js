@@ -1,5 +1,5 @@
 // Email codes for signup and passwords, deleting an account, logging out and switching
-module.exports = async ({ SITE, API, check, sleep, post, sentEmails, startRealServer, createDriver, openDashboard }) => {
+module.exports = async ({ SITE, API, check, sleep, waitUntil, post, sentEmails, startRealServer, createDriver, openDashboard }) => {
   // Each flow looks like a different network, so rate limits don't overlap
   let networkNumber = 0;
 
@@ -98,10 +98,10 @@ module.exports = async ({ SITE, API, check, sleep, post, sentEmails, startRealSe
   check("but no email is sent", sentEmails.length === before);
 
   const known = await send("/api/auth/password/forgot", { email: account.email });
-  await sleep(300);
   check("a known email gets the same reply", known.body.message === unknown.body.message);
+  const gotCode = await waitUntil(() => /to change your password/.test(sentEmails.at(-1).textContent));
+  check("and gets a code", gotCode);
   const resetCode = latestCode(account.email);
-  check("and gets a code", /to change your password/.test(sentEmails.at(-1).textContent));
 
   const token = loggedIn.body.token;
   const screen = await openDashboard(account.username, token);
@@ -128,8 +128,11 @@ module.exports = async ({ SITE, API, check, sleep, post, sentEmails, startRealSe
   });
   check("logins from before the change stop working", oldLogin.status === 401);
 
-  await sleep(3000);
-  check("an open car screen is sent back to log in", new URL(screen.url()).pathname === "/");
+  await screen.bringToFront();
+  check(
+    "an open car screen is sent back to log in",
+    await waitUntil(() => new URL(screen.url()).pathname === "/")
+  );
   await screen.close();
 
   // ---------- Deleting an account ----------
@@ -178,10 +181,16 @@ module.exports = async ({ SITE, API, check, sleep, post, sentEmails, startRealSe
   await sleep(600);
   check("you can go back to your own", new URL(page.url()).pathname === "/switch_first");
 
-  await page.waitForSelector(".cv-logout");
-  await page.click(".cv-logout");
-  await sleep(600);
-  check("the dashboard has a log out button", new URL(page.url()).pathname === "/");
+  await page.waitForSelector('button[aria-label="Account"]');
+  check("logging out starts hidden behind the icon", !(await page.$(".cv-menu-note")));
+  await page.click('button[aria-label="Account"]');
+  await page.waitForSelector(".cv-menu-note");
+  await page.evaluate(() =>
+    [...document.querySelectorAll(".cv-menu-list button")]
+      .find((button) => button.innerText.includes("Log out"))
+      .click()
+  );
+  check("the icon opens a log out button", await waitUntil(() => new URL(page.url()).pathname === "/"));
   check("logging out forgets the login", (await page.evaluate(() => localStorage.getItem("driverSession"))) === null);
   check("the login form starts empty", (await page.$eval('input[type="password"]', (input) => input.value)) === "");
 

@@ -44,34 +44,25 @@ function StatusChip({ label, text, tone }) {
   );
 }
 
-function TopBar() {
-  const {
-    username,
-    backendConnected,
-    gpsStatus,
-  } = useVehicle();
-
-  const navigate = useNavigate();
-  const clock = useClock();
-  const fullscreen = useFullscreen();
-
-  const [menuOpen, setMenuOpen] = useState(false);
+// An icon button that opens a small list, which closes on Esc or a click elsewhere
+function TopBarMenu({ label, icon, children }) {
+  const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!open) {
       return;
     }
 
     function closeOnOutsideClick(event) {
       if (!menuRef.current?.contains(event.target)) {
-        setMenuOpen(false);
+        setOpen(false);
       }
     }
 
     function closeOnEscape(event) {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        setOpen(false);
       }
     }
 
@@ -82,7 +73,41 @@ function TopBar() {
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
     };
-  }, [menuOpen]);
+  }, [open]);
+
+  return (
+    <div className="cv-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="cv-icon-button"
+        onClick={() => setOpen((previous) => !previous)}
+        aria-label={label}
+        title={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <Icon name={icon} />
+      </button>
+
+      {open && (
+        <div className="cv-menu-list" role="menu">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopBar() {
+  const {
+    username,
+    backendConnected,
+    gpsStatus,
+  } = useVehicle();
+
+  const navigate = useNavigate();
+  const clock = useClock();
+  const fullscreen = useFullscreen();
 
   const gps = GPS_LABELS[gpsStatus];
 
@@ -142,51 +167,36 @@ function TopBar() {
           </button>
         )}
 
-        <div className="cv-menu" ref={menuRef}>
+        <TopBarMenu label="Open menu" icon="menu">
           <button
             type="button"
-            className="cv-icon-button"
+            role="menuitem"
             onClick={() =>
-              setMenuOpen((previous) => !previous)
+              navigate(
+                `/${encodeURIComponent(username)}/suggest-narrow-road`
+              )
             }
-            aria-label="Open menu"
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
           >
-            <Icon name="menu" />
+            <Icon name="add" size={18} />
+            Suggest a narrow road
           </button>
+        </TopBarMenu>
 
-          {menuOpen && (
-            <div className="cv-menu-list" role="menu">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() =>
-                  navigate(
-                    `/${encodeURIComponent(username)}/suggest-narrow-road`
-                  )
-                }
-              >
-                <Icon name="add" size={18} />
-                Suggest a narrow road
-              </button>
+        <TopBarMenu label="Account" icon="logout">
+          <p className="cv-menu-note">Logged in as {username}</p>
 
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          className="cv-logout"
-          onClick={() => {
-            signOutDriver();
-            navigate("/", { replace: true });
-          }}
-          aria-label="Log out"
-        >
-          <Icon name="logout" size={18} />
-          <span>Log out</span>
-        </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              signOutDriver();
+              navigate("/", { replace: true });
+            }}
+          >
+            <Icon name="logout" size={18} />
+            Log out
+          </button>
+        </TopBarMenu>
       </div>
     </header>
   );

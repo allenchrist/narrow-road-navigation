@@ -43,6 +43,21 @@ const CHROME_LOCATIONS = [
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// For steps that take longer on a slow machine
+async function waitUntil(condition, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    if (await condition()) {
+      return true;
+    }
+
+    await sleep(250);
+  }
+
+  return false;
+}
+
 const children = [];
 
 function start(args, cwd, env) {
@@ -146,7 +161,7 @@ async function main() {
   });
 
   let browser;
-  let failed = 0;
+  const failures = [];
 
   try {
     await database.initialise();
@@ -215,7 +230,7 @@ async function main() {
       console.log(`  ${passed ? "✓" : "✗"} ${label}`);
 
       if (!passed) {
-        failed++;
+        failures.push(label);
       }
     };
 
@@ -278,6 +293,7 @@ async function main() {
       API,
       ADMIN_PASSWORD,
       sleep,
+      waitUntil,
       post,
       check,
       createDriver,
@@ -302,7 +318,7 @@ async function main() {
       try {
         await require(path.join(testsDir, file))(context);
       } catch (error) {
-        failed++;
+        failures.push(`${file} stopped early: ${error.message}`);
         console.error(`  ✗ stopped early: ${error.message}`);
       }
 
@@ -327,9 +343,15 @@ async function main() {
     fs.rmSync(databaseDir, { recursive: true, force: true, maxRetries: 5 });
   }
 
-  console.log(failed === 0 ? "\nAll passed" : `\n${failed} failed`);
+  if (failures.length === 0) {
+    console.log("\nAll passed");
+    return 0;
+  }
 
-  return failed === 0 ? 0 : 1;
+  console.log(`\n${failures.length} failed:`);
+  failures.forEach((failure) => console.log(`  ✗ ${failure}`));
+
+  return 1;
 }
 
 main()

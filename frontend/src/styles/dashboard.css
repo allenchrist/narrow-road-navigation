@@ -279,25 +279,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.cv-logout {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--cv-border);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--cv-text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cv-logout:hover {
-  background: var(--cv-raised);
-}
-
 .cv-menu {
   position: relative;
 }
@@ -312,6 +293,16 @@
   border-radius: 14px;
   background: var(--cv-surface-solid);
   box-shadow: var(--cv-shadow);
+}
+
+.cv-menu-note {
+  margin: 0;
+  padding: 8px 12px;
+  overflow: hidden;
+  color: var(--cv-text-3);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cv-menu-list button {
@@ -1280,19 +1271,6 @@
 
   .cv-topbar-right {
     gap: 4px;
-  }
-
-  .cv-logout {
-    width: 44px;
-    height: 44px;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    color: var(--cv-text-2);
-  }
-
-  .cv-logout span {
-    display: none;
   }
 }
 
