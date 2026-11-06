@@ -11,7 +11,12 @@ const {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
   updateRoadEntries,
+  updateRoadDirections,
 } = require("../services/narrowRoadAlert");
+const {
+  directionFromPosition,
+  roadAxis,
+} = require("../utils/roadAxis");
 
 // An east-west road about 220 m long and 22 m wide
 const ROAD = {
@@ -90,7 +95,72 @@ function kindsAfterUpdate(tracker, vehicles) {
   );
 }
 
+// Works out which way along the road a vehicle is going, as the server
+// does on each update. Without previous, the vehicle has just come in.
+function withDirection(vehicle, previous) {
+  const now = Date.now();
+
+  return {
+    ...vehicle,
+    roadDirections: updateRoadDirections(
+      previous?.roadDirections,
+      [ROAD],
+      vehicle,
+      previous ? now : null,
+      now
+    ),
+  };
+}
+
+const WEST_END = 77.0002;
+const EAST_END = 77.0018;
+const MIDDLE = 77.001;
+const CRAWLING = 0.5;
+
 const tests = {
+  "the end a slow vehicle came in from gives its direction": () => {
+    const axis = roadAxis(ROAD.polygon);
+    const fromWest = directionFromPosition(11, WEST_END, axis);
+    assert.strictEqual(directionFromPosition(11, EAST_END, axis), -fromWest);
+    assert.strictEqual(directionFromPosition(11, MIDDLE, axis), null);
+  },
+  "slow cars going the same way don't give way to each other": () => {
+    const first = withDirection(vehicleAt(11, WEST_END, CRAWLING, null));
+    const second = withDirection(vehicleAt(11, WEST_END + 0.0001, CRAWLING, null));
+    const tracker = createRightOfWayTracker();
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, second]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+    assert.strictEqual(buildNarrowRoadAlert(second, [first], tracker).sameDirectionCount, 1);
+  },
+  "slow cars from opposite ends get instructions": () => {
+    const first = withDirection(vehicleAt(11, WEST_END, CRAWLING, null));
+    const later = withDirection(vehicleAt(11, EAST_END, CRAWLING, null));
+    assert.deepStrictEqual(kindsAfterUpdate(createRightOfWayTracker(), [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "reversing to give way keeps the instruction": () => {
+    const tracker = createRightOfWayTracker();
+    const first = withDirection(insideEastbound());
+    const later = withDirection(insideWestbound());
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+    // Backing away moves it east, the same way as the first car
+    const reversing = withDirection(moved(later, 11, 77.0016, MOVING, EAST), later);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, reversing]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+  },
+  "an instruction given before directions were known ends if they go the same way": () => {
+    const tracker = createRightOfWayTracker();
+    const first = withDirection(vehicleAt(11, MIDDLE, 0, null));
+    const later = withDirection(vehicleAt(11, MIDDLE + 0.0001, 0, null));
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
+    const firstMoves = withDirection(moved(first, 11, MIDDLE + 0.0002, MOVING, EAST), first);
+    const laterMoves = withDirection(moved(later, 11, MIDDLE + 0.0003, MOVING, EAST), later);
+    // Not "road clear": nobody needed to give way
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [firstMoves, laterMoves]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+  },
+  "a car following you in isn't a vehicle about to enter": () => {
+    // Stopped near the west end, so it came in from there and faces east
+    const you = withDirection(vehicleAt(11, WEST_END, 0, null));
+    assert.strictEqual(kind(you, [aheadEastbound()]), "IN_NARROW_ROAD");
+    assert.strictEqual(kind(you, [aheadWestbound()]), "VEHICLE_ENTERING");
+  },
   "far away gets no alert": () => {
     assert.strictEqual(kind(vehicleAt(11.01, 77.01, MOVING, EAST)), "NONE");
   },

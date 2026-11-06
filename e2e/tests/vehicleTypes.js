@@ -54,9 +54,19 @@ module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }
     })
   ).json();
 
-  const [lat, lon] = roads[10].polygon[0];
+  // The two ends of a road, so the phones meet head on. Phones parked at the
+  // same end would be going the same way, and nobody would give way.
+  const outline = roads[10].polygon;
+  const [startEnd, farEnd] = outline
+    .flatMap((a) => outline.map((b) => [a, b]))
+    .reduce((best, pair) =>
+      Math.hypot(pair[0][0] - pair[1][0], pair[0][1] - pair[1][1]) >
+      Math.hypot(best[0][0] - best[1][0], best[0][1] - best[1][1])
+        ? pair
+        : best
+    );
 
-  async function connectPhone(token, deviceId) {
+  async function connectPhone(token, deviceId, [lat, lon]) {
     await post("/api/auth/device", { deviceId }, token);
 
     const phone = new WebSocket(`${API.replace("http", "ws")}/vehicle`, {
@@ -93,9 +103,9 @@ module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }
     return { phone, timer: setInterval(send, 1000) };
   }
 
-  const first = await connectPhone(truckToken, "truck-driver-phone");
+  const first = await connectPhone(truckToken, "truck-driver-phone", startEnd);
   await sleep(1200);
-  const second = await connectPhone(defaultToken, "auto-driver-phone");
+  const second = await connectPhone(defaultToken, "auto-driver-phone", farEnd);
 
   try {
     const truckScreen = await openDashboard("truck_driver", truckToken);

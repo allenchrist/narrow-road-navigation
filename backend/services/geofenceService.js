@@ -5,6 +5,7 @@ const {
   angleDifference,
   nearestPointOnPolygon,
 } = require("../utils/geo");
+const { directionFromBearing, roadAxis } = require("../utils/roadAxis");
 
 // How far ahead a moving vehicle is warned about a narrow road
 const APPROACH_DISTANCE_M = 150;
@@ -136,6 +137,9 @@ function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
         id: road.id,
         name: road.name,
         distanceM: nearest.distanceM,
+
+        // Which way along the road it will go, if moving along it
+        direction: directionFromBearing(travelBearing, roadAxis(road.polygon)),
       });
     }
   }

@@ -167,8 +167,15 @@ function NarrowRoadAlert({ alert, vehicle }) {
 
   const other = otherName(alert);
 
+  // Vehicles going the same way are no threat, but the driver can see
+  // the system has noticed them
+  const sameWay = alert.sameDirectionCount ?? 0;
+
   const note = [
     message.reason && capitalize(message.reason(other)),
+    alert.kind === "IN_NARROW_ROAD" && sameWay > 0
+      ? `${sameWay} ${sameWay === 1 ? "vehicle" : "vehicles"} going your way`
+      : null,
     hasRoadName(alert.roadName) ? alert.roadName : null,
   ]
     .filter(Boolean)

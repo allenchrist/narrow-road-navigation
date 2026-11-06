@@ -53,7 +53,9 @@ The car that entered the road first keeps going, and the car that entered last g
 - The decision stays fixed if the car giving way stops or reverses.
 - Once the first car has passed, the car that gave way is told the road is clear.
 - It ends when a car leaves the road or stops sending updates.
-- Cars clearly travelling the same way, or already driving apart, aren't a conflict.
+- Only vehicles coming towards each other are a conflict. Each vehicle's direction along the road comes from its GPS direction, or, when it's moving too slowly for that, from the end it came in. A narrow road is too narrow to turn round in, so once known, the direction stays, and a driver who reverses to give way keeps the instruction.
+- Vehicles going the same way never give way to each other. If an instruction was given before their directions were known, it's cancelled once they are. The Narrow road alert says how many are going your way.
+- A vehicle about to enter behind you, going your way, isn't announced. Cars already driving apart aren't a conflict either.
 - With three or more cars, every car has one place in the order, so they can't all be told to give way.
 
 ## What's in this repository
@@ -143,6 +145,11 @@ The simulator's password is written in its code. If your database is one other p
 | Car B stops to let Car A through | You have right of way | Give way |
 | Car A passes Car B | Narrow road | Road clear |
 | Car A leaves | Nothing | |
+| Both cars go back to the start | Nothing | |
+| Car A enters, Car B follows it the same way | Narrow road | Nothing |
+| Car B follows Car A into the road | Narrow road | Narrow road |
+| Both slow to a crawl | Narrow road | Narrow road |
+| Both leave | Nothing | |
 
 ## Demo with phones
 

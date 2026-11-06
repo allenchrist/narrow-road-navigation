@@ -12,6 +12,7 @@ const {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
   updateRoadEntries,
+  updateRoadDirections,
   NO_ALERT,
 } = require("./narrowRoadAlert");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
@@ -82,6 +83,9 @@ function registerVehicle(vehicleId) {
 
       // roadId → when this vehicle entered it
       roadEnteredAt: {},
+
+      // roadId → which way along it this vehicle is going: 1, -1 or 0
+      roadDirections: {},
       lastRoadCheckAt: null,
 
       approachingRoads: [],
@@ -149,6 +153,7 @@ function resolveGeofenceState(existing, data, now) {
     narrowRoadName: existing.narrowRoadName,
     insideRoadIds: existing.insideRoadIds,
     roadEnteredAt: existing.roadEnteredAt,
+    roadDirections: existing.roadDirections,
     lastRoadCheckAt: existing.lastRoadCheckAt,
     lastInsideAt: existing.lastInsideAt,
   };
@@ -189,6 +194,13 @@ function resolveGeofenceState(existing, data, now) {
     roadEnteredAt: updateRoadEntries(
       existing.roadEnteredAt,
       geofence.insideRoadIds,
+      existing.lastRoadCheckAt,
+      now
+    ),
+    roadDirections: updateRoadDirections(
+      existing.roadDirections,
+      geofence.insideRoadIds.map(getNarrowRoadById).filter(Boolean),
+      data,
       existing.lastRoadCheckAt,
       now
     ),
