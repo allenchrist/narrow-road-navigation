@@ -182,7 +182,7 @@ async function main() {
       MAIL_FROM_ADDRESS: "sender@example.com",
     };
 
-    const setup = spawnSync(process.execPath, ["database/init.js"], {
+    const setup = spawnSync(process.execPath, ["database/init.js", "--simulator-roads"], {
       cwd: BACKEND,
       env: { ...process.env, ...serverEnv },
       encoding: "utf8",

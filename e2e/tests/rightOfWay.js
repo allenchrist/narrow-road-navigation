@@ -56,6 +56,8 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimu
   check("the alert names the other vehicle", (await carA.evaluate(() => document.querySelector(".cv-alert").innerText)).includes("The bus should give way"));
   check("the first car in has right of way", (await alertOf(carA)) === "You have right of way");
   check("the later car is told to give way", (await alertOf(carB)) === "Give way");
+  check("the give way card shows both vehicles on the road", (await carB.$$(".cv-scene-vehicle")).length === 2);
+  check("the give way card shows the steps", Boolean(await carB.$(".cv-alert-steps .is-current")));
 
   // The top bar says when a position is getting old
   const gpsOf = (page) =>
@@ -72,7 +74,7 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimu
   await waitForPhase("Car A passes Car B");
   await sleep(9000);
   check("passing ends the first car's instruction", (await alertOf(carA)) === "Narrow road");
-  check("passing ends the later car's instruction", (await alertOf(carB)) === "Narrow road");
+  check("the later car is told the road is clear", (await alertOf(carB)) === "Road clear");
 
   const code =
     simulator.exitCode ??

@@ -22,7 +22,7 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
                               (accounts, roads, suggestions)
 ```
 
-1. The driver logs in on the phone and taps **Connect**. The app sends the car's position about once a second, even with the screen locked.
+1. The driver logs in on the phone and taps **Connect**. The app sends the car's position about once a second, even with the screen locked, and its compass heading as soon as it turns.
 2. The server checks each position against the saved narrow roads and compares nearby cars.
 3. The driver logs in to the dashboard with the same account. The map shows their car and other cars within 2 km. Inside a narrow road, the panel lists the vehicles in that road.
 
@@ -38,6 +38,9 @@ If a car's position is more than 5 seconds old, the top bar shows **Weak signal*
 | **Vehicle about to enter** | Another car is heading for this road | Orange |
 | **You have right of way** | Another car in this road entered after you | Green, with an arrow |
 | **Give way** | Another car in this road entered before you | Red, with a give-way sign |
+| **Road clear** | The car you gave way to has passed | Green, with a tick |
+
+The right of way, give way and road clear alerts show the narrow road from the side, with both vehicles, which of them goes, and where to wait. Giving way has three steps, **Stop**, **Let it pass** and **Continue**, and the current one is highlighted.
 
 ### Vehicle types
 
@@ -48,7 +51,8 @@ Each driver chooses a car, truck, lorry, bus or auto when signing up in the app,
 The car that entered the road first keeps going, and the car that entered last gives way, whether it's moving or stopped. The server makes this decision, so the two screens can't disagree.
 
 - The decision stays fixed if the car giving way stops or reverses.
-- It ends once the first car has passed, or when a car leaves the road or stops sending updates.
+- Once the first car has passed, the car that gave way is told the road is clear.
+- It ends when a car leaves the road or stops sending updates.
 - Cars clearly travelling the same way, or already driving apart, aren't a conflict.
 - With three or more cars, every car has one place in the order, so they can't all be told to give way.
 
@@ -60,7 +64,8 @@ backend/    Node.js server: login, live connections, road checks, alert rules
   services/geofenceService.js   is this car inside a road?
   services/vehicleState.js      the live state of every car
   test/                         tests and the two-car simulator
-  data/                         the first set of roads for a new database
+  data/                         the narrow roads of Coimbatore, see below
+  tools/findNarrowRoads.js      finds those roads from map data
 frontend/   React website: dashboard, login, road suggestions, admin page
 e2e/        browser tests of the whole system
 .github/    automatic checks that run on every push
@@ -88,7 +93,9 @@ npm run db:init
 npm run dev
 ```
 
-`db:init` creates the tables and imports the first set of roads. **Run it only once for each database**, because a road you later delete would be imported again. Starting the server is always safe, and it adds any tables or columns that are missing.
+`db:init` creates the tables and imports the narrow roads. **Run it only once for each database**, because a road you later delete would be imported again. Starting the server is always safe, and it adds any tables or columns that are missing.
+
+For the [demo without phones](#demo-without-phones), use `npm run db:init-demo` on a test database instead. It imports longer test roads the simulator can drive through.
 
 The server is ready when it prints `Listening on port 5000`.
 
@@ -112,7 +119,7 @@ Open <http://localhost:5173>.
 
 ## Demo without phones
 
-The simulator drives two cars through a real road and checks every alert. It needs the server from the steps above, and it creates two accounts, `sim_car_a` and `sim_car_b`, the first time it runs. To allow that, set `ALLOW_TEST_SIGNUP=true` in `backend/.env` on a test database only.
+The simulator drives two cars through a road and checks every alert. It needs the server from the steps above, with a test database set up by `npm run db:init-demo`, because the real narrow roads are too short to drive through at speed. It creates two accounts, `sim_car_a` and `sim_car_b`, the first time it runs. To allow that, set `ALLOW_TEST_SIGNUP=true` in `backend/.env` on a test database only.
 
 In a third terminal:
 
@@ -134,7 +141,7 @@ The simulator's password is written in its code. If your database is one other p
 | Car B's phone goes silent | Narrow road | |
 | Car B comes back | You have right of way | Give way |
 | Car B stops to let Car A through | You have right of way | Give way |
-| Car A passes Car B | Narrow road | Narrow road |
+| Car A passes Car B | Narrow road | Road clear |
 | Car A leaves | Nothing | |
 
 ## Demo with phones
@@ -146,6 +153,36 @@ The app only makes encrypted connections, so phones need the server hosted onlin
 3. Drive or walk both phones into the same narrow road from opposite ends.
 
 For the most reliable updates with the screen locked, turn Battery Saver off and allow the app to run without battery limits. The app offers both.
+
+## Narrow road data
+
+`backend/data/narrowRoads.json` holds 168 very narrow roads in Coimbatore, about 6.4 km in all. No ready-made list of narrow roads exists, and OpenStreetMap records the width of very few roads here, so the widths were measured from map data.
+
+`tools/findNarrowRoads.js` looks along every small road in OpenStreetMap, every 2 m, for the nearest building on each side. A road counts as very narrow where the buildings on both sides are **4 m apart or less**, too close for two vehicles to pass, along at least 25 m and 70% of its length. Each shape:
+
+- follows the middle of the gap between the buildings, which corrects the few metres OpenStreetMap's lines can be off by;
+- is as wide as the gap it measured, between 2.5 and 4 m;
+- joins narrow parts of the same road less than 20 m apart, so cars in one lane always share a road.
+
+It finds lanes between buildings. A narrow lane with a wall, field or open ground on one side isn't found, as walls aren't in the building data. Drivers can suggest those from the dashboard.
+
+To find them again, for example with newer map data, download the files listed at the top of `tools/findNarrowRoads.js` into `backend/tools/download`, then:
+
+```
+cd backend
+npm run roads:find
+```
+
+Check `tools/narrowRoads.found.json`, copy it over `data/narrowRoads.json`, then replace the imported roads in the database. Roads added on the admin page are kept:
+
+```
+npm run db:replace-roads            shows what would change
+npm run db:replace-roads -- --apply replaces them
+```
+
+Restart the server afterwards, as it keeps the roads in memory.
+
+**Map data:** roads and buildings © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. Buildings also from [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), available under the Open Database License.
 
 ## Host it online
 
@@ -198,6 +235,7 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 
 - **GPS accuracy:** many narrow roads are about 3 m wide, which is close to GPS error, so a car counts as inside when it's within 8 to 15 m of a road's edge. A car on a parallel road can trigger an alert.
 - **Short reversing:** alerts start inside the road, so the later car may need to reverse a short way.
+- **Road data:** only lanes with buildings close on both sides are found, and building outlines can be a little out, so a few roads may be missing or slightly too wide or narrow. See [Narrow road data](#narrow-road-data).
 - **Split roads:** a street can be saved as several road shapes that touch. Two cars in different shapes of the same street don't count as sharing a road, unless they're close enough to the join to count as inside both.
 - **Only cars using the system count:** other vehicles are invisible to it.
 - **No slope data:** it can't apply the usual rule that favours the car going uphill.

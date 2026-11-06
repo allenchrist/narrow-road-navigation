@@ -216,8 +216,22 @@ function closeSocketServer(onClosed) {
   io.close(onClosed);
 }
 
+// Fast enough to follow a turn, while several phones sending at once
+// still only cause one update
+const QUICK_UPDATE_DELAY_MS = 100;
+
+let quickUpdateTimer = null;
+
+// Sends the change soon, instead of waiting for the next regular update
+function scheduleFleetUpdate() {
+  quickUpdateTimer ??= setTimeout(broadcastFleetUpdate, QUICK_UPDATE_DELAY_MS);
+}
+
 // Each dashboard gets its own list, containing only what that driver may see
 function broadcastFleetUpdate() {
+  clearTimeout(quickUpdateTimer);
+  quickUpdateTimer = null;
+
   if (!io) return;
 
   const vehicles = getVehiclesForDashboard();
@@ -232,6 +246,7 @@ function broadcastFleetUpdate() {
 module.exports = {
   initSocketServer,
   broadcastFleetUpdate,
+  scheduleFleetUpdate,
   notifyDeviceChanged,
   disconnectUser,
   notifyAllDashboards,

@@ -5,10 +5,14 @@ const DANGER_REPEAT_MS = 2000;
 const TONES = {
   danger: { frequency: 880, durationS: 0.35 },
   warning: { frequency: 660, durationS: 0.25 },
+
+  // Higher and shorter, so it doesn't sound like a warning
+  clear: { frequency: 1046, durationS: 0.15 },
 };
 
 /**
- * Beeps for an alert: repeatedly for danger, once for a warning.
+ * Beeps for an alert: repeatedly for danger, once for a warning or when the
+ * road is clear again.
  * Browsers block audio until the user has interacted with the page,
  * so the first click or tap anywhere unlocks it. Returns whether
  * sound is unlocked, so the screen can ask for that first tap.

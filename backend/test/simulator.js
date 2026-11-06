@@ -332,9 +332,9 @@ function buildPhases(L) {
       carB: [L * 0.65, L * 0.65],
     },
     {
-      title: "Car A passes Car B, which ends both instructions",
+      title: "Car A passes Car B, so Car B is told the road is clear",
       expected: "IN_NARROW_ROAD",
-      expectedCarB: "IN_NARROW_ROAD",
+      expectedCarB: "ROAD_CLEAR",
       seconds: 10,
       carA: [L * 0.6, L * 0.95],
       carB: [L * 0.65, L * 0.65],

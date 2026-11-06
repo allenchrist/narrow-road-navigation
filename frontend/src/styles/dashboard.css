@@ -363,6 +363,13 @@
   font-weight: 600;
 }
 
+.cv-heading-degrees {
+  margin-left: 6px;
+  color: var(--cv-text-2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 .cv-compass-arrow {
   display: flex;
   flex-shrink: 0;
@@ -492,38 +499,51 @@
   pointer-events: none;
 }
 
+/* The card has a coloured band with the instruction, then a picture of
+   the narrow road showing who goes, then the steps when giving way */
 .cv-alert {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: min(480px, 100%);
-  padding: 14px 20px 14px 14px;
-  border-radius: 16px;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  --cv-tone: #c62828;
+  --cv-tone-text: #ffffff;
+
+  width: min(540px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--cv-tone);
+  border-radius: 18px;
+  background: var(--cv-surface-solid);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
   animation: cv-alert-in 0.2s ease-out;
 }
 
 .cv-alert--stop {
-  background: #c62828;
-  color: #ffffff;
   animation:
     cv-alert-in 0.2s ease-out,
     cv-alert-pulse 1.6s ease-in-out infinite;
 }
 
 .cv-alert--go {
-  background: #14713a;
-  color: #ffffff;
+  --cv-tone: #14713a;
+}
+
+.cv-alert--clear {
+  --cv-tone: #0d7a55;
 }
 
 .cv-alert--warning {
-  background: #c74a00;
-  color: #ffffff;
+  --cv-tone: #c74a00;
 }
 
 .cv-alert--caution {
-  background: #f5b90f;
-  color: #1a1400;
+  --cv-tone: #f5b90f;
+  --cv-tone-text: #1a1400;
+}
+
+.cv-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px 14px 14px;
+  background: var(--cv-tone);
+  color: var(--cv-tone-text);
 }
 
 .cv-alert-icon {
@@ -546,6 +566,239 @@
 .cv-alert-text span,
 .cv-alert-text small {
   display: block;
+}
+
+.cv-alert-text strong {
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.cv-alert-text span {
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 550;
+}
+
+.cv-alert-text small {
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 13px;
+  opacity: 0.85;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The narrow road, seen from the side */
+.cv-scene {
+  padding: 16px 18px 12px;
+}
+
+.cv-scene-road {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.cv-scene-road::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 52px;
+  border-top: 2px solid #3d4a57;
+  border-bottom: 2px solid #3d4a57;
+  border-radius: 6px;
+  background: #1a222b;
+  content: "";
+}
+
+/* The other vehicle is still outside the road */
+.cv-scene--outside .cv-scene-road::before {
+  left: 82px;
+  border-left: 2px dashed #5c6976;
+}
+
+.cv-scene-vehicle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  width: 76px;
+}
+
+.cv-scene-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 52px;
+}
+
+.cv-scene-image img {
+  width: auto;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  user-select: none;
+}
+
+.cv-scene-label {
+  margin-top: 6px;
+  color: var(--cv-text-2);
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.cv-scene-label b {
+  display: block;
+  color: var(--cv-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cv-scene-vehicle--goes .cv-scene-label {
+  color: var(--cv-good);
+  font-weight: 600;
+}
+
+.cv-scene-more {
+  position: relative;
+  align-self: flex-start;
+  margin: 14px 0 0 -14px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--cv-raised);
+  color: var(--cv-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Chevrons moving the way the vehicle with right of way drives */
+.cv-scene-flow {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 52px;
+  color: var(--cv-good);
+}
+
+.cv-scene-flow span {
+  width: 12px;
+  height: 12px;
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  transform: rotate(45deg);
+  animation: cv-flow 1.2s ease-in-out infinite;
+}
+
+.cv-scene-flow--left span {
+  transform: rotate(-135deg);
+}
+
+.cv-scene-flow span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.cv-scene-flow span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.cv-scene-flow--left span:nth-child(1) {
+  animation-delay: 0.4s;
+}
+
+.cv-scene-flow--left span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.cv-scene-flow--none span {
+  display: none;
+}
+
+/* Where to wait, just in front of your vehicle */
+.cv-scene-stop {
+  position: relative;
+  flex-shrink: 0;
+  width: 5px;
+  height: 40px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #ff5c63 0 8px,
+    #ffffff 8px 16px
+  );
+}
+
+/* Stop, let it pass, continue */
+.cv-alert-steps {
+  display: flex;
+  margin: 0;
+  padding: 0 18px 16px;
+  list-style: none;
+  counter-reset: none;
+}
+
+/* Straight after the coloured band, when there's no road picture */
+.cv-alert-head + .cv-alert-steps {
+  padding-top: 14px;
+}
+
+.cv-alert-steps li {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--cv-border);
+  color: var(--cv-text-3);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cv-alert-steps li:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.cv-alert-steps li:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.cv-alert-steps li + li {
+  border-left: none;
+}
+
+.cv-alert-steps li > span {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+}
+
+.cv-alert-steps li.is-done {
+  color: var(--cv-good);
+}
+
+.cv-alert-steps li.is-current {
+  border-color: var(--cv-tone);
+  background: var(--cv-tone);
+  color: var(--cv-tone-text);
+}
+
+.cv-alert-steps li.is-current > span {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .cv-alert-text strong {
@@ -591,7 +844,20 @@
 
 @keyframes cv-alert-pulse {
   50% {
-    box-shadow: 0 0 0 8px rgba(198, 40, 40, 0.35);
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.5),
+      0 0 0 8px rgba(198, 40, 40, 0.35);
+  }
+}
+
+@keyframes cv-flow {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 1;
   }
 }
 
@@ -1231,6 +1497,10 @@
   }
 
   .cv-alert {
+    width: 100%;
+  }
+
+  .cv-alert-head {
     gap: 12px;
     padding: 10px 14px 10px 10px;
   }
@@ -1241,7 +1511,7 @@
   }
 
   .cv-alert-text strong {
-    font-size: 20px;
+    font-size: 21px;
   }
 
   .cv-alert-text span {
@@ -1249,6 +1519,20 @@
   }
 
   .cv-alert-text small {
+    font-size: 12px;
+  }
+
+  .cv-scene {
+    padding: 12px 14px 8px;
+  }
+
+  .cv-alert-steps {
+    padding: 0 14px 12px;
+  }
+
+  .cv-alert-steps li {
+    gap: 6px;
+    padding: 6px 8px;
     font-size: 12px;
   }
 
@@ -1277,7 +1561,12 @@
 @media (prefers-reduced-motion: reduce) {
   .cv-alert,
   .cv-alert--stop,
+  .cv-scene-flow span,
   .cv-marker-ring {
     animation: none;
+  }
+
+  .cv-scene-flow span {
+    opacity: 1;
   }
 }

@@ -8,8 +8,14 @@ const { ensureSchema } = require("./schema");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 
+// The real roads are too short for the two-car simulator, so the tests and
+// demos use their own, long and straight enough to drive through
+const ROADS_FILE = process.argv.includes("--simulator-roads")
+  ? "../test/fixtures/simulatorRoads.json"
+  : "narrowRoads.json";
+
 function readJsonFile(fileName) {
-  const filePath = path.join(DATA_DIR, fileName);
+  const filePath = path.resolve(DATA_DIR, fileName);
 
   return fs.existsSync(filePath)
     ? JSON.parse(fs.readFileSync(filePath, "utf8"))
@@ -25,7 +31,7 @@ async function importJsonData() {
   let roadCount = 0;
   let suggestionCount = 0;
 
-  for (const road of readJsonFile("narrowRoads.json")) {
+  for (const road of readJsonFile(ROADS_FILE)) {
     const result = await pool.query(
       `
       INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at)

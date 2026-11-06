@@ -198,6 +198,15 @@ function resolveGeofenceState(existing, data, now) {
   };
 }
 
+// Only the compass changed, so the position and its age stay as they were
+function updateVehicleHeading(vehicleId, heading) {
+  const vehicle = vehicles.get(vehicleId);
+
+  if (vehicle && vehicle.lat !== null) {
+    vehicle.heading = heading;
+  }
+}
+
 function setVehicleType(vehicleId, vehicleType) {
   const vehicle = vehicles.get(vehicleId);
 
@@ -351,6 +360,7 @@ function getVehicleCount() {
 module.exports = {
   registerVehicle,
   updateVehicleTelemetry,
+  updateVehicleHeading,
   setVehicleType,
   setVehicleConnected,
   getAllVehicles,

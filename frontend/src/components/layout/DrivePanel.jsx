@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { useVehicle } from "../../context/VehicleContext";
 import { haversineDistance } from "../../utils/haversine";
 import {
@@ -19,6 +21,19 @@ function compassPoint(degrees) {
   return COMPASS_POINTS[Math.round(normalized / 45) % COMPASS_POINTS.length];
 }
 
+// Turns the arrow the short way, so 350° to 10° doesn't spin all the way round
+function useTurnAngle(degrees) {
+  const angle = useRef(degrees ?? 0);
+
+  if (degrees !== null) {
+    const change = ((degrees - angle.current) % 360 + 540) % 360 - 180;
+
+    angle.current += change;
+  }
+
+  return angle.current;
+}
+
 function DrivePanel({ alert }) {
   const {
     vehicles,
@@ -32,6 +47,8 @@ function DrivePanel({ alert }) {
   const direction = hasPosition
     ? travelDirection(egoVehicle)
     : null;
+
+  const arrowAngle = useTurnAngle(direction);
 
   const inNarrowRoad = Boolean(alert?.roadId);
 
@@ -61,7 +78,7 @@ function DrivePanel({ alert }) {
         <span
           className="cv-compass-arrow"
           style={{
-            transform: `rotate(${direction ?? 0}deg)`,
+            transform: `rotate(${arrowAngle}deg)`,
             opacity: direction === null ? 0.3 : 1,
           }}
         >
@@ -71,7 +88,16 @@ function DrivePanel({ alert }) {
         <div>
           <span className="cv-section-label">Heading</span>
           <strong>
-            {direction === null ? "–" : compassPoint(direction)}
+            {direction === null ? (
+              "–"
+            ) : (
+              <>
+                {compassPoint(direction)}
+                <span className="cv-heading-degrees">
+                  {Math.round(direction) % 360}°
+                </span>
+              </>
+            )}
           </strong>
         </div>
       </section>

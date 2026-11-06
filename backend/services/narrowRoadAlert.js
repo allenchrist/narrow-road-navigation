@@ -161,7 +161,8 @@ function createRightOfWayTracker() {
 
 /**
  * Decides what the infotainment screen should tell this driver. Alerts
- * start once the vehicle is inside a narrow road.
+ * start once the vehicle is inside a narrow road. A driver who gave way is
+ * told the road is clear once the other vehicle has passed.
  */
 function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   if (vehicle.insideRoadIds.length === 0) {
@@ -172,14 +173,19 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
   const mustGiveWayTo = [];
   const givingWay = [];
+  const passedBy = [];
   let vehicleEntering = false;
 
   for (const other of others) {
     const pair = rightOfWay.get(vehicle, other);
 
     if (pair) {
+      const won = pair.winnerId === vehicle.vehicleId;
+
       if (!pair.passed) {
-        (pair.winnerId === vehicle.vehicleId ? givingWay : mustGiveWayTo).push(other);
+        (won ? givingWay : mustGiveWayTo).push(other);
+      } else if (!won) {
+        passedBy.push(other);
       }
     } else if (
       getRelation(vehicle, other) !== "SAME_DIRECTION" &&
@@ -198,11 +204,16 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
     // Only when there's one other vehicle, so the screen can name it
     otherVehicleType:
       conflicts.length === 1 ? conflicts[0].vehicleType ?? null : null,
+    otherCount: conflicts.length,
   });
 
   if (mustGiveWayTo.length > 0) return alert("GIVE_WAY", "danger", mustGiveWayTo);
   if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", givingWay);
   if (vehicleEntering) return alert("VEHICLE_ENTERING", "warning");
+
+  // The driver who gave way is told when they can go. Like the instruction
+  // before it, this lasts until the two no longer share the road.
+  if (passedBy.length > 0) return alert("ROAD_CLEAR", "clear", passedBy);
   return alert("IN_NARROW_ROAD", "caution");
 }
 

@@ -28,6 +28,10 @@ build/
 backend/logs/
 backend/tmp/
 
+# Map data downloaded for tools/findNarrowRoads.js, and what it finds
+backend/tools/download/
+backend/tools/narrowRoads.found*.json
+
 # Test coverage
 coverage/
 

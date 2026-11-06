@@ -43,7 +43,7 @@ function Dashboard() {
       <DrivePanel alert={alert} />
 
       <div className="cv-alert-area">
-        <NarrowRoadAlert alert={alert} />
+        <NarrowRoadAlert alert={alert} vehicle={egoVehicle} />
         <StatusNotice />
       </div>
 

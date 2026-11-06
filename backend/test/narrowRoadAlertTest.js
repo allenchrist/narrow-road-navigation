@@ -186,17 +186,18 @@ const tests = {
     const stopped = moved(first, 11, 77.0005, 0, null);
     assert.deepStrictEqual(kindsAfterUpdate(tracker, [stopped, later]), ["RIGHT_OF_WAY", "GIVE_WAY"]);
   },
-  "both alerts end once the first car has passed": () => {
+  "the car that gave way is told the road is clear once the first has passed": () => {
     const tracker = createRightOfWayTracker();
     const first = insideEastbound();
     const later = insideWestbound();
     kindsAfterUpdate(tracker, [first, later]);
     const waiting = moved(later, 11, 77.0015, 0, null);
     const past = moved(first, 11, 77.0018, MOVING, EAST);
-    assert.deepStrictEqual(kindsAfterUpdate(tracker, [past, waiting]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [past, waiting]), ["IN_NARROW_ROAD", "ROAD_CLEAR"]);
     // Stays over, even though they are still in the same road
     const stillPast = moved(past, 11, 77.0019, MOVING, EAST);
-    assert.deepStrictEqual(kindsAfterUpdate(tracker, [stillPast, waiting]), ["IN_NARROW_ROAD", "IN_NARROW_ROAD"]);
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [stillPast, waiting]), ["IN_NARROW_ROAD", "ROAD_CLEAR"]);
+    assert.strictEqual(buildNarrowRoadAlert(waiting, [stillPast], tracker).otherCount, 1);
   },
   "cars side by side while passing keep their instructions": () => {
     const tracker = createRightOfWayTracker();
@@ -291,6 +292,7 @@ const tests = {
     const tracker = createRightOfWayTracker();
     tracker.update([oncoming, a, b]);
     assert.strictEqual(buildNarrowRoadAlert(oncoming, [a, b], tracker).otherVehicleType, null);
+    assert.strictEqual(buildNarrowRoadAlert(oncoming, [a, b], tracker).otherCount, 2);
   },
   "a car that entered last gives way to everyone before it": () => {
     const first = insideEastbound();

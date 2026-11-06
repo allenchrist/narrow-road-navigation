@@ -8,7 +8,8 @@
  *   CLIENT → SERVER:  { type: "register", deviceId: "<persistent-uuid>" }
  *   SERVER → CLIENT:  { type: "registered", deviceId: "...", vehicleId: "VEHICLE_001" }
  *
- * After registration, all subsequent messages are treated as telemetry.
+ * After registration, messages are telemetry, or { type: "heading", heading }
+ * when only the compass has changed, so the screen can follow a turn quickly.
  * The connection itself identifies the device — no vehicleId needed in packets.
  *
  * Duplicate connection policy:
@@ -26,10 +27,15 @@ const { validateVehicleData } = require("../utils/validateVehicleData");
 const {
   registerVehicle,
   updateVehicleTelemetry,
+  updateVehicleHeading,
   setVehicleType,
   setVehicleConnected,
 } = require("../services/vehicleState");
-const { broadcastFleetUpdate, notifyDeviceChanged } = require("./socketServer");
+const {
+  broadcastFleetUpdate,
+  scheduleFleetUpdate,
+  notifyDeviceChanged,
+} = require("./socketServer");
 const { allocateVehicleId } = require("../services/vehicleIdAllocator");
 const {
   validateDeviceId,
@@ -56,6 +62,9 @@ const MAX_MESSAGE_BYTES = 64 * 1024;
 
 // Phones send about one packet a second. Anything much faster is dropped.
 const MIN_TELEMETRY_INTERVAL_MS = 200;
+
+// Phones send the compass up to about six times a second while turning
+const MIN_HEADING_INTERVAL_MS = 100;
 
 // Each new phone is saved permanently and added to every fleet message
 const MAX_DEVICES = 1000;
@@ -129,6 +138,7 @@ function initVehicleWebSocketServer(httpServer, path) {
     let registered = false;
     let checkingLogin = false;
     let lastTelemetryAt = 0;
+    let lastHeadingAt = 0;
     let warnedAboutTelemetry = false;
 
     // Close unregistered connections that never send a register message
@@ -292,6 +302,23 @@ function initVehicleWebSocketServer(httpServer, path) {
 
       const now = Date.now();
 
+      if (msg.type === "heading") {
+        const { heading } = msg;
+
+        if (
+          now - lastHeadingAt >= MIN_HEADING_INTERVAL_MS &&
+          typeof heading === "number" &&
+          heading >= 0 &&
+          heading <= 360
+        ) {
+          lastHeadingAt = now;
+          updateVehicleHeading(vehicleId, heading);
+          scheduleFleetUpdate();
+        }
+
+        return;
+      }
+
       if (now - lastTelemetryAt < MIN_TELEMETRY_INTERVAL_MS) {
         return;
       }
@@ -318,6 +345,7 @@ function initVehicleWebSocketServer(httpServer, path) {
         result.data
       );
       updateLastSeen(deviceId);
+      scheduleFleetUpdate();
     });
 
     // ── DISCONNECT ───────────────────────────────────────────────────────────
