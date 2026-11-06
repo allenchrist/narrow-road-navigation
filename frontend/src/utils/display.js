@@ -32,9 +32,15 @@ export function isMoving(vehicle) {
   return vehicle.speed !== null && vehicle.speed >= MOVING_SPEED_MPS;
 }
 
+// GPS gives a direction once the phone moves, but below about 7 km/h it
+// wanders, so slower than this the compass is used instead
+const GPS_DIRECTION_SPEED_MPS = 2;
+
 // A phone's compass shows how it is lying, not which way the car is going
 export function travelDirection(vehicle) {
-  return isMoving(vehicle) && vehicle.bearing !== null
+  return vehicle.speed !== null &&
+    vehicle.speed >= GPS_DIRECTION_SPEED_MPS &&
+    vehicle.bearing !== null
     ? vehicle.bearing
     : vehicle.heading;
 }

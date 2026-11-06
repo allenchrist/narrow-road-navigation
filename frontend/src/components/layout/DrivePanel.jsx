@@ -1,6 +1,5 @@
-import { useRef } from "react";
-
 import { useVehicle } from "../../context/VehicleContext";
+import { useTurnAngle } from "../../hooks/useSmoothPosition";
 import { haversineDistance } from "../../utils/haversine";
 import {
   displayRoadName,
@@ -19,19 +18,6 @@ function compassPoint(degrees) {
   const normalized = ((degrees % 360) + 360) % 360;
 
   return COMPASS_POINTS[Math.round(normalized / 45) % COMPASS_POINTS.length];
-}
-
-// Turns the arrow the short way, so 350° to 10° doesn't spin all the way round
-function useTurnAngle(degrees) {
-  const angle = useRef(degrees ?? 0);
-
-  if (degrees !== null) {
-    const change = ((degrees - angle.current) % 360 + 540) % 360 - 180;
-
-    angle.current += change;
-  }
-
-  return angle.current;
 }
 
 function DrivePanel({ alert }) {

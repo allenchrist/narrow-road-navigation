@@ -305,6 +305,7 @@ function getVehiclesForDashboard() {
     heading: vehicle.heading,
     speed: vehicle.speed,
     bearing: vehicle.bearing,
+    accuracy: vehicle.accuracy,
     connected: vehicle.connected,
     active: vehicle.active,
     weakSignal:

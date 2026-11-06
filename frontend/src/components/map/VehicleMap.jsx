@@ -15,6 +15,11 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import { useVehicle } from "../../context/VehicleContext";
+import {
+  useSmoothPosition,
+  useSteadyTarget,
+} from "../../hooks/useSmoothPosition";
+import { isMoving } from "../../utils/display";
 import Icon from "../common/Icon";
 import { MapController } from "./mapHelpers";
 import VehicleMarker from "./VehicleMarker";
@@ -68,15 +73,18 @@ function centreFor(map, lat, lon, zoom, offsetShare) {
   );
 }
 
+// Long enough for Leaflet's zoom or pan animation to finish
+const VIEW_CHANGE_MS = 600;
+
 /**
- * Keeps the map on the driver's car. Dragging the map pauses this,
- * so the driver can look around, until they press recenter. The zoom
- * only changes on entering or leaving a narrow road, so a driver who
- * zooms by hand keeps their zoom until then.
+ * Keeps the map on the driver's car. It moves with the car's shown
+ * position on every frame, so the car stays still on screen while the map
+ * moves under it. Dragging the map pauses this, so the driver can look
+ * around, until they press recenter. The zoom only changes on entering or
+ * leaving a narrow road, so a driver who zooms by hand keeps their zoom.
  */
 function FollowEgo({
-  lat,
-  lon,
+  position,
   following,
   zoom,
   offsetShare,
@@ -87,6 +95,8 @@ function FollowEgo({
 
   const positionedRef = useRef(false);
   const zoomRef = useRef(zoom);
+  const offsetRef = useRef(offsetShare);
+  const changingUntilRef = useRef(0);
 
   useMapEvents({
     dragstart: onDragged,
@@ -94,20 +104,17 @@ function FollowEgo({
   });
 
   useEffect(() => {
-    if (
-      lat === null ||
-      lon === null ||
-      !following
-    ) {
+    if (!position || !following) {
       return;
     }
+
+    const [lat, lon] = position;
 
     if (!positionedRef.current) {
       positionedRef.current = true;
       zoomRef.current = zoom;
+      offsetRef.current = offsetShare;
 
-      // Not animated: the next GPS update would interrupt an animation
-      // and leave the map stuck at whatever zoom it had reached
       map.setView(centreFor(map, lat, lon, zoom, offsetShare), zoom, {
         animate: false,
       });
@@ -115,8 +122,12 @@ function FollowEgo({
       return;
     }
 
-    if (zoomRef.current !== zoom) {
+    // Entering or leaving a narrow road zooms, and an alert moves the car
+    // down the screen. Both animate, and following waits for them.
+    if (zoomRef.current !== zoom || offsetRef.current !== offsetShare) {
       zoomRef.current = zoom;
+      offsetRef.current = offsetShare;
+      changingUntilRef.current = performance.now() + VIEW_CHANGE_MS;
 
       map.setView(centreFor(map, lat, lon, zoom, offsetShare), zoom, {
         animate: true,
@@ -125,11 +136,20 @@ function FollowEgo({
       return;
     }
 
-    map.panTo(centreFor(map, lat, lon, map.getZoom(), offsetShare), {
-      animate: true,
-      duration: 0.8,
-    });
-  }, [lat, lon, following, zoom, offsetShare, map]);
+    if (performance.now() < changingUntilRef.current) {
+      return;
+    }
+
+    const shift = map
+      .latLngToContainerPoint(
+        centreFor(map, lat, lon, map.getZoom(), offsetShare)
+      )
+      .subtract(map.getSize().divideBy(2));
+
+    if (Math.abs(shift.x) + Math.abs(shift.y) >= 1) {
+      map.panBy(shift, { animate: false });
+    }
+  }, [position, following, zoom, offsetShare, map]);
 
   return null;
 }
@@ -194,6 +214,15 @@ function VehicleMap({
     egoVehicle.lat !== null &&
     egoVehicle.lon !== null;
 
+  // Shown by the marker and followed by the map, so the two always match
+  const egoTarget = useSteadyTarget(
+    egoVehicle.lat,
+    egoVehicle.lon,
+    isMoving(egoVehicle),
+    egoVehicle.accuracy
+  );
+  const egoPosition = useSmoothPosition(egoTarget);
+
   // Other vehicles only appear once this dashboard has its own vehicle.
   // A vehicle that stopped updating is hidden, so nobody relies on an old position.
   const vehicleList = myVehicleId
@@ -208,7 +237,9 @@ function VehicleMap({
 
   const inNarrowRoad = Boolean(alert?.roadId);
   const followZoom = inNarrowRoad ? NARROW_ROAD_ZOOM : DRIVING_ZOOM;
-  const offsetShare = alert ? ALERT_OFFSET_SHARE : 0;
+  // Outside narrow roads the server still sends an alert, of kind NONE
+  const showingAlert = Boolean(alert) && alert.kind !== "NONE";
+  const offsetShare = showingAlert ? ALERT_OFFSET_SHARE : 0;
 
   const onMyCar =
     hasEgoGps &&
@@ -228,8 +259,10 @@ function VehicleMap({
 
     setFollowing(true);
 
+    const [lat, lon] = egoPosition ?? [egoVehicle.lat, egoVehicle.lon];
+
     map.setView(
-      centreFor(map, egoVehicle.lat, egoVehicle.lon, followZoom, offsetShare),
+      centreFor(map, lat, lon, followZoom, offsetShare),
       followZoom,
       { animate: true }
     );
@@ -255,8 +288,7 @@ function VehicleMap({
         <MapController onReady={setMap} />
 
         <FollowEgo
-          lat={egoVehicle.lat}
-          lon={egoVehicle.lon}
+          position={hasEgoGps ? egoPosition : null}
           following={following}
           zoom={followZoom}
           offsetShare={offsetShare}
@@ -264,7 +296,7 @@ function VehicleMap({
           onZoomed={setZoom}
         />
 
-        {alert && (
+        {showingAlert && (
           <CurrentRoads
             roads={egoVehicle.currentRoads ?? []}
             kind={alert.kind}
@@ -276,6 +308,7 @@ function VehicleMap({
             key={v.vehicleId}
             vehicleData={v}
             isEgo={v.vehicleId === myVehicleId}
+            position={v.vehicleId === myVehicleId ? egoPosition : undefined}
           />
         ))}
       </MapContainer>
