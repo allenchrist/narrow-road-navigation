@@ -4,11 +4,6 @@ const {
   distanceBetween,
   getTravelBearing,
 } = require("../utils/geo");
-const {
-  roadAxis,
-  directionFromBearing,
-  directionFromPosition,
-} = require("../utils/roadAxis");
 
 const NO_ALERT = { kind: "NONE", level: "none" };
 
@@ -40,69 +35,6 @@ function getRelation(vehicle, other) {
   if (difference > 120) return "ONCOMING";
   if (difference < 60) return "SAME_DIRECTION";
   return "UNKNOWN";
-}
-
-/**
- * How two vehicles in the same road are moving, from their directions along
- * it where both are known. fromLane says the answer came from those, rather
- * than from GPS directions alone.
- */
-function laneRelation(vehicle, other, roadIds) {
-  for (const id of roadIds) {
-    const mine = vehicle.roadDirections?.[id];
-    const theirs = other.roadDirections?.[id];
-
-    if (mine && theirs) {
-      return {
-        relation: mine === theirs ? "SAME_DIRECTION" : "ONCOMING",
-        fromLane: true,
-      };
-    }
-  }
-
-  return { relation: getRelation(vehicle, other), fromLane: false };
-}
-
-/**
- * Which way along each road the vehicle is going, as roadId → 1 or -1,
- * or 0 while not known.
- *
- * A narrow road is too narrow to turn round in, so once known, a direction
- * stays for as long as the vehicle is in the road. That way a driver who
- * reverses to give way keeps their instruction. Until then it comes from
- * the GPS direction when moving, or else from the end the vehicle came in.
- */
-function updateRoadDirections(previous, roads, position, lastCheckedAt, now) {
-  const remembered =
-    lastCheckedAt !== null && now - lastCheckedAt <= ENTRY_MEMORY_MS
-      ? previous ?? {}
-      : {};
-
-  const travelBearing = getTravelBearing(position.speed, position.bearing);
-
-  const directions = {};
-
-  for (const road of roads) {
-    const known = remembered[road.id];
-
-    if (known) {
-      directions[road.id] = known;
-      continue;
-    }
-
-    const axis = roadAxis(road.polygon);
-
-    // 0 means inside, but the direction isn't known yet. The end it came in
-    // from only counts on first entering, not later in the middle.
-    directions[road.id] =
-      directionFromBearing(travelBearing, axis) ??
-      (known === undefined
-        ? directionFromPosition(position.lat, position.lon, axis)
-        : null) ??
-      0;
-  }
-
-  return directions;
 }
 
 function isBehind(vehicle, other) {
@@ -176,9 +108,10 @@ function createRightOfWayTracker() {
   function updatePair(a, b, roadIds) {
     const key = keyOf(a, b);
     const pair = pairs.get(key);
-    const { relation, fromLane } = laneRelation(a, b, roadIds);
 
     if (!pair) {
+      const relation = getRelation(a, b);
+
       // Checked again on each update, in case either of them turns
       const noConflict =
         relation === "SAME_DIRECTION" ||
@@ -190,10 +123,6 @@ function createRightOfWayTracker() {
           passed: false,
         });
       }
-    } else if (fromLane && relation === "SAME_DIRECTION") {
-      // Decided while their directions weren't known, and it turns out
-      // they're going the same way, so neither needs to give way
-      pairs.delete(key);
     } else if (!pair.passed) {
       const [winner, other] = pair.winnerId === a.vehicleId ? [a, b] : [b, a];
 
@@ -245,29 +174,10 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   const mustGiveWayTo = [];
   const givingWay = [];
   const passedBy = [];
-  let sameDirectionCount = 0;
   let vehicleEntering = false;
-
-  // An approaching vehicle heading the same way as this one is following it
-  // in, so it isn't a threat. Without a known direction, it counts as one.
-  const isOncomingApproach = (road) => {
-    const mine = vehicle.roadDirections?.[road.id];
-
-    return !(mine && road.direction && mine === road.direction);
-  };
 
   for (const other of others) {
     const pair = rightOfWay.get(vehicle, other);
-    const sharedRoads = sharedRoadIds(vehicle, other);
-
-    if (
-      !pair &&
-      sharedRoads.length > 0 &&
-      laneRelation(vehicle, other, sharedRoads).relation === "SAME_DIRECTION"
-    ) {
-      sameDirectionCount++;
-      continue;
-    }
 
     if (pair) {
       const won = pair.winnerId === vehicle.vehicleId;
@@ -279,9 +189,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
       }
     } else if (
       getRelation(vehicle, other) !== "SAME_DIRECTION" &&
-      other.approachingRoads.some(
-        (road) => roadIds.has(road.id) && isOncomingApproach(road)
-      )
+      other.approachingRoads.some((road) => roadIds.has(road.id))
     ) {
       vehicleEntering = true;
     }
@@ -297,9 +205,6 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
     otherVehicleType:
       conflicts.length === 1 ? conflicts[0].vehicleType ?? null : null,
     otherCount: conflicts.length,
-
-    // Others in this road going the same way, which are no threat
-    sameDirectionCount,
   });
 
   if (mustGiveWayTo.length > 0) return alert("GIVE_WAY", "danger", mustGiveWayTo);
@@ -316,6 +221,5 @@ module.exports = {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
   updateRoadEntries,
-  updateRoadDirections,
   NO_ALERT,
 };

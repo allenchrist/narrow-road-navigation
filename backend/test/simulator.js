@@ -346,58 +346,25 @@ function buildPhases(L) {
       carA: [L * 0.95, L + CLEARANCE_M],
       carB: "away",
     },
-    {
-      title: "Both cars go back to the start",
-      expected: "NONE",
-      seconds: 12,
-      carA: [L + CLEARANCE_M, -120],
-      carB: "away",
-    },
-    {
-      title: "Car A enters again, with Car B following the same way",
-      expected: "IN_NARROW_ROAD",
-      expectedCarB: "NONE",
-      seconds: 12,
-      carA: [-120, L * 0.3],
-      carB: [-200, -15],
-    },
-    {
-      title: "Car B follows Car A into the road, so neither gives way",
-      expected: "IN_NARROW_ROAD",
-      expectedCarB: "IN_NARROW_ROAD",
-      seconds: 8,
-      carA: [L * 0.3, L * 0.5],
-      carB: [-15, L * 0.2],
-    },
-    {
-      title: "Both slow to a crawl, and still neither gives way",
-      expected: "IN_NARROW_ROAD",
-      expectedCarB: "IN_NARROW_ROAD",
-      seconds: 8,
-      carA: [L * 0.5, L * 0.52],
-      carB: [L * 0.2, L * 0.22],
-    },
-    {
-      title: "Both cars leave the road",
-      expected: "NONE",
-      seconds: 15,
-      carA: [L * 0.52, L + CLEARANCE_M],
-      carB: "away",
-    },
   ];
 }
 
-// GPS reports the direction a car is moving in, along the route or back
-function moveAlongRoute(car, route, [from, to], progress, seconds) {
+function moveAlongRoute(car, route, [from, to], progress, seconds, forwardBearing) {
   const distance = from + (to - from) * progress;
   const speed = Math.abs(to - from) / seconds;
-  const bearing = to > from ? route.bearing : (route.bearing + 180) % 360;
 
-  sendTelemetry(car, route.pointAt(distance), speed, speed > 0 ? bearing : null);
+  sendTelemetry(
+    car,
+    route.pointAt(distance),
+    speed,
+    speed > 0 ? forwardBearing : null
+  );
 }
 
 async function runPhase(phase, route, carA, carB) {
   const { seconds } = phase;
+  const carABearing = route.bearing;
+  const carBBearing = (route.bearing + 180) % 360;
 
   // Well clear of the road, on the far side of Car A's lead-in
   const awayPoint = route.pointAt(-5000);
@@ -407,12 +374,12 @@ async function runPhase(phase, route, carA, carB) {
   for (let tick = 1; tick <= seconds; tick++) {
     const progress = tick / seconds;
 
-    moveAlongRoute(carA, route, phase.carA, progress, seconds);
+    moveAlongRoute(carA, route, phase.carA, progress, seconds, carABearing);
 
     if (phase.carB === "away") {
       sendTelemetry(carB, awayPoint, 0, null);
     } else if (phase.carB !== "silent") {
-      moveAlongRoute(carB, route, phase.carB, progress, seconds);
+      moveAlongRoute(carB, route, phase.carB, progress, seconds, carBBearing);
     }
 
     await delay(TICK_MS);

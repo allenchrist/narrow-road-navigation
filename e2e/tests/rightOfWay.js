@@ -77,31 +77,11 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimu
   check("passing ends the first car's instruction", (await alertOf(carA)) === "Narrow road");
   check("the later car is told the road is clear", (await alertOf(carB)) === "Road clear");
 
-  // Cars going the same way aren't a threat, even crawling
-  await waitForPhase("Both slow to a crawl");
-  await sleep(6000);
-  check("cars going the same way get no give way", (await alertOf(carB)) === "Narrow road");
-  check(
-    "the car ahead is told one is going its way",
-    (await carA.evaluate(() => document.querySelector(".cv-alert").innerText)).includes("1 vehicle going your way")
-  );
-
   const code =
     simulator.exitCode ??
     (await new Promise((resolve) => simulator.on("exit", resolve)));
 
   check("every alert in the simulator was right", code === 0);
-
-  if (code !== 0) {
-    // Which alert was wrong, and in which step
-    const lines = simulator.output.split(/\r?\n/);
-    lines.forEach((line, index) => {
-      if (line.includes("✗")) {
-        const step = lines.slice(0, index).reverse().find((earlier) => earlier.includes("▶"));
-        console.log(`    ${step?.trim()} → ${line.trim()}`);
-      }
-    });
-  }
 
   const health = await (await fetch(`${API}/health`)).json();
   check("the server is still healthy", health.status === "ok");
