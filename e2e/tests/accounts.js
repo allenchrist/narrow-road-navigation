@@ -1,5 +1,5 @@
 // Email codes for signup and passwords, deleting an account, logging out and switching
-module.exports = async ({ SITE, API, check, sleep, waitUntil, post, sentEmails, startRealServer, createDriver, openDashboard }) => {
+module.exports = async ({ SITE, API, check, sleep, waitUntil, post, sentEmails, startRealServer, createDriver, newPage, openDashboard }) => {
   // Each flow looks like a different network, so rate limits don't overlap
   let networkNumber = 0;
 
@@ -209,4 +209,46 @@ module.exports = async ({ SITE, API, check, sleep, waitUntil, post, sentEmails, 
   );
   await sleep(600);
   check("switching logs out and offers that account", (await page.$eval('input[type="text"]', (input) => input.value)) === "switch_first");
+
+  // ---------- Forgotten password on the website ----------
+  await createDriver("web_reset");
+  const resetEmail = "web_reset@example.com";
+  const resetPage = await newPage();
+
+  const clickButton = (text) =>
+    resetPage.evaluate(
+      (label) =>
+        [...document.querySelectorAll("button")]
+          .find((button) => button.innerText.trim() === label)
+          .click(),
+      text
+    );
+
+  await resetPage.goto(`${SITE}/`, { waitUntil: "domcontentloaded" });
+  await resetPage.waitForSelector(".cv-forgot-link");
+  await clickButton("Forgot password?");
+  await resetPage.waitForSelector('input[type="email"]');
+  check("the login page offers to reset a password", true);
+
+  await resetPage.type('input[type="email"]', resetEmail);
+  await clickButton("Send code");
+  await resetPage.waitForSelector(".cv-code-input");
+  check("the website emails a code", await waitUntil(() => Boolean(latestCode(resetEmail))));
+
+  await resetPage.type(".cv-code-input", latestCode(resetEmail));
+  await resetPage.type('input[type="password"]', "web-reset-new-password");
+  await clickButton("Change password");
+  check(
+    "the code changes the password, back on the login page",
+    await waitUntil(async () =>
+      (await resetPage.evaluate(() => document.querySelector(".cv-form-success")?.innerText ?? ""))
+        .includes("Password changed")
+    )
+  );
+
+  await resetPage.type('input[type="text"]', "web_reset");
+  await resetPage.type('input[type="password"]', "web-reset-new-password");
+  await resetPage.keyboard.press("Enter");
+  check("the new password logs in", await waitUntil(() => new URL(resetPage.url()).pathname === "/web_reset"));
+  await resetPage.close();
 };

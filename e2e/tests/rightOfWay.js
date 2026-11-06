@@ -58,6 +58,7 @@ module.exports = async ({ SITE, API, check, sleep, post, newPage, logIn, runSimu
   check("the later car is told to give way", (await alertOf(carB)) === "Give way");
   check("the give way card shows both vehicles on the road", (await carB.$$(".cv-scene-vehicle")).length === 2);
   check("the give way card shows the steps", Boolean(await carB.$(".cv-alert-steps .is-current")));
+  check("the road you're in is outlined on the map", (await carB.$$(".cv-current-road")).length > 0);
 
   // The top bar says when a position is getting old
   const gpsOf = (page) =>

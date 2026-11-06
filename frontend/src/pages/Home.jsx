@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
+import ForgotPasswordForm from "../components/auth/ForgotPasswordForm";
 import Icon from "../components/common/Icon";
+import PasswordField from "../components/common/PasswordField";
 import { usePageTitle } from "../hooks/usePageTitle";
 import {
   getDriverSession,
   signInDriver,
 } from "../services/driverSession";
+import { wakeServer } from "../services/passwordReset";
 
 const FEATURES = [
   {
@@ -30,15 +33,19 @@ function Home() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  usePageTitle("Log in");
+  const [resetting, setResetting] = useState(false);
+
+  usePageTitle(resetting ? "Reset password" : "Log in");
 
   const [username, setUsername] = useState(
     location.state?.username ?? ""
   );
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.reason ?? "");
+  const [success, setSuccess] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+
+  useEffect(wakeServer, []);
 
   const session = getDriverSession();
 
@@ -56,6 +63,7 @@ function Home() {
 
     setSigningIn(true);
     setError("");
+    setSuccess("");
 
     const message = await signInDriver(username.trim(), password);
 
@@ -103,83 +111,89 @@ function Home() {
       </section>
 
       <main className="cv-auth-main">
-        <form className="cv-auth-form" onSubmit={logIn}>
-          <div className="cv-auth-brand cv-auth-brand--compact">
-            <div className="cv-brand-mark">
-              <Icon name="car" size={22} />
+        {resetting ? (
+          <ForgotPasswordForm
+            onDone={() => {
+              setResetting(false);
+              setError("");
+              setPassword("");
+              setSuccess("Password changed. Log in with your new password.");
+            }}
+            onCancel={() => setResetting(false)}
+          />
+        ) : (
+          <form className="cv-auth-form" onSubmit={logIn}>
+            <div className="cv-auth-brand cv-auth-brand--compact">
+              <div className="cv-brand-mark">
+                <Icon name="car" size={22} />
+              </div>
+
+              <span>Connected Vehicle</span>
             </div>
 
-            <span>Connected Vehicle</span>
-          </div>
+            <h2>Log in</h2>
 
-          <h2>Log in</h2>
+            <p>Use your phone app's account to open your car screen.</p>
 
-          <p>Use your phone app's account to open your car screen.</p>
+            <label className="cv-field">
+              <span>Username</span>
 
-          <label className="cv-field">
-            <span>Username</span>
-
-            <input
-              type="text"
-              value={username}
-              onChange={(event) =>
-                setUsername(event.target.value)
-              }
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck="false"
-              autoFocus={!username}
-            />
-          </label>
-
-          <label className="cv-field cv-field--close">
-            <span>Password</span>
-
-            <div className="cv-password">
               <input
-                type={showPassword ? "text" : "password"}
-                value={password}
+                type="text"
+                value={username}
                 onChange={(event) =>
-                  setPassword(event.target.value)
+                  setUsername(event.target.value)
                 }
-                autoComplete="current-password"
-                autoFocus={Boolean(username)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
+                autoFocus={!username}
               />
+            </label>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword((previous) => !previous)
-                }
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                <Icon
-                  name={showPassword ? "visibilityOff" : "visibility"}
-                  size={20}
-                />
-              </button>
-            </div>
-          </label>
+            <PasswordField
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              autoFocus={Boolean(username)}
+              close
+            />
 
-          {error && (
-            <div className="cv-form-error" role="alert">
-              {error}
-            </div>
-          )}
+            <button
+              type="button"
+              className="cv-text-button cv-forgot-link"
+              onClick={() => {
+                setError("");
+                setSuccess("");
+                setResetting(true);
+              }}
+            >
+              Forgot password?
+            </button>
 
-          <button
-            type="submit"
-            className="cv-button"
-            disabled={!username.trim() || !password || signingIn}
-          >
-            {signingIn ? "Logging in…" : "Log in"}
-          </button>
+            {success && <div className="cv-form-success">{success}</div>}
 
-          <p className="cv-form-note">
-            New here, or forgot your password? Use the phone app.
-          </p>
-        </form>
+            {error && (
+              <div className="cv-form-error" role="alert">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="cv-button"
+              disabled={!username.trim() || !password || signingIn}
+            >
+              {signingIn ? "Logging in…" : "Log in"}
+            </button>
+
+            <p className="cv-form-note">
+              New here? Create an account in the phone app.
+            </p>
+          </form>
+        )}
       </main>
     </div>
   );

@@ -26,7 +26,7 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
 2. The server checks each position against the saved narrow roads and compares nearby cars.
 3. The driver logs in to the dashboard with the same account. The map shows their car and other cars within 2 km. Inside a narrow road, the panel lists the vehicles in that road.
 
-Road shapes are never shown to drivers. Alerts only appear once a car is inside a narrow road.
+Inside a narrow road, the map outlines it softly, tinted to match the alert. Other road shapes aren't shown to drivers. Alerts only appear once a car is inside a narrow road.
 
 If a car's position is more than 5 seconds old, the top bar shows **Weak signal**. After 15 seconds, the car stops counting.
 
@@ -184,6 +184,12 @@ Restart the server afterwards, as it keeps the roads in memory.
 
 **Map data:** roads and buildings © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. Buildings also from [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), available under the Open Database License.
 
+## Before a demo
+
+Render's free plan stops the server after about 15 minutes without visitors, and the next visitor waits up to a minute while it starts. The login page starts waking it as soon as it opens. To keep it awake all the time, add a free monitor at [UptimeRobot](https://uptimerobot.com) for `https://narrow-road-navigation.onrender.com/health`, checking every 5 minutes. The free plan's 750 hours a month cover one server running all month.
+
+Phone GPS is often 10 to 20 m out between tall buildings. For a first test, pick a lane with open sky.
+
 ## Host it online
 
 **Server, for example on Render:** set the root folder to `backend`, the build command to `npm install` and the start command to `npm start`, then add the [settings](#settings). The address is set in the app's `ServerConfig.kt` and the website's `frontend/src/config.js`, so update both if yours is different.
@@ -212,7 +218,7 @@ These go in `backend/.env`, or in the host's environment settings.
 
 | Address | What it is |
 |---|---|
-| `/` | Driver login. Accounts are created, passwords reset and accounts deleted in the phone app |
+| `/` | Driver login, with **Forgot password?** to change a password with an emailed code. Accounts are created and deleted in the phone app |
 | `/your-username` | The dashboard. The full-screen button is in the top bar, and the menu has Suggest a narrow road and Log out |
 | `/your-username/suggest-narrow-road` | Mark a narrow road on the map and send it for review |
 | `/admin` | Mark, edit and delete roads, and approve or reject suggestions |

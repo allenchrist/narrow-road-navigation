@@ -3,10 +3,18 @@ import { closeVehicleSocket } from "./socket";
 
 const SESSION_KEY = "driverSession";
 
-// Kept between visits, so a car screen doesn't need a login on every drive
+// Kept between visits, so a car screen doesn't need a login on every drive.
+// Anything else saved under this name, such as a half-written or edited
+// value, counts as logged out rather than breaking the page.
 export function getDriverSession() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY));
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+
+    return typeof session?.token === "string" &&
+      typeof session.username === "string" &&
+      session.username
+      ? session
+      : null;
   } catch {
     return null;
   }

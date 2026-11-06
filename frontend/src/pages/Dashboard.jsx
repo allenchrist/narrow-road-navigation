@@ -31,6 +31,7 @@ function Dashboard() {
   return (
     <div className="cv-dashboard">
       <VehicleMap
+        alert={alert}
         soundOn={soundOn}
         soundUnlocked={soundUnlocked}
         onToggleSound={() =>

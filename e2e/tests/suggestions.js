@@ -10,7 +10,7 @@ const MATCHES = [
   { lat: "28.61", lon: "77.2", display_name: "Gandhi Road, New Delhi, a very long address that has to be shortened to fit" },
 ];
 
-module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createDriver, newPage, logIn }) => {
+module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, waitUntil, post, createDriver, newPage, logIn }) => {
   const username = "road_suggester";
   const token = await createDriver(username);
 
@@ -92,13 +92,20 @@ module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createD
       waitUntil: "domcontentloaded",
     });
     await page.waitForSelector(".suggest-road-map");
-    await sleep(2500);
 
-    const tile = () =>
-      page.evaluate(() => document.querySelector(".leaflet-tile")?.src ?? "");
+    // The old tiles stay until the new ones have downloaded, which can be
+    // slow, so this looks for any tile at the car, not just the first one
+    const hasTile = (column) =>
+      page.evaluate(
+        (pattern) =>
+          [...document.querySelectorAll(".leaflet-tile")].some((tile) =>
+            new RegExp(pattern).test(tile.src)
+          ),
+        `/16/${column}\\d{3}/`
+      );
 
-    const opened = await tile();
-    check("the map opens at the car", /\/16\/47\d{3}\//.test(opened));
+    // The car is in Chennai, which is tile column 47xxx at zoom 16
+    check("the map opens at the car", await waitUntil(() => hasTile(47)));
 
     await page.type(".suggest-header-search input", "Gandhi Road");
     await page.keyboard.press("Enter");
@@ -132,7 +139,9 @@ module.exports = async ({ SITE, API, ADMIN_PASSWORD, check, sleep, post, createD
     await page.click(".search-matches > button");
     await sleep(1800);
     check("picking one closes the list", !(await page.$(".search-matches")));
-    check("picking one moves the map", (await tile()) !== opened);
+
+    // The first match offered is in Coimbatore, tile column 46xxx at zoom 16
+    check("picking one moves the map", await waitUntil(() => hasTile(46)));
 
     reply = [MATCHES[0]];
     await page.focus(".suggest-header-search input");

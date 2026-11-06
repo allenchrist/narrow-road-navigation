@@ -120,15 +120,24 @@ async function post(urlPath, body, token, headers) {
 }
 
 // A new driver account, returning its login token
+// Each test account comes from its own address, so the limit on new
+// accounts from one network doesn't stop the tests as more are added
+let driverNumber = 0;
+
 async function createDriver(username, vehicleType) {
   const password = `${username}-password`;
 
-  const created = await post("/api/auth/register", {
-    username,
-    email: `${username}@example.com`,
-    password,
-    vehicleType,
-  });
+  const created = await post(
+    "/api/auth/register",
+    {
+      username,
+      email: `${username}@example.com`,
+      password,
+      vehicleType,
+    },
+    null,
+    { "X-Forwarded-For": `10.8.0.${++driverNumber}` }
+  );
 
   if (created.status !== 201) {
     throw new Error(`Couldn't create ${username}: ${created.status}`);

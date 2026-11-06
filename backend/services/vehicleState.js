@@ -15,6 +15,7 @@ const {
   NO_ALERT,
 } = require("./narrowRoadAlert");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
+const { getNarrowRoadById } = require("./narrowRoadService");
 const { DEFAULT_VEHICLE_TYPE } = require("../utils/vehicleTypes");
 
 // Drivers only receive other vehicles within this distance
@@ -318,6 +319,9 @@ function getVehiclesForDashboard() {
  * an account alone can't be used to look around. Another vehicle's alert
  * is left out, because it's only meant for that driver. Each other vehicle
  * says whether it shares a narrow road with this driver, but not which road.
+ *
+ * The driver's own vehicle includes the shapes of the roads it's in, so the
+ * screen can outline them. Other roads stay hidden.
  */
 function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
   const own = dashboardVehicles.find(
@@ -329,10 +333,15 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
   }
 
   if (!own.active || own.lat === null) {
-    return [own];
+    return [{ ...own, currentRoads: [] }];
   }
 
   const ownRoadIds = vehicles.get(ownVehicleId)?.insideRoadIds ?? [];
+
+  const currentRoads = ownRoadIds
+    .map(getNarrowRoadById)
+    .filter(Boolean)
+    .map(({ id, polygon }) => ({ id, polygon }));
 
   const others = dashboardVehicles
     .filter(
@@ -350,7 +359,7 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
       ),
     }));
 
-  return [own, ...others];
+  return [{ ...own, currentRoads }, ...others];
 }
 
 function getVehicleCount() {

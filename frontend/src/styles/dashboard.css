@@ -70,6 +70,17 @@
   pointer-events: none;
 }
 
+/* The road you're in fades in, so it doesn't flash on and off */
+.cv-current-road {
+  animation: cv-road-in 0.6s ease-out;
+}
+
+@keyframes cv-road-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Turns the standard light map into a navy one that matches the dashboard */
 .cv-map--map .leaflet-tile {
   filter: invert(1) contrast(0.68) brightness(1.02) grayscale(1) sepia(1) hue-rotate(175deg) saturate(1.7);
@@ -1147,6 +1158,62 @@
   font-size: 13px !important;
 }
 
+.cv-form-success {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(67, 209, 122, 0.12);
+  color: #8ee6b0;
+  font-size: 14px;
+}
+
+/* Quiet links, such as Forgot password */
+.cv-text-button {
+  display: block;
+  margin: 14px auto 0;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--cv-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cv-text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.cv-text-button:disabled {
+  color: var(--cv-text-3);
+  cursor: default;
+}
+
+.cv-forgot-link {
+  margin: 8px 0 0 auto;
+  font-size: 13px;
+}
+
+.cv-text-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cv-text-buttons .cv-text-button {
+  margin: 14px 0 0;
+}
+
+/* Spaced out, so the six digits are easy to check */
+.cv-code-input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.35em;
+  font-size: 20px !important;
+}
+
 .cv-form-error {
   width: 100%;
   margin-top: 14px;
@@ -1562,6 +1629,7 @@
   .cv-alert,
   .cv-alert--stop,
   .cv-scene-flow span,
+  .cv-current-road,
   .cv-marker-ring {
     animation: none;
   }
