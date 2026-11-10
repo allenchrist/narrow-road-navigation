@@ -2,4 +2,4 @@
 // and admin pages can't end up on different servers.
 export const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  "https://narrow-road-navigation.onrender.com";
+  "https://narrow-road-navigation-ckml.onrender.com";

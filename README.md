@@ -186,7 +186,7 @@ Restart the server afterwards, as it keeps the roads in memory.
 
 ## Before a demo
 
-Render's free plan stops the server after about 15 minutes without visitors, and the next visitor waits up to a minute while it starts. The login page starts waking it as soon as it opens. To keep it awake all the time, add a free monitor at [UptimeRobot](https://uptimerobot.com) for `https://narrow-road-navigation.onrender.com/health`, checking every 5 minutes. The free plan's 750 hours a month cover one server running all month.
+Render's free plan stops the server after about 15 minutes without visitors, and the next visitor waits up to a minute while it starts. The login page starts waking it as soon as it opens. To keep it awake all the time, add a free monitor at [UptimeRobot](https://uptimerobot.com) for `https://narrow-road-navigation-ckml.onrender.com/health`, checking every 5 minutes. The free plan's 750 hours a month cover one server running all month.
 
 Phone GPS is often 10 to 20 m out between tall buildings. For a first test, pick a lane with open sky.
 
