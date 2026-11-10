@@ -1,10 +1,7 @@
 const crypto = require("crypto");
 
 const { pool } = require("../config/database");
-const {
-  loadNarrowRoads,
-  createNarrowRoad,
-} = require("./narrowRoadService");
+const { loadNarrowRoads, createNarrowRoad } = require("./narrowRoadService");
 
 function rowToSuggestion(row) {
   return {
@@ -25,7 +22,7 @@ function rowToSuggestion(row) {
 
 async function getAllSuggestions() {
   const result = await pool.query(
-    "SELECT * FROM narrow_road_suggestions ORDER BY submitted_at, id;"
+    "SELECT * FROM narrow_road_suggestions ORDER BY submitted_at, id;",
   );
 
   return result.rows.map(rowToSuggestion);
@@ -34,7 +31,7 @@ async function getAllSuggestions() {
 async function getSuggestionById(id) {
   const result = await pool.query(
     "SELECT * FROM narrow_road_suggestions WHERE id = $1;",
-    [id]
+    [id],
   );
 
   return result.rows[0] ? rowToSuggestion(result.rows[0]) : null;
@@ -57,14 +54,12 @@ async function createSuggestion({ name, polygon, reason, submittedBy }) {
       JSON.stringify(polygon),
       typeof reason === "string" ? reason.trim() : "",
       submittedBy,
-    ]
+    ],
   );
 
   const suggestion = rowToSuggestion(result.rows[0]);
 
-  console.log(
-    `[Suggestion Service] New suggestion created: ${suggestion.id}`
-  );
+  console.log(`[Suggestion Service] New suggestion created: ${suggestion.id}`);
 
   return suggestion;
 }
@@ -81,7 +76,7 @@ async function rejectSuggestion(id) {
     WHERE id = $1 AND status = 'PENDING'
     RETURNING *;
     `,
-    [id]
+    [id],
   );
 
   return result.rows[0] ? rowToSuggestion(result.rows[0]) : null;
@@ -106,7 +101,7 @@ async function approveSuggestion(id) {
       WHERE id = $1 AND status = 'PENDING'
       RETURNING *;
       `,
-      [id]
+      [id],
     );
 
     if (updated.rowCount === 0) {
@@ -121,7 +116,7 @@ async function approveSuggestion(id) {
         name: suggestion.name,
         polygon: suggestion.polygon,
       },
-      client
+      client,
     );
 
     await client.query("COMMIT");

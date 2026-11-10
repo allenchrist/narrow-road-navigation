@@ -6,11 +6,12 @@ module.exports = {
   // Path where Android phones connect as WebSocket clients
   vehicleWsPath: process.env.VEHICLE_WS_PATH || "/vehicle",
 
-  corsOrigin: process.env.CORS_ORIGIN === "*"
-    ? "*"
-    : process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
-    : ["http://localhost:5173", "http://127.0.0.1:5173"],
+  corsOrigin:
+    process.env.CORS_ORIGIN === "*"
+      ? "*"
+      : process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
+        : ["http://localhost:5173", "http://127.0.0.1:5173"],
 
   // Without a clear view of the sky, a phone can go about 7 seconds between
   // positions. A shorter limit would make a working car keep dropping out.

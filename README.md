@@ -229,9 +229,11 @@ These go in `backend/.env`, or in the host's environment settings.
 |---|---|---|---|
 | `npm run test:alerts` | `backend` | Alert and right-of-way rules | Nothing else |
 | `npm run test:validation` | `backend` | Input checks | Nothing else |
+| `npm run test:state` | `backend` | The live vehicle list, such as forgetting vehicles gone for over an hour | Nothing else |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
 | `npm run simulate` | `backend` | Every alert, using two simulated cars | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
 | `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |
+| `npm run format:check` | `backend`, `frontend` or `e2e` | That the code follows the shared style. `npm run format` fixes it | Nothing else |
 | `npm run build` | `frontend` | That the website builds | Nothing else |
 | `npm test` | `e2e` | Every page in Chrome, using a temporary database. Takes a few minutes | Chrome, and `npm install` in `backend`, `frontend` and `e2e` |
 

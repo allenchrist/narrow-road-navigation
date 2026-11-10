@@ -13,26 +13,21 @@ function AdminHeader({ search, editor, onStartDrawing, onSignOut }) {
 
   return (
     <header className="admin-header">
-
       <div className="admin-heading">
-        <div className="admin-title">
-          Narrow road management
-        </div>
+        <div className="admin-title">Narrow road management</div>
 
-        <div className="admin-subtitle">
-          Admin console
-        </div>
+        <div className="admin-subtitle">Admin console</div>
       </div>
 
       <div className="admin-header-search-container">
         <div className="admin-header-search">
-          <span className="admin-search-icon"><Icon name="search" size={18} /></span>
+          <span className="admin-search-icon">
+            <Icon name="search" size={18} />
+          </span>
           <input
             type="text"
             value={search.searchText}
-            onChange={(event) =>
-              search.setSearchText(event.target.value)
-            }
+            onChange={(event) => search.setSearchText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 search.searchLocationOnMap();
@@ -53,7 +48,6 @@ function AdminHeader({ search, editor, onStartDrawing, onSignOut }) {
       </div>
 
       <div className="admin-actions">
-
         <button
           type="button"
           onClick={onSignOut}
@@ -63,7 +57,6 @@ function AdminHeader({ search, editor, onStartDrawing, onSignOut }) {
         </button>
 
         {!drawing ? (
-
           <button
             type="button"
             onClick={onStartDrawing}
@@ -72,11 +65,8 @@ function AdminHeader({ search, editor, onStartDrawing, onSignOut }) {
             <Icon name="add" size={18} />
             Mark narrow road
           </button>
-
         ) : (
-
           <>
-
             <button
               type="button"
               onClick={cancelDrawing}
@@ -101,19 +91,11 @@ function AdminHeader({ search, editor, onStartDrawing, onSignOut }) {
               disabled={saving || currentPolygon.length < 3}
               className="admin-primary-button"
             >
-              {saving
-                ? "Saving…"
-                : editingRoadId
-                ? "Update road"
-                : "Save road"}
+              {saving ? "Saving…" : editingRoadId ? "Update road" : "Save road"}
             </button>
-
           </>
-
         )}
-
       </div>
-
     </header>
   );
 }

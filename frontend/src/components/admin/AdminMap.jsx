@@ -9,11 +9,7 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import SearchMatches from "../common/SearchMatches";
-import {
-  DrawingLayer,
-  FlyToLocation,
-  MapController,
-} from "../map/mapHelpers";
+import { DrawingLayer, FlyToLocation, MapController } from "../map/mapHelpers";
 
 function AdminMap({ search, editor, review, onMapReady }) {
   const { searchLocation, searchError } = search;
@@ -22,14 +18,12 @@ function AdminMap({ search, editor, review, onMapReady }) {
 
   return (
     <div className="admin-map cv-map--map">
-
       <MapContainer
         center={[10.958, 76.956]}
         zoom={15}
         zoomControl={true}
         className="admin-leaflet-map"
       >
-
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
@@ -37,21 +31,13 @@ function AdminMap({ search, editor, review, onMapReady }) {
 
         <MapController onReady={onMapReady} />
 
-        <FlyToLocation
-          location={searchLocation}
-          zoom={17}
-          duration={1.2}
-        />
+        <FlyToLocation location={searchLocation} zoom={17} duration={1.2} />
 
-        <DrawingLayer
-          drawing={drawing}
-          onPointAdded={addPoint}
-        />
+        <DrawingLayer drawing={drawing} onPointAdded={addPoint} />
 
         {/* Saved roads */}
 
         {roads.map((road) => (
-
           <Polygon
             key={`road-${road.id}`}
             positions={road.polygon}
@@ -62,17 +48,14 @@ function AdminMap({ search, editor, review, onMapReady }) {
               fillOpacity: 0.18,
             }}
           />
-
         ))}
 
         {/* Drivers' suggestions */}
 
         {pendingSuggestions.map((suggestion) => {
-
           const selected = suggestion.id === selectedSuggestionId;
 
           return (
-
             <Polygon
               key={`suggestion-${suggestion.id}`}
               positions={suggestion.polygon}
@@ -81,7 +64,7 @@ function AdminMap({ search, editor, review, onMapReady }) {
                 weight: selected ? 5 : 3,
                 dashArray: "8 6",
                 fillColor: selected ? "#ffd54f" : "#9c6cff",
-                fillOpacity: selected ? 0.30 : 0.20,
+                fillOpacity: selected ? 0.3 : 0.2,
               }}
               eventHandlers={{
                 // While marking, a click here only adds a point
@@ -92,14 +75,12 @@ function AdminMap({ search, editor, review, onMapReady }) {
                 },
               }}
             />
-
           );
         })}
 
         {/* Search result */}
 
         {searchLocation && (
-
           <CircleMarker
             center={[searchLocation.lat, searchLocation.lon]}
             radius={8}
@@ -110,13 +91,11 @@ function AdminMap({ search, editor, review, onMapReady }) {
               weight: 3,
             }}
           />
-
         )}
 
         {/* The road being marked */}
 
         {currentPolygon.length >= 2 && (
-
           <Polyline
             positions={currentPolygon}
             pathOptions={{
@@ -125,11 +104,9 @@ function AdminMap({ search, editor, review, onMapReady }) {
               dashArray: "8 6",
             }}
           />
-
         )}
 
         {currentPolygon.map((point, index) => (
-
           <CircleMarker
             key={index}
             center={point}
@@ -141,9 +118,7 @@ function AdminMap({ search, editor, review, onMapReady }) {
               weight: 2,
             }}
           />
-
         ))}
-
       </MapContainer>
 
       {searchError && (
@@ -155,26 +130,14 @@ function AdminMap({ search, editor, review, onMapReady }) {
       <SearchMatches search={search} />
 
       {drawing && (
-
         <div className="admin-drawing-help">
+          <strong>Marking a narrow road</strong>
 
-          <strong>
-            Marking a narrow road
-          </strong>
+          <span>Click around the road to mark its boundary.</span>
 
-          <span>
-            Click around the road to mark its boundary.
-          </span>
-
-          <span>
-            Points:{" "}
-            {currentPolygon.length}
-          </span>
-
+          <span>Points: {currentPolygon.length}</span>
         </div>
-
       )}
-
     </div>
   );
 }

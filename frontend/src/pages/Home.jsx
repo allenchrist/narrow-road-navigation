@@ -5,10 +5,7 @@ import ForgotPasswordForm from "../components/auth/ForgotPasswordForm";
 import Icon from "../components/common/Icon";
 import PasswordField from "../components/common/PasswordField";
 import { usePageTitle } from "../hooks/usePageTitle";
-import {
-  getDriverSession,
-  signInDriver,
-} from "../services/driverSession";
+import { getDriverSession, signInDriver } from "../services/driverSession";
 import { wakeServer } from "../services/passwordReset";
 
 const FEATURES = [
@@ -37,9 +34,7 @@ function Home() {
 
   usePageTitle(resetting ? "Reset password" : "Log in");
 
-  const [username, setUsername] = useState(
-    location.state?.username ?? ""
-  );
+  const [username, setUsername] = useState(location.state?.username ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(location.state?.reason ?? "");
   const [success, setSuccess] = useState("");
@@ -50,12 +45,7 @@ function Home() {
   const session = getDriverSession();
 
   if (session) {
-    return (
-      <Navigate
-        to={`/${encodeURIComponent(session.username)}`}
-        replace
-      />
-    );
+    return <Navigate to={`/${encodeURIComponent(session.username)}`} replace />;
   }
 
   async function logIn(event) {
@@ -75,10 +65,9 @@ function Home() {
       return;
     }
 
-    navigate(
-      `/${encodeURIComponent(getDriverSession().username)}`,
-      { replace: true }
-    );
+    navigate(`/${encodeURIComponent(getDriverSession().username)}`, {
+      replace: true,
+    });
   }
 
   return (
@@ -141,9 +130,7 @@ function Home() {
               <input
                 type="text"
                 value={username}
-                onChange={(event) =>
-                  setUsername(event.target.value)
-                }
+                onChange={(event) => setUsername(event.target.value)}
                 autoComplete="username"
                 autoCapitalize="none"
                 autoCorrect="off"

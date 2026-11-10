@@ -1,17 +1,9 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 import { useNavigate, useParams } from "react-router-dom";
 
 import { signOutDriver } from "../services/driverSession";
-import {
-  getVehicleSocket,
-  SOCKET_NOT_AUTHORIZED,
-} from "../services/socket";
+import { getVehicleSocket, SOCKET_NOT_AUTHORIZED } from "../services/socket";
 
 const VehicleContext = createContext(null);
 
@@ -48,26 +40,21 @@ export function VehicleProvider({ children }) {
   const { username } = useParams();
   const navigate = useNavigate();
 
-  const [vehicles, setVehicles] =
-    useState({});
+  const [vehicles, setVehicles] = useState({});
 
-  const [backendConnected, setBackendConnected] =
-    useState(false);
+  const [backendConnected, setBackendConnected] = useState(false);
 
   // Ego vehicle assigned to THIS dashboard
-  const [myVehicleId, setMyVehicleId] =
-    useState(null);
+  const [myVehicleId, setMyVehicleId] = useState(null);
 
-  const [sessionError, setSessionError] =
-    useState("");
+  const [sessionError, setSessionError] = useState("");
 
   // --------------------------------------------------
   // SOCKET.IO
   // --------------------------------------------------
 
   useEffect(() => {
-    const socket =
-      getVehicleSocket();
+    const socket = getVehicleSocket();
 
     function identifyDashboard() {
       socket.emit("session:identify");
@@ -105,23 +92,19 @@ export function VehicleProvider({ children }) {
       setVehicles((previous) => {
         const updated = {};
 
-        Object.keys(previous).forEach(
-          (id) => {
-            updated[id] = {
-              ...previous[id],
-              connected: false,
-              active: false,
-            };
-          }
-        );
+        Object.keys(previous).forEach((id) => {
+          updated[id] = {
+            ...previous[id],
+            connected: false,
+            active: false,
+          };
+        });
 
         return updated;
       });
     }
 
-    function onVehiclesUpdate({
-      vehicles: list,
-    }) {
+    function onVehiclesUpdate({ vehicles: list }) {
       if (!Array.isArray(list)) {
         return;
       }
@@ -136,28 +119,17 @@ export function VehicleProvider({ children }) {
       setBackendConnected(true);
     }
 
-    function onSessionAssigned({
-      vehicleId,
-    }) {
-      if (
-        !vehicleId ||
-        typeof vehicleId !== "string"
-      ) {
+    function onSessionAssigned({ vehicleId }) {
+      if (!vehicleId || typeof vehicleId !== "string") {
         return;
       }
 
       setSessionError("");
 
-      setMyVehicleId(
-        vehicleId
-          .trim()
-          .toUpperCase()
-      );
+      setMyVehicleId(vehicleId.trim().toUpperCase());
     }
 
-    function onSessionError({
-      message,
-    }) {
+    function onSessionError({ message }) {
       setSessionError(message);
 
       setMyVehicleId(null);
@@ -200,23 +172,16 @@ export function VehicleProvider({ children }) {
       return;
     }
 
-    const socket =
-      getVehicleSocket();
+    const socket = getVehicleSocket();
 
     const interval = setInterval(() => {
       socket.emit("session:identify");
     }, IDENTIFY_RETRY_MS);
 
-    return () =>
-      clearInterval(interval);
-  }, [
-    backendConnected,
-    myVehicleId,
-  ]);
+    return () => clearInterval(interval);
+  }, [backendConnected, myVehicleId]);
 
-  const egoVehicle =
-    (myVehicleId && vehicles[myVehicleId]) ||
-    EMPTY_VEHICLE;
+  const egoVehicle = (myVehicleId && vehicles[myVehicleId]) || EMPTY_VEHICLE;
 
   return (
     <VehicleContext.Provider
@@ -227,11 +192,7 @@ export function VehicleProvider({ children }) {
         myVehicleId,
         backendConnected,
         sessionError,
-        gpsStatus: getGpsStatus(
-          backendConnected,
-          myVehicleId,
-          egoVehicle
-        ),
+        gpsStatus: getGpsStatus(backendConnected, myVehicleId, egoVehicle),
       }}
     >
       {children}
@@ -240,7 +201,5 @@ export function VehicleProvider({ children }) {
 }
 
 export function useVehicle() {
-  return useContext(
-    VehicleContext
-  );
+  return useContext(VehicleContext);
 }

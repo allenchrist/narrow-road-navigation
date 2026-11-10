@@ -25,6 +25,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Code style
+        run: npm run format:check
       - run: npm run lint
       - run: npm run build
 
@@ -61,11 +63,15 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - name: Code style
+        run: npm run format:check
       - run: npm run lint
       - name: Alert rules
         run: npm run test:alerts
       - name: Input validation
         run: npm run test:validation
+      - name: Live vehicle list
+        run: npm run test:state
       - name: Set up the database, with roads the simulator can drive through
         run: npm run db:init-demo
       - name: Start the server
@@ -98,6 +104,9 @@ jobs:
       - run: npm ci
         working-directory: frontend
       - run: npm ci
+        working-directory: e2e
+      - name: Code style of the tests
+        run: npm run format:check
         working-directory: e2e
       - name: Browser tests
         run: npm test

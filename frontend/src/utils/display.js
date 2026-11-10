@@ -2,9 +2,7 @@
 const PLACEHOLDER_ROAD_NAME = /^Narrow Road \d+$/;
 
 export function displayRoadName(name) {
-  return !name || PLACEHOLDER_ROAD_NAME.test(name)
-    ? "Narrow road"
-    : name;
+  return !name || PLACEHOLDER_ROAD_NAME.test(name) ? "Narrow road" : name;
 }
 
 export function hasRoadName(name) {

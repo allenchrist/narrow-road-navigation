@@ -8,11 +8,8 @@ function SearchMatches({ search }) {
 
   return (
     <div className="search-matches">
-
       <div className="search-matches-title">
-        <strong>
-          Not the right place?
-        </strong>
+        <strong>Not the right place?</strong>
 
         <button
           type="button"
@@ -33,7 +30,6 @@ function SearchMatches({ search }) {
           {match.displayName}
         </button>
       ))}
-
     </div>
   );
 }

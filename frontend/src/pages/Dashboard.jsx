@@ -19,9 +19,7 @@ function Dashboard() {
 
   // An alert from before a lost connection may no longer be true
   const alert =
-    backendConnected && egoVehicle.active
-      ? egoVehicle.narrowRoadAlert
-      : null;
+    backendConnected && egoVehicle.active ? egoVehicle.narrowRoadAlert : null;
 
   const soundUnlocked = useAlertSound(alert?.level, soundOn);
 
@@ -34,9 +32,7 @@ function Dashboard() {
         alert={alert}
         soundOn={soundOn}
         soundUnlocked={soundUnlocked}
-        onToggleSound={() =>
-          setSoundOn((previous) => !previous)
-        }
+        onToggleSound={() => setSoundOn((previous) => !previous)}
       />
 
       <TopBar />

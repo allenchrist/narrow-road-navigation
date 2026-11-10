@@ -1,7 +1,6 @@
 const MAX_POLYGON_POINTS = 500;
 
-const POLYGON_ERROR =
-  `Polygon must contain 3 to ${MAX_POLYGON_POINTS} [latitude, longitude] points`;
+const POLYGON_ERROR = `Polygon must contain 3 to ${MAX_POLYGON_POINTS} [latitude, longitude] points`;
 
 /**
  * Checks that a client-supplied polygon is a list of valid
@@ -24,7 +23,7 @@ function isValidPolygon(polygon) {
       Number.isFinite(point[0]) &&
       Number.isFinite(point[1]) &&
       Math.abs(point[0]) <= 90 &&
-      Math.abs(point[1]) <= 180
+      Math.abs(point[1]) <= 180,
   );
 }
 

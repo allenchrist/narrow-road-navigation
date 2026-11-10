@@ -7,7 +7,7 @@ async function registerUser(username, email, passwordHash, vehicleType) {
     VALUES ($1, $2, $3, $4)
     RETURNING id, username, email, vehicle_type, created_at;
     `,
-    [username, email, passwordHash, vehicleType]
+    [username, email, passwordHash, vehicleType],
   );
 
   return result.rows[0];
@@ -20,7 +20,7 @@ async function findUserByUsername(username) {
     FROM users
     WHERE username = $1;
     `,
-    [username]
+    [username],
   );
 
   return result.rows[0] || null;
@@ -38,7 +38,7 @@ async function findUserForLogin(username) {
     WHERE LOWER(username) = LOWER($1)
     ORDER BY id;
     `,
-    [username]
+    [username],
   );
 
   return (
@@ -52,7 +52,7 @@ async function findUserForLogin(username) {
 async function isUsernameTaken(username) {
   const result = await pool.query(
     "SELECT 1 FROM users WHERE LOWER(username) = LOWER($1);",
-    [username]
+    [username],
   );
 
   return result.rowCount > 0;
@@ -61,7 +61,7 @@ async function isUsernameTaken(username) {
 async function isEmailTaken(email) {
   const result = await pool.query(
     "SELECT 1 FROM users WHERE LOWER(email) = LOWER($1);",
-    [email]
+    [email],
   );
 
   return result.rowCount > 0;
@@ -75,7 +75,7 @@ async function findUserByDeviceId(deviceId) {
     FROM users
     WHERE device_id = $1;
     `,
-    [deviceId]
+    [deviceId],
   );
 
   return result.rows[0] || null;
@@ -99,7 +99,7 @@ async function linkDeviceToUser(userId, deviceId) {
       WHERE device_id = $1 AND id <> $2
       RETURNING username;
       `,
-      [deviceId, userId]
+      [deviceId, userId],
     );
 
     const updated = await client.query(
@@ -109,7 +109,7 @@ async function linkDeviceToUser(userId, deviceId) {
       WHERE id = $2
       RETURNING id, username, email, device_id;
       `,
-      [deviceId, userId]
+      [deviceId, userId],
     );
 
     await client.query("COMMIT");
@@ -137,7 +137,7 @@ async function unlinkDeviceFromUser(userId, deviceId) {
     SET device_id = NULL
     WHERE id = $1 AND device_id = $2;
     `,
-    [userId, deviceId]
+    [userId, deviceId],
   );
 
   return result.rowCount > 0;
@@ -150,7 +150,7 @@ async function findUserByEmail(email) {
     FROM users
     WHERE LOWER(email) = LOWER($1);
     `,
-    [email.trim()]
+    [email.trim()],
   );
 
   return result.rows[0] || null;
@@ -163,7 +163,7 @@ async function findUserByEmail(email) {
 async function isSessionCurrent({ username, sv = 0 }) {
   const result = await pool.query(
     "SELECT session_version FROM users WHERE username = $1;",
-    [username]
+    [username],
   );
 
   return result.rows[0]?.session_version === sv;
@@ -176,7 +176,7 @@ async function updatePassword(userId, passwordHash) {
     SET password_hash = $1, session_version = session_version + 1
     WHERE id = $2;
     `,
-    [passwordHash, userId]
+    [passwordHash, userId],
   );
 }
 
@@ -189,7 +189,7 @@ async function deleteUser(user) {
 
     await client.query(
       "UPDATE narrow_road_suggestions SET submitted_by = NULL WHERE submitted_by = $1;",
-      [user.username]
+      [user.username],
     );
 
     await client.query("DELETE FROM users WHERE id = $1;", [user.id]);
@@ -204,10 +204,10 @@ async function deleteUser(user) {
 }
 
 async function updateVehicleType(userId, vehicleType) {
-  await pool.query(
-    "UPDATE users SET vehicle_type = $1 WHERE id = $2;",
-    [vehicleType, userId]
-  );
+  await pool.query("UPDATE users SET vehicle_type = $1 WHERE id = $2;", [
+    vehicleType,
+    userId,
+  ]);
 }
 
 module.exports = {

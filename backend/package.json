@@ -14,7 +14,10 @@
     "simulate": "node test/simulator.js",
     "test": "node test/smokeTest.js",
     "test:alerts": "node test/narrowRoadAlertTest.js",
-    "test:validation": "node test/validationTest.js"
+    "test:validation": "node test/validationTest.js",
+    "test:state": "node test/vehicleStateTest.js",
+    "format": "prettier --write . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
+    "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -30,6 +33,7 @@
     "@eslint/js": "^9.39.5",
     "eslint": "^9.39.5",
     "globals": "^17.14.0",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "prettier": "3.9.10"
   }
 }

@@ -23,7 +23,7 @@ function isOnThisMachine(connectionString) {
   }
 
   return ["localhost", "127.0.0.1", "[::1]"].includes(
-    new URL(connectionString).hostname
+    new URL(connectionString).hostname,
   );
 }
 

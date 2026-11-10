@@ -37,7 +37,7 @@ export function useSteadyTarget(lat, lon, moving, accuracy) {
     const next = [lat, lon];
     const hold = Math.min(
       MAX_HOLD_M,
-      Math.max(MIN_HOLD_M, accuracy ?? DEFAULT_HOLD_M)
+      Math.max(MIN_HOLD_M, accuracy ?? DEFAULT_HOLD_M),
     );
 
     if (
@@ -68,7 +68,8 @@ export function useSmoothPosition(target) {
     }
 
     const startedAt = performance.now();
-    const gap = lastTargetAt.current === null ? null : startedAt - lastTargetAt.current;
+    const gap =
+      lastTargetAt.current === null ? null : startedAt - lastTargetAt.current;
     const from = shownRef.current;
 
     lastTargetAt.current = startedAt;

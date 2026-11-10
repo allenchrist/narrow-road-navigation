@@ -3,7 +3,14 @@ import { useState } from "react";
 import Icon from "./Icon";
 
 // A password box with a button to show what's been typed
-function PasswordField({ label, value, onChange, autoComplete, autoFocus, close }) {
+function PasswordField({
+  label,
+  value,
+  onChange,
+  autoComplete,
+  autoFocus,
+  close,
+}) {
   const [visible, setVisible] = useState(false);
 
   return (

@@ -1,5 +1,4 @@
 import { BACKEND_URL } from "../config";
-import { closeVehicleSocket } from "./socket";
 
 const SESSION_KEY = "driverSession";
 
@@ -22,7 +21,10 @@ export function getDriverSession() {
 
 export function signOutDriver() {
   localStorage.removeItem(SESSION_KEY);
-  closeVehicleSocket();
+
+  // Loaded here rather than at the top, so the login page doesn't download
+  // the live connection code. If a car screen opened it, it's already loaded.
+  import("./socket").then(({ closeVehicleSocket }) => closeVehicleSocket());
 }
 
 /**
@@ -47,7 +49,7 @@ export async function signInDriver(username, password) {
       JSON.stringify({
         token: data.token,
         username: data.user.username,
-      })
+      }),
     );
 
     return null;

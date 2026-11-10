@@ -31,7 +31,7 @@ export function sendResetCode(email) {
   return postJson(
     "/api/auth/password/forgot",
     { email },
-    "Couldn't send the code."
+    "Couldn't send the code.",
   );
 }
 
@@ -40,7 +40,7 @@ export function resetPassword(email, code, newPassword) {
   return postJson(
     "/api/auth/password/reset",
     { email, code, newPassword },
-    "Couldn't change your password."
+    "Couldn't change your password.",
   );
 }
 

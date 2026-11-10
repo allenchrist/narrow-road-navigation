@@ -3,28 +3,14 @@ function SuggestionItem({ suggestion, review }) {
   const selected = review.selectedSuggestionId === suggestion.id;
 
   return (
-
-    <div
-      className={`admin-road-item${selected ? " is-selected" : ""}`}
-    >
-
+    <div className={`admin-road-item${selected ? " is-selected" : ""}`}>
       <div>
+        <strong>{suggestion.name}</strong>
 
-        <strong>
-          {suggestion.name}
-        </strong>
-
-        <span>
-          {suggestion.polygon.length}{" "}
-          boundary points
-        </span>
+        <span>{suggestion.polygon.length} boundary points</span>
 
         {suggestion.reason && (
-
-          <span className="admin-road-reason">
-            {suggestion.reason}
-          </span>
-
+          <span className="admin-road-reason">{suggestion.reason}</span>
         )}
 
         <span>
@@ -34,18 +20,13 @@ function SuggestionItem({ suggestion, review }) {
         </span>
 
         {suggestion.submittedAt && (
-
           <span>
-            Submitted{" "}
-            {new Date(suggestion.submittedAt).toLocaleString()}
+            Submitted {new Date(suggestion.submittedAt).toLocaleString()}
           </span>
-
         )}
-
       </div>
 
       <div className="admin-road-buttons">
-
         <button
           type="button"
           onClick={() => review.viewSuggestion(suggestion)}
@@ -72,11 +53,8 @@ function SuggestionItem({ suggestion, review }) {
         >
           Reject
         </button>
-
       </div>
-
     </div>
-
   );
 }
 
@@ -85,45 +63,25 @@ function SuggestionList({ review }) {
 
   return (
     <>
-
       {suggestionsError && (
-
-        <div className="admin-error">
-          {suggestionsError}
-        </div>
-
+        <div className="admin-error">{suggestionsError}</div>
       )}
 
       {suggestionsLoading ? (
-
-        <div className="admin-empty">
-          Loading user suggestions...
-        </div>
-
+        <div className="admin-empty">Loading user suggestions...</div>
       ) : pendingSuggestions.length === 0 ? (
-
-        <div className="admin-empty">
-          No pending user suggestions.
-        </div>
-
+        <div className="admin-empty">No pending user suggestions.</div>
       ) : (
-
         <div className="admin-road-list">
-
           {pendingSuggestions.map((suggestion) => (
-
             <SuggestionItem
               key={suggestion.id}
               suggestion={suggestion}
               review={review}
             />
-
           ))}
-
         </div>
-
       )}
-
     </>
   );
 }

@@ -1,10 +1,5 @@
-const {
-  getAllNarrowRoads,
-} = require("./narrowRoadService");
-const {
-  angleDifference,
-  nearestPointOnPolygon,
-} = require("../utils/geo");
+const { getAllNarrowRoads } = require("./narrowRoadService");
+const { angleDifference, nearestPointOnPolygon } = require("../utils/geo");
 
 // How far ahead a moving vehicle is warned about a narrow road
 const APPROACH_DISTANCE_M = 150;
@@ -27,10 +22,7 @@ const DEFAULT_ROAD_TOLERANCE_M = 10;
 
 function getRoadTolerance(accuracy) {
   return typeof accuracy === "number"
-    ? Math.min(
-        MAX_ROAD_TOLERANCE_M,
-        Math.max(MIN_ROAD_TOLERANCE_M, accuracy)
-      )
+    ? Math.min(MAX_ROAD_TOLERANCE_M, Math.max(MIN_ROAD_TOLERANCE_M, accuracy))
     : DEFAULT_ROAD_TOLERANCE_M;
 }
 
@@ -40,17 +32,11 @@ function getRoadTolerance(accuracy) {
 // --------------------------------------------------
 
 function isPointInsidePolygon(lat, lon, polygon) {
-  if (
-    !Number.isFinite(Number(lat)) ||
-    !Number.isFinite(Number(lon))
-  ) {
+  if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lon))) {
     return false;
   }
 
-  if (
-    !Array.isArray(polygon) ||
-    polygon.length < 3
-  ) {
+  if (!Array.isArray(polygon) || polygon.length < 3) {
     return false;
   }
 
@@ -59,11 +45,7 @@ function isPointInsidePolygon(lat, lon, polygon) {
 
   let inside = false;
 
-  for (
-    let i = 0, j = polygon.length - 1;
-    i < polygon.length;
-    j = i++
-  ) {
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
     const latI = Number(polygon[i][0]);
     const lonI = Number(polygon[i][1]);
 
@@ -80,12 +62,8 @@ function isPointInsidePolygon(lat, lon, polygon) {
     }
 
     const intersects =
-      (lonI > pointLon) !== (lonJ > pointLon) &&
-      pointLat <
-        ((latJ - latI) *
-          (pointLon - lonI)) /
-          (lonJ - lonI) +
-          latI;
+      lonI > pointLon !== lonJ > pointLon &&
+      pointLat < ((latJ - latI) * (pointLon - lonI)) / (lonJ - lonI) + latI;
 
     if (intersects) {
       inside = !inside;
@@ -157,7 +135,7 @@ function getGeofenceState(lat, lon, travelBearing = null, accuracy) {
     lon,
     travelBearing,
     getAllNarrowRoads(),
-    accuracy
+    accuracy,
   );
 }
 

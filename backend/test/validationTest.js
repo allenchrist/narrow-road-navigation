@@ -22,7 +22,11 @@ const errorFor = (changes) =>
 
 const tests = {
   "a normal account is accepted and trimmed": () => {
-    const account = validateRegistration({ ...good, username: " allen ", email: " a@b.co " });
+    const account = validateRegistration({
+      ...good,
+      username: " allen ",
+      email: " a@b.co ",
+    });
     assert.strictEqual(account.error, undefined);
     assert.strictEqual(account.username, "allen");
     assert.strictEqual(account.email, "a@b.co");
@@ -32,7 +36,10 @@ const tests = {
   },
   "every vehicle type is accepted": () => {
     for (const vehicleType of ["car", "truck", "lorry", "bus", "auto"]) {
-      assert.strictEqual(validateRegistration({ ...good, vehicleType }).vehicleType, vehicleType);
+      assert.strictEqual(
+        validateRegistration({ ...good, vehicleType }).vehicleType,
+        vehicleType,
+      );
     }
   },
   "an unknown vehicle type is refused": () => {
@@ -51,7 +58,15 @@ const tests = {
     assert.ok(errorFor({ email: `${"x".repeat(250)}@b.com` }));
   },
   "usernames that would break the dashboard address are refused": () => {
-    for (const username of ["a/b", "..", "ab", "has space", "x".repeat(51), ".hidden", "a?b"]) {
+    for (const username of [
+      "a/b",
+      "..",
+      "ab",
+      "has space",
+      "x".repeat(51),
+      ".hidden",
+      "a?b",
+    ]) {
       assert.ok(errorFor({ username }), username);
     }
   },
@@ -87,12 +102,15 @@ const tests = {
   },
   "the client address comes from the proxy header when present": () => {
     assert.strictEqual(
-      getClientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" }, socket: {} }),
-      "1.2.3.4"
+      getClientIp({
+        headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
+        socket: {},
+      }),
+      "1.2.3.4",
     );
     assert.strictEqual(
       getClientIp({ headers: {}, socket: { remoteAddress: "9.9.9.9" } }),
-      "9.9.9.9"
+      "9.9.9.9",
     );
   },
 };
@@ -109,6 +127,8 @@ for (const [name, test] of Object.entries(tests)) {
   }
 }
 
-console.log(`\n  ${Object.keys(tests).length - failed} passed, ${failed} failed`);
+console.log(
+  `\n  ${Object.keys(tests).length - failed} passed, ${failed} failed`,
+);
 
 if (failed > 0) process.exit(1);

@@ -23,7 +23,7 @@ function rowToRoad(row) {
 
 async function loadNarrowRoads() {
   const result = await pool.query(
-    "SELECT * FROM narrow_roads ORDER BY created_at, id;"
+    "SELECT * FROM narrow_roads ORDER BY created_at, id;",
   );
 
   cachedRoads = result.rows.map(rowToRoad);
@@ -40,9 +40,7 @@ function getAllNarrowRoads() {
 }
 
 function getNarrowRoadById(id) {
-  return cachedRoads.find(
-    (road) => road.id === id
-  ) || null;
+  return cachedRoads.find((road) => road.id === id) || null;
 }
 
 // --------------------------------------------------
@@ -51,30 +49,21 @@ function getNarrowRoadById(id) {
 // db lets a caller include this in its own transaction.
 // --------------------------------------------------
 
-async function createNarrowRoad(
-  { name, polygon },
-  db = pool
-) {
+async function createNarrowRoad({ name, polygon }, db = pool) {
   const result = await db.query(
     `
     INSERT INTO narrow_roads (id, name, polygon)
     VALUES ($1, $2, $3)
     RETURNING *;
     `,
-    [
-      `NR_${crypto.randomUUID()}`,
-      String(name).trim(),
-      JSON.stringify(polygon),
-    ]
+    [`NR_${crypto.randomUUID()}`, String(name).trim(), JSON.stringify(polygon)],
   );
 
   const road = rowToRoad(result.rows[0]);
 
   cachedRoads = [...cachedRoads, road];
 
-  console.log(
-    `[Narrow Road] Created ${road.id}: ${road.name}`
-  );
+  console.log(`[Narrow Road] Created ${road.id}: ${road.name}`);
 
   return road;
 }
@@ -98,7 +87,7 @@ async function updateNarrowRoad(id, { name, polygon }) {
       id,
       name === undefined ? null : String(name).trim(),
       polygon === undefined ? null : JSON.stringify(polygon),
-    ]
+    ],
   );
 
   if (result.rowCount === 0) {
@@ -108,12 +97,10 @@ async function updateNarrowRoad(id, { name, polygon }) {
   const road = rowToRoad(result.rows[0]);
 
   cachedRoads = cachedRoads.map((existing) =>
-    existing.id === id ? road : existing
+    existing.id === id ? road : existing,
   );
 
-  console.log(
-    `[Narrow Road] Updated ${id}`
-  );
+  console.log(`[Narrow Road] Updated ${id}`);
 
   return road;
 }
@@ -123,22 +110,17 @@ async function updateNarrowRoad(id, { name, polygon }) {
 // --------------------------------------------------
 
 async function deleteNarrowRoad(id) {
-  const result = await pool.query(
-    "DELETE FROM narrow_roads WHERE id = $1;",
-    [id]
-  );
+  const result = await pool.query("DELETE FROM narrow_roads WHERE id = $1;", [
+    id,
+  ]);
 
   if (result.rowCount === 0) {
     return false;
   }
 
-  cachedRoads = cachedRoads.filter(
-    (road) => road.id !== id
-  );
+  cachedRoads = cachedRoads.filter((road) => road.id !== id);
 
-  console.log(
-    `[Narrow Road] Deleted ${id}`
-  );
+  console.log(`[Narrow Road] Deleted ${id}`);
 
   return true;
 }

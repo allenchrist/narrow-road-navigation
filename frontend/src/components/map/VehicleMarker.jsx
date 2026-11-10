@@ -70,7 +70,7 @@ function VehicleMarker({ vehicleData, isEgo, position }) {
   const icon = useMemo(
     () => buildIcon(vehicleType, angle, isEgo, !active),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vehicleType, isEgo, active]
+    [vehicleType, isEgo, active],
   );
 
   useEffect(() => {

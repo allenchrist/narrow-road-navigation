@@ -3,37 +3,28 @@ import Icon from "../common/Icon";
 function SuggestHeader({ search, onBack }) {
   return (
     <header className="suggest-road-header">
-
-      <button
-        type="button"
-        className="suggest-back-button"
-        onClick={onBack}
-      >
+      <button type="button" className="suggest-back-button" onClick={onBack}>
         <Icon name="back" size={18} />
         Back
       </button>
 
       <div className="suggest-road-heading">
-
-        <div className="suggest-road-title">
-          Suggest a narrow road
-        </div>
+        <div className="suggest-road-title">Suggest a narrow road</div>
 
         <div className="suggest-road-subtitle">
           Help other drivers stay safe
         </div>
-
       </div>
 
       <div className="suggest-header-search-container">
         <div className="suggest-header-search">
-          <span className="suggest-search-icon"><Icon name="search" size={18} /></span>
+          <span className="suggest-search-icon">
+            <Icon name="search" size={18} />
+          </span>
           <input
             type="text"
             value={search.searchText}
-            onChange={(event) =>
-              search.setSearchText(event.target.value)
-            }
+            onChange={(event) => search.setSearchText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -54,7 +45,6 @@ function SuggestHeader({ search, onBack }) {
           {search.searching ? "Searching…" : "Search"}
         </button>
       </div>
-
     </header>
   );
 }

@@ -22,17 +22,21 @@ async function replaceNarrowRoads(apply) {
   const roads = JSON.parse(fs.readFileSync(ROADS_FILE, "utf8"));
 
   if (!roads.every((road) => road.id.startsWith(IMPORTED_PREFIX))) {
-    throw new Error(`Every road in the file must have an ID starting ${IMPORTED_PREFIX}`);
+    throw new Error(
+      `Every road in the file must have an ID starting ${IMPORTED_PREFIX}`,
+    );
   }
 
   const { rows } = await pool.query(
     "SELECT id FROM narrow_roads WHERE id LIKE $1;",
-    [`${IMPORTED_PREFIX}%`]
+    [`${IMPORTED_PREFIX}%`],
   );
 
-  const { rows: [{ count: ownRoads }] } = await pool.query(
+  const {
+    rows: [{ count: ownRoads }],
+  } = await pool.query(
     "SELECT COUNT(*) FROM narrow_roads WHERE id NOT LIKE $1;",
-    [`${IMPORTED_PREFIX}%`]
+    [`${IMPORTED_PREFIX}%`],
   );
 
   console.log(`Imported roads in the database now: ${rows.length}`);
@@ -49,7 +53,9 @@ async function replaceNarrowRoads(apply) {
   try {
     await client.query("BEGIN");
 
-    await client.query("DELETE FROM narrow_roads WHERE id LIKE $1;", [`${IMPORTED_PREFIX}%`]);
+    await client.query("DELETE FROM narrow_roads WHERE id LIKE $1;", [
+      `${IMPORTED_PREFIX}%`,
+    ]);
 
     for (const road of roads) {
       await client.query(
@@ -57,7 +63,13 @@ async function replaceNarrowRoads(apply) {
         INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5);
         `,
-        [road.id, road.name, JSON.stringify(road.polygon), road.createdAt, road.updatedAt]
+        [
+          road.id,
+          road.name,
+          JSON.stringify(road.polygon),
+          road.createdAt,
+          road.updatedAt,
+        ],
       );
     }
 
@@ -69,7 +81,9 @@ async function replaceNarrowRoads(apply) {
     client.release();
   }
 
-  console.log(`\nReplaced ${rows.length} imported roads with ${roads.length}. Restart the server to use them.`);
+  console.log(
+    `\nReplaced ${rows.length} imported roads with ${roads.length}. Restart the server to use them.`,
+  );
 }
 
 replaceNarrowRoads(process.argv.includes("--apply"))

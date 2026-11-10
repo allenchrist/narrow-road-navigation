@@ -9,25 +9,19 @@ import {
 import "leaflet/dist/leaflet.css";
 
 import SearchMatches from "../common/SearchMatches";
-import {
-  DrawingLayer,
-  FlyToLocation,
-  MapController,
-} from "../map/mapHelpers";
+import { DrawingLayer, FlyToLocation, MapController } from "../map/mapHelpers";
 
 const MARKING_COLOR = "#56c7ff";
 
 function SuggestMap({ search, drawing, points, onPointAdded, onMapReady }) {
   return (
     <div className="suggest-road-map-wrapper cv-map--map">
-
       <MapContainer
         center={[10.958, 76.956]}
         zoom={15}
         zoomControl={true}
         className="suggest-road-map"
       >
-
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
@@ -35,10 +29,7 @@ function SuggestMap({ search, drawing, points, onPointAdded, onMapReady }) {
 
         <MapController onReady={onMapReady} />
 
-        <DrawingLayer
-          drawing={drawing}
-          onPointAdded={onPointAdded}
-        />
+        <DrawingLayer drawing={drawing} onPointAdded={onPointAdded} />
 
         <FlyToLocation
           location={search.searchLocation}
@@ -82,36 +73,23 @@ function SuggestMap({ search, drawing, points, onPointAdded, onMapReady }) {
             }}
           />
         )}
-
       </MapContainer>
 
       {search.searchError && (
-        <div className="suggest-search-error">
-          {search.searchError}
-        </div>
+        <div className="suggest-search-error">{search.searchError}</div>
       )}
 
       <SearchMatches search={search} />
 
       {drawing && (
         <div className="suggest-drawing-help">
+          <strong>Mark the narrow road</strong>
 
-          <strong>
-            Mark the narrow road
-          </strong>
+          <span>Click around the road to mark its boundary.</span>
 
-          <span>
-            Click around the road to mark its boundary.
-          </span>
-
-          <span>
-            Points:{" "}
-            {points.length}
-          </span>
-
+          <span>Points: {points.length}</span>
         </div>
       )}
-
     </div>
   );
 }

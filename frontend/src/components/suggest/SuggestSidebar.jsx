@@ -31,9 +31,7 @@ function SuggestSidebar({
 }) {
   return (
     <aside className="suggest-road-sidebar">
-
       <ol className="suggest-steps">
-
         <Step number={1} title="Mark the road" done={pointCount >= 3}>
           <p className="suggest-description">
             Click around the road on the map to outline it.
@@ -50,7 +48,6 @@ function SuggestSidebar({
             </button>
           ) : (
             <div className="suggest-drawing-actions">
-
               <button
                 type="button"
                 className="suggest-secondary-button"
@@ -68,7 +65,6 @@ function SuggestSidebar({
                 <Icon name="undo" size={18} />
                 Undo
               </button>
-
             </div>
           )}
 
@@ -81,10 +77,7 @@ function SuggestSidebar({
 
         <Step number={2} title="Describe it" done={Boolean(roadName.trim())}>
           <div className="suggest-form">
-
-            <label>
-              Road name
-            </label>
+            <label>Road name</label>
 
             <input
               type="text"
@@ -94,9 +87,7 @@ function SuggestSidebar({
               placeholder="Example: College Road"
             />
 
-            <label>
-              Why is this road narrow? (optional)
-            </label>
+            <label>Why is this road narrow? (optional)</label>
 
             <textarea
               value={reason}
@@ -105,16 +96,11 @@ function SuggestSidebar({
               placeholder="For example: only one vehicle fits between the walls"
               rows={3}
             />
-
           </div>
         </Step>
 
         <Step number={3} title="Send for review" done={false}>
-          {error && (
-            <div className="suggest-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="suggest-error">{error}</div>}
 
           <button
             type="button"
@@ -126,12 +112,11 @@ function SuggestSidebar({
           </button>
 
           <p className="suggest-notice">
-            An administrator checks each suggestion before drivers get alerts for it.
+            An administrator checks each suggestion before drivers get alerts
+            for it.
           </p>
         </Step>
-
       </ol>
-
     </aside>
   );
 }

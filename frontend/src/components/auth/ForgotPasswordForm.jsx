@@ -51,7 +51,7 @@ function ForgotPasswordForm({ onDone, onCancel }) {
     setNotice(
       step === "code"
         ? "We've sent a new code, if that email has an account."
-        : ""
+        : "",
     );
   }
 

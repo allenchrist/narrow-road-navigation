@@ -14,7 +14,7 @@ function distanceBetween(latA, lonA, latB, lonB) {
 
   return Math.hypot(
     (latB - latA) * metresPerDegree,
-    (lonB - lonA) * metresPerDegree * Math.cos(toRadians(latA))
+    (lonB - lonA) * metresPerDegree * Math.cos(toRadians(latA)),
   );
 }
 

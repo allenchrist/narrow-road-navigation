@@ -5,9 +5,7 @@
  */
 
 const config = require("../config/config");
-const {
-  getGeofenceState,
-} = require("./geofenceService");
+const { getGeofenceState } = require("./geofenceService");
 const {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
@@ -31,6 +29,10 @@ const WEAK_SIGNAL_MS = 5000;
 // the edge of a road does not make the warning flicker
 const INSIDE_HOLD_MS = 3000;
 
+// A vehicle disconnected for this long is forgotten. Its phone gets the same
+// vehicle ID back if it returns, as that's saved with the device.
+const FORGET_AFTER_MS = 60 * 60 * 1000;
+
 // vehicles map: vehicleId → vehicle state object
 const vehicles = new Map();
 
@@ -44,11 +46,10 @@ function registerVehicle(vehicleId) {
     vehicles.set(vehicleId, {
       ...existing,
       connected: true,
+      lastChangedAt: Date.now(),
     });
 
-    console.log(
-      `[Vehicle Registry] ${vehicleId} reconnected`
-    );
+    console.log(`[Vehicle Registry] ${vehicleId} reconnected`);
   } else {
     vehicles.set(vehicleId, {
       vehicleId,
@@ -74,6 +75,9 @@ function registerVehicle(vehicleId) {
       // Backend receive time — NOT from Android
       lastReceivedAt: null,
 
+      // When it last connected, disconnected or sent a position
+      lastChangedAt: Date.now(),
+
       // Geofence state
       insideNarrowRoad: false,
       narrowRoadId: null,
@@ -98,9 +102,7 @@ function registerVehicle(vehicleId) {
       otherVehiclesInSameNarrowRoad: 0,
     });
 
-    console.log(
-      `[Vehicle Registry] ${vehicleId} registered`
-    );
+    console.log(`[Vehicle Registry] ${vehicleId} registered`);
   }
 }
 
@@ -111,11 +113,7 @@ function updateVehicleTelemetry(vehicleId, data) {
 
   const now = Date.now();
 
-  const geofence = resolveGeofenceState(
-    existing,
-    data,
-    now
-  );
+  const geofence = resolveGeofenceState(existing, data, now);
 
   vehicles.set(vehicleId, {
     ...existing,
@@ -137,6 +135,7 @@ function updateVehicleTelemetry(vehicleId, data) {
     gyroZ: data.gyroZ,
 
     lastReceivedAt: now,
+    lastChangedAt: now,
 
     ...geofence,
   });
@@ -167,7 +166,7 @@ function resolveGeofenceState(existing, data, now) {
     data.lat,
     data.lon,
     getTravelBearing(data.speed, data.bearing),
-    data.accuracy
+    data.accuracy,
   );
 
   const justLeft =
@@ -190,12 +189,10 @@ function resolveGeofenceState(existing, data, now) {
       existing.roadEnteredAt,
       geofence.insideRoadIds,
       existing.lastRoadCheckAt,
-      now
+      now,
     ),
     lastRoadCheckAt: now,
-    lastInsideAt: geofence.insideNarrowRoad
-      ? now
-      : existing.lastInsideAt,
+    lastInsideAt: geofence.insideNarrowRoad ? now : existing.lastInsideAt,
   };
 }
 
@@ -216,10 +213,7 @@ function setVehicleType(vehicleId, vehicleType) {
   }
 }
 
-function setVehicleConnected(
-  vehicleId,
-  connected
-) {
+function setVehicleConnected(vehicleId, connected) {
   if (!vehicles.has(vehicleId)) return;
 
   const existing = vehicles.get(vehicleId);
@@ -227,7 +221,25 @@ function setVehicleConnected(
   vehicles.set(vehicleId, {
     ...existing,
     connected,
+    lastChangedAt: Date.now(),
   });
+}
+
+/**
+ * Drops vehicles that have been disconnected for over an hour, so the
+ * server doesn't keep every vehicle that ever connected. Returns how many.
+ */
+function forgetIdleVehicles(now = Date.now()) {
+  let forgotten = 0;
+
+  for (const [vehicleId, vehicle] of vehicles) {
+    if (!vehicle.connected && now - vehicle.lastChangedAt > FORGET_AFTER_MS) {
+      vehicles.delete(vehicleId);
+      forgotten++;
+    }
+  }
+
+  return forgotten;
 }
 
 /**
@@ -269,13 +281,13 @@ function updateNarrowRoadAlerts() {
     }
 
     const others = activeVehicles.filter(
-      (other) => other.vehicleId !== vehicle.vehicleId
+      (other) => other.vehicleId !== vehicle.vehicleId,
     );
 
     vehicle.narrowRoadAlert = buildNarrowRoadAlert(vehicle, others, rightOfWay);
 
     vehicle.otherVehiclesInSameNarrowRoad = others.filter((other) =>
-      other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id))
+      other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id)),
     ).length;
   }
 }
@@ -283,9 +295,7 @@ function updateNarrowRoadAlerts() {
 function getAllVehicles() {
   updateNarrowRoadAlerts();
 
-  return Array.from(
-    vehicles.values()
-  ).map((v) => ({
+  return Array.from(vehicles.values()).map((v) => ({
     ...v,
   }));
 }
@@ -308,8 +318,7 @@ function getVehiclesForDashboard() {
     accuracy: vehicle.accuracy,
     connected: vehicle.connected,
     active: vehicle.active,
-    weakSignal:
-      vehicle.active && now - vehicle.lastReceivedAt > WEAK_SIGNAL_MS,
+    weakSignal: vehicle.active && now - vehicle.lastReceivedAt > WEAK_SIGNAL_MS,
     narrowRoadAlert: vehicle.narrowRoadAlert,
   }));
 }
@@ -326,7 +335,7 @@ function getVehiclesForDashboard() {
  */
 function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
   const own = dashboardVehicles.find(
-    (vehicle) => vehicle.vehicleId === ownVehicleId
+    (vehicle) => vehicle.vehicleId === ownVehicleId,
   );
 
   if (!own) {
@@ -351,12 +360,12 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
         vehicle.active &&
         vehicle.lat !== null &&
         distanceBetween(own.lat, own.lon, vehicle.lat, vehicle.lon) <=
-          NEARBY_RADIUS_M
+          NEARBY_RADIUS_M,
     )
     .map(({ narrowRoadAlert: _alert, ...vehicle }) => ({
       ...vehicle,
       inSameRoad: (vehicles.get(vehicle.vehicleId)?.insideRoadIds ?? []).some(
-        (id) => ownRoadIds.includes(id)
+        (id) => ownRoadIds.includes(id),
       ),
     }));
 
@@ -373,6 +382,7 @@ module.exports = {
   updateVehicleHeading,
   setVehicleType,
   setVehicleConnected,
+  forgetIdleVehicles,
   getAllVehicles,
   getVehiclesForDashboard,
   getVisibleVehicles,

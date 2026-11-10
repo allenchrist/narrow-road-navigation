@@ -20,10 +20,7 @@ async function authenticateToken(req, res, next) {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // A driver's login ends when their password changes or their account goes
     if (decoded.username && !(await isSessionCurrent(decoded))) {
@@ -36,7 +33,10 @@ async function authenticateToken(req, res, next) {
 
     next();
   } catch (error) {
-    if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
       console.error("[Auth] Token verification failed:", error.message);
 
       return res.status(401).json({

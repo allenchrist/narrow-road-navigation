@@ -1,7 +1,14 @@
 // Choosing a vehicle type, and seeing it on the dashboard
 const WebSocket = require("../../backend/node_modules/ws");
 
-module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }) => {
+module.exports = async ({
+  API,
+  check,
+  sleep,
+  post,
+  createDriver,
+  openDashboard,
+}) => {
   const put = async (urlPath, body, token) => {
     const response = await fetch(API + urlPath, {
       method: "PUT",
@@ -36,16 +43,45 @@ module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }
   const truckToken = await createDriver("truck_driver", "truck");
   const defaultToken = await createDriver("no_choice_driver");
 
-  check("the chosen type is saved", (await profile(truckToken)).vehicleType === "truck");
-  check("no choice means a car", (await profile(defaultToken)).vehicleType === "car");
+  check(
+    "the chosen type is saved",
+    (await profile(truckToken)).vehicleType === "truck",
+  );
+  check(
+    "no choice means a car",
+    (await profile(defaultToken)).vehicleType === "car",
+  );
 
-  const login = await post("/api/auth/login", { username: "truck_driver", password: "truck_driver-password" });
+  const login = await post("/api/auth/login", {
+    username: "truck_driver",
+    password: "truck_driver-password",
+  });
   check("logging in gives the type", login.body.user.vehicleType === "truck");
 
-  check("changing needs a login", (await put("/api/auth/vehicle-type", { vehicleType: "bus" })).status === 401);
-  check("changing to an unknown type is refused", (await put("/api/auth/vehicle-type", { vehicleType: "plane" }, defaultToken)).status === 400);
-  check("the type can be changed", (await put("/api/auth/vehicle-type", { vehicleType: "auto" }, defaultToken)).status === 200);
-  check("the change is saved", (await profile(defaultToken)).vehicleType === "auto");
+  check(
+    "changing needs a login",
+    (await put("/api/auth/vehicle-type", { vehicleType: "bus" })).status ===
+      401,
+  );
+  check(
+    "changing to an unknown type is refused",
+    (
+      await put(
+        "/api/auth/vehicle-type",
+        { vehicleType: "plane" },
+        defaultToken,
+      )
+    ).status === 400,
+  );
+  check(
+    "the type can be changed",
+    (await put("/api/auth/vehicle-type", { vehicleType: "auto" }, defaultToken))
+      .status === 200,
+  );
+  check(
+    "the change is saved",
+    (await profile(defaultToken)).vehicleType === "auto",
+  );
 
   // ---------- Two phones in the same narrow road ----------
   const { roads } = await (
@@ -85,7 +121,7 @@ module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }
           gyroZ: 0,
           speed: 0,
           accuracy: 5,
-        })
+        }),
       );
 
     send();
@@ -101,24 +137,48 @@ module.exports = async ({ API, check, sleep, post, createDriver, openDashboard }
     const truckScreen = await openDashboard("truck_driver", truckToken);
     await sleep(2500);
 
-    check("your own vehicle shows as your type", Boolean(await truckScreen.$(".cv-marker-ego[data-vehicle='truck'] img")));
-    check("another driver shows as their type", Boolean(await truckScreen.$(".cv-marker-other[data-vehicle='auto'] img")));
+    check(
+      "your own vehicle shows as your type",
+      Boolean(await truckScreen.$(".cv-marker-ego[data-vehicle='truck'] img")),
+    );
+    check(
+      "another driver shows as their type",
+      Boolean(await truckScreen.$(".cv-marker-other[data-vehicle='auto'] img")),
+    );
 
-    const listed = await truckScreen.$eval(".cv-nearby li strong", (name) => name.innerText);
+    const listed = await truckScreen.$eval(
+      ".cv-nearby li strong",
+      (name) => name.innerText,
+    );
     check(`the list names the type (${listed})`, listed.startsWith("Auto "));
 
-    const note = await truckScreen.$eval(".cv-alert small", (line) => line.innerText);
-    check("the alert names the other vehicle", note.includes("The auto should give way"));
+    const note = await truckScreen.$eval(
+      ".cv-alert small",
+      (line) => line.innerText,
+    );
+    check(
+      "the alert names the other vehicle",
+      note.includes("The auto should give way"),
+    );
 
     // A change shows without reconnecting the phone
     await put("/api/auth/vehicle-type", { vehicleType: "bus" }, defaultToken);
     await sleep(2500);
-    check("a change shows on other screens straight away", Boolean(await truckScreen.$(".cv-marker-other[data-vehicle='bus'] img")));
+    check(
+      "a change shows on other screens straight away",
+      Boolean(await truckScreen.$(".cv-marker-other[data-vehicle='bus'] img")),
+    );
 
     const autoScreen = await openDashboard("no_choice_driver", defaultToken);
     await sleep(2500);
-    const giveWay = await autoScreen.$eval(".cv-alert strong", (title) => title.innerText);
-    check("a truck that entered first keeps right of way", giveWay === "Give way");
+    const giveWay = await autoScreen.$eval(
+      ".cv-alert strong",
+      (title) => title.innerText,
+    );
+    check(
+      "a truck that entered first keeps right of way",
+      giveWay === "Give way",
+    );
   } finally {
     for (const { phone, timer } of [first, second]) {
       clearInterval(timer);

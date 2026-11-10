@@ -1,8 +1,4 @@
-import {
-  hasRoadName,
-  isMoving,
-  VEHICLE_LABELS,
-} from "../../utils/display";
+import { hasRoadName, isMoving, VEHICLE_LABELS } from "../../utils/display";
 import { vehicleImage } from "../../utils/vehicleImages";
 import Icon from "../common/Icon";
 
@@ -21,7 +17,12 @@ const MESSAGES = {
     title: "Give way",
     detail: (other) => `Stop and let ${other} pass`,
     reason: (other) => `${other} entered first`,
-    scene: { other: "Entered first", own: "Wait here", goes: "other", stopLine: true },
+    scene: {
+      other: "Entered first",
+      own: "Wait here",
+      goes: "other",
+      stopLine: true,
+    },
     step: (moving) => (moving ? 0 : 1),
   },
   RIGHT_OF_WAY: {
@@ -115,7 +116,9 @@ function RoadScene({ scene, ownType, otherType, otherCount }) {
           <span className="cv-scene-more">+{otherCount - 1}</span>
         )}
 
-        <div className={`cv-scene-flow cv-scene-flow--${scene.goes ? flow : "none"}`}>
+        <div
+          className={`cv-scene-flow cv-scene-flow--${scene.goes ? flow : "none"}`}
+        >
           <span />
           <span />
           <span />
@@ -145,12 +148,14 @@ function Steps({ active }) {
             index < active
               ? "is-done"
               : index === active
-              ? "is-current"
-              : undefined
+                ? "is-current"
+                : undefined
           }
           aria-current={index === active ? "step" : undefined}
         >
-          <span>{index < active ? <Icon name="check" size={12} /> : index + 1}</span>
+          <span>
+            {index < active ? <Icon name="check" size={12} /> : index + 1}
+          </span>
           {step}
         </li>
       ))}

@@ -68,7 +68,7 @@ export function useSuggestionReview(map, onReviewed) {
     const action = status === "APPROVED" ? "approve" : "reject";
 
     const confirmed = window.confirm(
-      `Are you sure you want to ${action} "${suggestion.name}"?`
+      `Are you sure you want to ${action} "${suggestion.name}"?`,
     );
 
     if (!confirmed) return;
@@ -89,7 +89,7 @@ export function useSuggestionReview(map, onReviewed) {
           body: JSON.stringify({
             status,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -114,7 +114,7 @@ export function useSuggestionReview(map, onReviewed) {
 
   return {
     pendingSuggestions: suggestions.filter(
-      (suggestion) => suggestion.status === "PENDING"
+      (suggestion) => suggestion.status === "PENDING",
     ),
     suggestionsLoading,
     suggestionsError,

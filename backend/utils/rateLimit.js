@@ -9,7 +9,7 @@ function createRateLimiter({ max, windowMs }) {
 
   function recentEvents(key, now) {
     const recent = (events.get(key) || []).filter(
-      (time) => now - time < windowMs
+      (time) => now - time < windowMs,
     );
 
     if (recent.length === 0) {
@@ -47,9 +47,7 @@ function createRateLimiter({ max, windowMs }) {
 function getClientIp(req) {
   const forwarded = req.headers["x-forwarded-for"];
 
-  return forwarded
-    ? forwarded.split(",")[0].trim()
-    : req.socket.remoteAddress;
+  return forwarded ? forwarded.split(",")[0].trim() : req.socket.remoteAddress;
 }
 
 module.exports = { createRateLimiter, getClientIp };

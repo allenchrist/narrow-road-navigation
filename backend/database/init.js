@@ -44,7 +44,7 @@ async function importJsonData() {
         JSON.stringify(road.polygon),
         road.createdAt,
         road.updatedAt,
-      ]
+      ],
     );
 
     roadCount += result.rowCount;
@@ -66,14 +66,14 @@ async function importJsonData() {
         suggestion.status,
         suggestion.submittedAt,
         suggestion.reviewedAt,
-      ]
+      ],
     );
 
     suggestionCount += result.rowCount;
   }
 
   console.log(
-    `[Database] Imported ${roadCount} roads and ${suggestionCount} suggestions.`
+    `[Database] Imported ${roadCount} roads and ${suggestionCount} suggestions.`,
   );
 }
 
@@ -86,10 +86,7 @@ async function initializeDatabase() {
 
     console.log("[Database] Tables are ready.");
   } catch (error) {
-    console.error(
-      "[Database] Failed to initialize database:",
-      error.message
-    );
+    console.error("[Database] Failed to initialize database:", error.message);
 
     process.exitCode = 1;
   } finally {

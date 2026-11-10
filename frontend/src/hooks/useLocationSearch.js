@@ -78,7 +78,7 @@ export function useLocationSearch(map) {
         .map(toLocation)
         .filter(
           (location) =>
-            Number.isFinite(location.lat) && Number.isFinite(location.lon)
+            Number.isFinite(location.lat) && Number.isFinite(location.lon),
         );
 
       if (!best) {

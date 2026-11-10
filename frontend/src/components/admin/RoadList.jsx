@@ -8,65 +8,39 @@ function RoadList({ editor, onEditRoad }) {
   const [roadFilter, setRoadFilter] = useState("");
 
   const filteredRoads = roads.filter((road) =>
-    road.name
-      .toLowerCase()
-      .includes(roadFilter.trim().toLowerCase())
+    road.name.toLowerCase().includes(roadFilter.trim().toLowerCase()),
   );
 
   return (
     <>
-
       <input
         type="search"
         className="admin-road-filter"
         value={roadFilter}
-        onChange={(event) =>
-          setRoadFilter(event.target.value)
-        }
+        onChange={(event) => setRoadFilter(event.target.value)}
         placeholder="Filter roads by name"
         aria-label="Filter roads by name"
       />
 
       {loading ? (
-
-        <div className="admin-empty">
-          Loading...
-        </div>
-
+        <div className="admin-empty">Loading...</div>
       ) : filteredRoads.length === 0 ? (
-
         <div className="admin-empty">
           {roads.length === 0
             ? "No narrow roads marked yet."
             : "No roads match that name."}
         </div>
-
       ) : (
-
         <div className="admin-road-list">
-
           {filteredRoads.map((road) => (
-
-            <div
-              key={road.id}
-              className="admin-road-item"
-            >
-
+            <div key={road.id} className="admin-road-item">
               <div>
+                <strong>{road.name}</strong>
 
-                <strong>
-                  {road.name}
-                </strong>
-
-                <span>
-                  {road.polygon.length}{" "}
-                  boundary points
-                </span>
-
+                <span>{road.polygon.length} boundary points</span>
               </div>
 
               <div className="admin-road-buttons">
-
                 <button
                   type="button"
                   onClick={() => viewRoad(road)}
@@ -93,17 +67,11 @@ function RoadList({ editor, onEditRoad }) {
                   <Icon name="trash" size={15} />
                   Delete
                 </button>
-
               </div>
-
             </div>
-
           ))}
-
         </div>
-
       )}
-
     </>
   );
 }

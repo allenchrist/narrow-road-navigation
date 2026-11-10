@@ -49,7 +49,10 @@ function validateDeviceId(deviceId) {
     return { valid: false, reason: "deviceId must not be empty" };
   }
   if (trimmed.length > DEVICE_ID_MAX_LEN) {
-    return { valid: false, reason: `deviceId exceeds max length of ${DEVICE_ID_MAX_LEN}` };
+    return {
+      valid: false,
+      reason: `deviceId exceeds max length of ${DEVICE_ID_MAX_LEN}`,
+    };
   }
   if (!DEVICE_ID_PATTERN.test(trimmed)) {
     return { valid: false, reason: "deviceId contains invalid characters" };
@@ -64,9 +67,7 @@ function validateDeviceId(deviceId) {
  * finished. Returns the number of saved devices.
  */
 async function loadDevices() {
-  const result = await pool.query(
-    "SELECT device_id, vehicle_id FROM devices;"
-  );
+  const result = await pool.query("SELECT device_id, vehicle_id FROM devices;");
 
   for (const row of result.rows) {
     reserveVehicleId(row.vehicle_id);
@@ -108,7 +109,9 @@ function registerDevice(deviceId, vehicleId, ws) {
     lastSeen: Date.now(),
     ws,
   });
-  console.log(`[Device Registry] Registered new device ${deviceId} → ${vehicleId}`);
+  console.log(
+    `[Device Registry] Registered new device ${deviceId} → ${vehicleId}`,
+  );
 
   pool
     .query(
@@ -117,12 +120,12 @@ function registerDevice(deviceId, vehicleId, ws) {
       VALUES ($1, $2)
       ON CONFLICT (device_id) DO NOTHING;
       `,
-      [deviceId, vehicleId]
+      [deviceId, vehicleId],
     )
     .catch((error) => {
       console.error(
         `[Device Registry] Failed to save ${deviceId}:`,
-        error.message
+        error.message,
       );
     });
 }
@@ -178,7 +181,12 @@ function getConnection(deviceId) {
 function removeConnection(deviceId) {
   const d = devices.get(deviceId);
   if (!d) return;
-  devices.set(deviceId, { ...d, ws: null, connected: false, lastSeen: Date.now() });
+  devices.set(deviceId, {
+    ...d,
+    ws: null,
+    connected: false,
+    lastSeen: Date.now(),
+  });
 }
 
 /**

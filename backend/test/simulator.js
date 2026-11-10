@@ -22,14 +22,20 @@ const WebSocket = require("ws");
 const { isPointInsidePolygon } = require("../services/geofenceService");
 const { nearestPointOnPolygon } = require("../utils/geo");
 
-const BACKEND_URL = (process.env.BACKEND_URL || "http://127.0.0.1:5000").replace(/\/$/, "");
+const BACKEND_URL = (
+  process.env.BACKEND_URL || "http://127.0.0.1:5000"
+).replace(/\/$/, "");
 const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 
 // This account can only see its own demo dashboard, so a fixed password is fine
 const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 
 const CAR_A = { username: "sim_car_a", deviceId: "simulator-car-a" };
-const CAR_B = { username: "sim_car_b", deviceId: "simulator-car-b", vehicleType: "bus" };
+const CAR_B = {
+  username: "sim_car_b",
+  deviceId: "simulator-car-b",
+  vehicleType: "bus",
+};
 
 const TICK_MS = 1000;
 const START_DELAY_MS = 5000;
@@ -72,7 +78,9 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
 
   // 410 means this server needs emailed codes, so the account must already exist
   if (![201, 409, 410].includes(registered.status)) {
-    throw new Error(`Could not create the demo account: ${registered.body.message}`);
+    throw new Error(
+      `Could not create the demo account: ${registered.body.message}`,
+    );
   }
 
   const login = await postJson("/api/auth/login", {
@@ -82,18 +90,20 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
 
   if (login.status !== 200) {
     throw new Error(
-      `Could not log in as ${username}. To create it, set ALLOW_TEST_SIGNUP=true on the server.`
+      `Could not log in as ${username}. To create it, set ALLOW_TEST_SIGNUP=true on the server.`,
     );
   }
 
   if (login.status !== 200) {
-    throw new Error(`Could not log in to the demo account: ${login.body.message}`);
+    throw new Error(
+      `Could not log in to the demo account: ${login.body.message}`,
+    );
   }
 
   const device = await postJson(
     "/api/auth/device",
     { deviceId },
-    login.body.token
+    login.body.token,
   );
 
   if (device.status !== 200) {
@@ -167,7 +177,7 @@ function farthestPoints(polygon) {
 
 function sampleRoute(route, from, to) {
   return Array.from({ length: ROUTE_SAMPLES + 1 }, (_, i) =>
-    route.pointAt(from + ((to - from) * i) / ROUTE_SAMPLES)
+    route.pointAt(from + ((to - from) * i) / ROUTE_SAMPLES),
   );
 }
 
@@ -183,9 +193,14 @@ function scoreRoad(road, roads) {
     return null;
   }
 
-  const isInside = ({ lat, lon }) => isPointInsidePolygon(lat, lon, road.polygon);
+  const isInside = ({ lat, lon }) =>
+    isPointInsidePolygon(lat, lon, road.polygon);
 
-  const staysInside = sampleRoute(route, route.length * 0.02, route.length * 0.98).every(isInside);
+  const staysInside = sampleRoute(
+    route,
+    route.length * 0.02,
+    route.length * 0.98,
+  ).every(isInside);
   const clearOfRoad = [
     ...sampleRoute(route, -CLEARANCE_M, -5),
     ...sampleRoute(route, route.length + 5, route.length + CLEARANCE_M),
@@ -195,16 +210,20 @@ function scoreRoad(road, roads) {
     return null;
   }
 
-  const wholeRoute = sampleRoute(route, -CLEARANCE_M, route.length + CLEARANCE_M);
+  const wholeRoute = sampleRoute(
+    route,
+    -CLEARANCE_M,
+    route.length + CLEARANCE_M,
+  );
 
   const nearbyRoads = roads.filter(
     (other) =>
       other.id !== road.id &&
       wholeRoute.some(
         ({ lat, lon }) =>
-          nearestPointOnPolygon(lat, lon, other.polygon).distanceM < CLEARANCE_M ||
-          isPointInsidePolygon(lat, lon, other.polygon)
-      )
+          nearestPointOnPolygon(lat, lon, other.polygon).distanceM <
+            CLEARANCE_M || isPointInsidePolygon(lat, lon, other.polygon),
+      ),
   ).length;
 
   return { road, route, nearbyRoads };
@@ -221,9 +240,13 @@ function chooseRoad(roads) {
   }
 
   // A named road reads better on screen, if one is just as clear of others
-  const clearest = candidates.filter((c) => c.nearbyRoads === candidates[0].nearbyRoads);
+  const clearest = candidates.filter(
+    (c) => c.nearbyRoads === candidates[0].nearbyRoads,
+  );
 
-  return clearest.find((c) => !/^Narrow Road \d+$/.test(c.road.name)) || clearest[0];
+  return (
+    clearest.find((c) => !/^Narrow Road \d+$/.test(c.road.name)) || clearest[0]
+  );
 }
 
 // ── Simulated phones ──────────────────────────────────────────────────────────
@@ -265,7 +288,7 @@ function sendTelemetry(car, { lat, lon }, speed, bearing) {
       speed,
       accuracy: 5,
       ...(bearing !== null && { bearing }),
-    })
+    }),
   );
 }
 
@@ -349,7 +372,14 @@ function buildPhases(L) {
   ];
 }
 
-function moveAlongRoute(car, route, [from, to], progress, seconds, forwardBearing) {
+function moveAlongRoute(
+  car,
+  route,
+  [from, to],
+  progress,
+  seconds,
+  forwardBearing,
+) {
   const distance = from + (to - from) * progress;
   const speed = Math.abs(to - from) / seconds;
 
@@ -357,7 +387,7 @@ function moveAlongRoute(car, route, [from, to], progress, seconds, forwardBearin
     car,
     route.pointAt(distance),
     speed,
-    speed > 0 ? forwardBearing : null
+    speed > 0 ? forwardBearing : null,
   );
 }
 
@@ -391,7 +421,7 @@ async function runPhase(phase, route, carA, carB) {
 
     console.log(
       `  ${passed ? "✓" : "✗"} ${name} alert: ${alert}` +
-        (passed ? "" : ` (expected ${expected})`)
+        (passed ? "" : ` (expected ${expected})`),
     );
 
     return passed;
@@ -431,7 +461,7 @@ async function main() {
   const { road, route, nearbyRoads } = chooseRoad(await getRoads(carAToken));
 
   console.log(
-    `Road: ${road.name} (${Math.round(route.length)} m, ${nearbyRoads} other roads nearby)`
+    `Road: ${road.name} (${Math.round(route.length)} m, ${nearbyRoads} other roads nearby)`,
   );
 
   const carA = await connectCar(CAR_A, carAToken);
@@ -449,7 +479,9 @@ async function main() {
 
   console.log(`Car A: ${carA.vehicleId}, Car B: ${carB.vehicleId}`);
   console.log(`\nOpen the dashboard as Car A: /${CAR_A.username}`);
-  console.log(`Click once on the page to allow alert sounds. Starting in ${START_DELAY_MS / 1000}s...`);
+  console.log(
+    `Click once on the page to allow alert sounds. Starting in ${START_DELAY_MS / 1000}s...`,
+  );
 
   await delay(START_DELAY_MS);
 
@@ -462,7 +494,9 @@ async function main() {
   carA.ws.close();
   carB.ws.close();
 
-  console.log(failed === 0 ? "\nAll alerts correct." : `\n${failed} alerts were wrong.`);
+  console.log(
+    failed === 0 ? "\nAll alerts correct." : `\n${failed} alerts were wrong.`,
+  );
 
   process.exit(failed === 0 ? 0 : 1);
 }
@@ -471,7 +505,9 @@ main().catch((error) => {
   console.error(`\nSimulator stopped: ${error.message}`);
 
   if (error.cause?.code === "ECONNREFUSED" || error.code === "ECONNREFUSED") {
-    console.error(`Is the backend running at ${BACKEND_URL}? Start it with: npm run dev`);
+    console.error(
+      `Is the backend running at ${BACKEND_URL}? Start it with: npm run dev`,
+    );
   }
 
   process.exit(1);

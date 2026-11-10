@@ -1,11 +1,9 @@
 const MAX_ROAD_NAME_LENGTH = 100;
 const MAX_REASON_LENGTH = 500;
 
-const ROAD_NAME_ERROR =
-  `Road name is required, up to ${MAX_ROAD_NAME_LENGTH} characters`;
+const ROAD_NAME_ERROR = `Road name is required, up to ${MAX_ROAD_NAME_LENGTH} characters`;
 
-const REASON_ERROR =
-  `Reason must be ${MAX_REASON_LENGTH} characters or fewer`;
+const REASON_ERROR = `Reason must be ${MAX_REASON_LENGTH} characters or fewer`;
 
 function isValidRoadName(name) {
   return (
@@ -18,8 +16,7 @@ function isValidRoadName(name) {
 function isValidReason(reason) {
   return (
     reason === undefined ||
-    (typeof reason === "string" &&
-      reason.trim().length <= MAX_REASON_LENGTH)
+    (typeof reason === "string" && reason.trim().length <= MAX_REASON_LENGTH)
   );
 }
 

@@ -6,11 +6,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-import {
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import { useState, useEffect, useRef } from "react";
 
 import "leaflet/dist/leaflet.css";
 
@@ -69,7 +65,7 @@ function centreFor(map, lat, lon, zoom, offsetShare) {
 
   return map.unproject(
     map.project([lat, lon], zoom).subtract([0, offset]),
-    zoom
+    zoom,
   );
 }
 
@@ -142,7 +138,7 @@ function FollowEgo({
 
     const shift = map
       .latLngToContainerPoint(
-        centreFor(map, lat, lon, map.getZoom(), offsetShare)
+        centreFor(map, lat, lon, map.getZoom(), offsetShare),
       )
       .subtract(map.getSize().divideBy(2));
 
@@ -193,33 +189,22 @@ function CurrentRoads({ roads, kind }) {
   ]);
 }
 
-function VehicleMap({
-  alert,
-  soundOn,
-  soundUnlocked,
-  onToggleSound,
-}) {
-  const {
-    vehicles,
-    egoVehicle,
-    myVehicleId,
-  } = useVehicle();
+function VehicleMap({ alert, soundOn, soundUnlocked, onToggleSound }) {
+  const { vehicles, egoVehicle, myVehicleId } = useVehicle();
 
   const [map, setMap] = useState(null);
   const [mapMode, setMapMode] = useState("map");
   const [following, setFollowing] = useState(true);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
-  const hasEgoGps =
-    egoVehicle.lat !== null &&
-    egoVehicle.lon !== null;
+  const hasEgoGps = egoVehicle.lat !== null && egoVehicle.lon !== null;
 
   // Shown by the marker and followed by the map, so the two always match
   const egoTarget = useSteadyTarget(
     egoVehicle.lat,
     egoVehicle.lon,
     isMoving(egoVehicle),
-    egoVehicle.accuracy
+    egoVehicle.accuracy,
   );
   const egoPosition = useSmoothPosition(egoTarget);
 
@@ -227,9 +212,7 @@ function VehicleMap({
   // A vehicle that stopped updating is hidden, so nobody relies on an old position.
   const vehicleList = myVehicleId
     ? Object.values(vehicles).filter(
-        (v) =>
-          v.lat !== null &&
-          (v.vehicleId === myVehicleId || v.active)
+        (v) => v.lat !== null && (v.vehicleId === myVehicleId || v.active),
       )
     : [];
 
@@ -241,16 +224,13 @@ function VehicleMap({
   const showingAlert = Boolean(alert) && alert.kind !== "NONE";
   const offsetShare = showingAlert ? ALERT_OFFSET_SHARE : 0;
 
-  const onMyCar =
-    hasEgoGps &&
-    following &&
-    zoom === followZoom;
+  const onMyCar = hasEgoGps && following && zoom === followZoom;
 
   const myCarLabel = !hasEgoGps
     ? "Waiting for GPS"
     : onMyCar
-    ? "On my car"
-    : "Go to my car";
+      ? "On my car"
+      : "Go to my car";
 
   function goToMyCar() {
     if (!map || !hasEgoGps) {
@@ -261,11 +241,9 @@ function VehicleMap({
 
     const [lat, lon] = egoPosition ?? [egoVehicle.lat, egoVehicle.lon];
 
-    map.setView(
-      centreFor(map, lat, lon, followZoom, offsetShare),
-      followZoom,
-      { animate: true }
-    );
+    map.setView(centreFor(map, lat, lon, followZoom, offsetShare), followZoom, {
+      animate: true,
+    });
   }
 
   return (
@@ -321,9 +299,7 @@ function VehicleMap({
 
       <button
         type="button"
-        className={`cv-mycar${
-          hasEgoGps && !onMyCar ? " is-away" : ""
-        }`}
+        className={`cv-mycar${hasEgoGps && !onMyCar ? " is-away" : ""}`}
         onClick={goToMyCar}
         disabled={!hasEgoGps}
         aria-label={myCarLabel}

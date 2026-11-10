@@ -144,7 +144,9 @@ function initVehicleWebSocketServer(httpServer, path) {
     // Close unregistered connections that never send a register message
     const registrationTimeout = setTimeout(() => {
       if (!registered) {
-        console.warn(`[Vehicle WS] Connection from ${remoteAddr} timed out waiting for register message`);
+        console.warn(
+          `[Vehicle WS] Connection from ${remoteAddr} timed out waiting for register message`,
+        );
         ws.close(4000, "Registration timeout");
       }
     }, REGISTRATION_TIMEOUT_MS);
@@ -166,22 +168,39 @@ function initVehicleWebSocketServer(httpServer, path) {
 
       // JSON.parse also accepts null, numbers, strings and arrays
       if (msg === null || typeof msg !== "object" || Array.isArray(msg)) {
-        ws.send(JSON.stringify({ type: "error", message: "Message must be a JSON object" }));
+        ws.send(
+          JSON.stringify({
+            type: "error",
+            message: "Message must be a JSON object",
+          }),
+        );
         return;
       }
 
       // ── REGISTRATION ──────────────────────────────────────────────────────
       if (!registered) {
         if (msg.type !== "register") {
-          ws.send(JSON.stringify({ type: "error", message: "Expected register message first" }));
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Expected register message first",
+            }),
+          );
           return;
         }
 
         // Validate deviceId — server never trusts a client-supplied vehicleId
         const validation = validateDeviceId(msg.deviceId);
         if (!validation.valid) {
-          console.warn(`[Vehicle WS] Invalid deviceId from ${remoteAddr}: ${validation.reason}`);
-          ws.send(JSON.stringify({ type: "error", message: `Invalid deviceId: ${validation.reason}` }));
+          console.warn(
+            `[Vehicle WS] Invalid deviceId from ${remoteAddr}: ${validation.reason}`,
+          );
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: `Invalid deviceId: ${validation.reason}`,
+            }),
+          );
           ws.close(4001, "Invalid deviceId");
           return;
         }
@@ -198,7 +217,12 @@ function initVehicleWebSocketServer(httpServer, path) {
           !canRegisterNewDevice(clientAddress)
         ) {
           console.warn(`[Vehicle WS] New device refused from ${clientAddress}`);
-          ws.send(JSON.stringify({ type: "error", message: "Too many new devices. Try again later." }));
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Too many new devices. Try again later.",
+            }),
+          );
           ws.close(4003, "Too many new devices");
           return;
         }
@@ -220,8 +244,15 @@ function initVehicleWebSocketServer(httpServer, path) {
         }
 
         if (!authorized) {
-          console.warn(`[Vehicle WS] Refused ${validation.normalized} from ${clientAddress}`);
-          ws.send(JSON.stringify({ type: "error", message: "Not authorized for this device" }));
+          console.warn(
+            `[Vehicle WS] Refused ${validation.normalized} from ${clientAddress}`,
+          );
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Not authorized for this device",
+            }),
+          );
           ws.close(CLOSE_NOT_AUTHORIZED, "Not authorized");
           return;
         }
@@ -236,8 +267,14 @@ function initVehicleWebSocketServer(httpServer, path) {
         // ── DUPLICATE CONNECTION HANDLING ────────────────────────────────────
         // If this device already has an active connection, close the old one.
         const existingWs = getConnection(deviceId);
-        if (existingWs && existingWs !== ws && existingWs.readyState <= 1 /* OPEN or CONNECTING */) {
-          console.log(`[Device Registry] Replacing existing connection for ${deviceId}`);
+        if (
+          existingWs &&
+          existingWs !== ws &&
+          existingWs.readyState <= 1 /* OPEN or CONNECTING */
+        ) {
+          console.log(
+            `[Device Registry] Replacing existing connection for ${deviceId}`,
+          );
           existingWs.close(4002, "Replaced by new connection");
         }
 
@@ -248,7 +285,9 @@ function initVehicleWebSocketServer(httpServer, path) {
           vehicleId = getVehicleForDevice(deviceId);
           setDeviceConnected(deviceId, true, ws);
           registerVehicle(vehicleId); // marks connected:true in vehicleState
-          console.log(`[Vehicle WS] Known device ${deviceId} → ${vehicleId} (restored)`);
+          console.log(
+            `[Vehicle WS] Known device ${deviceId} → ${vehicleId} (restored)`,
+          );
         } else {
           // ── NEW DEVICE: allocate a permanent vehicleId ────────────────────
           vehicleId = allocateVehicleId();
@@ -256,7 +295,9 @@ function initVehicleWebSocketServer(httpServer, path) {
           newDevicesByAddress.record(clientAddress);
           newDevicesOverall.record("all");
           registerVehicle(vehicleId);
-          console.log(`[Vehicle WS] New device ${deviceId} → ${vehicleId} (allocated)`);
+          console.log(
+            `[Vehicle WS] New device ${deviceId} → ${vehicleId} (allocated)`,
+          );
         }
 
         const connectedVehicleId = vehicleId;
@@ -275,7 +316,9 @@ function initVehicleWebSocketServer(httpServer, path) {
             }
           })
           .catch((error) => {
-            console.error(`[Vehicle WS] Couldn't load the account's details: ${error.message}`);
+            console.error(
+              `[Vehicle WS] Couldn't load the account's details: ${error.message}`,
+            );
           });
 
         registered = true;
@@ -285,7 +328,7 @@ function initVehicleWebSocketServer(httpServer, path) {
             type: "registered",
             deviceId,
             vehicleId,
-          })
+          }),
         );
 
         broadcastFleetUpdate();
@@ -296,7 +339,9 @@ function initVehicleWebSocketServer(httpServer, path) {
       // ── TELEMETRY (post-registration) ────────────────────────────────────
       // Ignore any stale re-registration attempts
       if (msg.type === "register") {
-        console.warn(`[Vehicle WS] ${deviceId} sent duplicate register — ignoring`);
+        console.warn(
+          `[Vehicle WS] ${deviceId} sent duplicate register — ignoring`,
+        );
         return;
       }
 
@@ -333,17 +378,14 @@ function initVehicleWebSocketServer(httpServer, path) {
           warnedAboutTelemetry = true;
 
           console.warn(
-            `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`
+            `[Vehicle WS] Invalid telemetry from ${deviceId} (${vehicleId}): ${result.reason}`,
           );
         }
 
         return;
       }
 
-      updateVehicleTelemetry(
-        vehicleId,
-        result.data
-      );
+      updateVehicleTelemetry(vehicleId, result.data);
       updateLastSeen(deviceId);
       scheduleFleetUpdate();
     });
@@ -365,13 +407,15 @@ function initVehicleWebSocketServer(httpServer, path) {
         broadcastFleetUpdate();
 
         console.log(
-          `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected, code ${code}`
+          `[Vehicle WS] ${deviceId} (${vehicleId}) disconnected, code ${code}`,
         );
       }
     });
 
     ws.on("error", (err) => {
-      console.error(`[Vehicle WS] Error (${deviceId ?? remoteAddr}): ${err.message}`);
+      console.error(
+        `[Vehicle WS] Error (${deviceId ?? remoteAddr}): ${err.message}`,
+      );
     });
   });
 

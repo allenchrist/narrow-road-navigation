@@ -40,7 +40,6 @@ function AdminPage({ onSignOut }) {
 
   return (
     <div className="admin-page">
-
       <AdminHeader
         search={search}
         editor={editor}
@@ -49,7 +48,6 @@ function AdminPage({ onSignOut }) {
       />
 
       <div className="admin-content">
-
         <AdminMap
           search={search}
           editor={editor}
@@ -58,41 +56,25 @@ function AdminPage({ onSignOut }) {
         />
 
         <aside className="admin-sidebar">
-
           {editor.drawing && (
-
             <div className="admin-drawing-panel">
-
-              <label>
-                Road name
-              </label>
+              <label>Road name</label>
 
               <input
                 type="text"
                 value={editor.roadName}
                 maxLength={100}
-                onChange={(event) =>
-                  editor.setRoadName(event.target.value)
-                }
+                onChange={(event) => editor.setRoadName(event.target.value)}
                 placeholder="Example: College Road"
               />
 
               <div className="admin-point-count">
-                {editor.currentPolygon.length}{" "}
-                points
+                {editor.currentPolygon.length} points
               </div>
-
             </div>
-
           )}
 
-          {editor.error && (
-
-            <div className="admin-error">
-              {editor.error}
-            </div>
-
-          )}
+          {editor.error && <div className="admin-error">{editor.error}</div>}
 
           <div className="admin-tabs" role="tablist">
             {[
@@ -117,17 +99,11 @@ function AdminPage({ onSignOut }) {
             {tab === "suggestions" ? (
               <SuggestionList review={review} />
             ) : (
-              <RoadList
-                editor={editor}
-                onEditRoad={startEditingRoad}
-              />
+              <RoadList editor={editor} onEditRoad={startEditingRoad} />
             )}
           </div>
-
         </aside>
-
       </div>
-
     </div>
   );
 }

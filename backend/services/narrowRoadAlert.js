@@ -46,7 +46,7 @@ function isBehind(vehicle, other) {
       BEHIND_MIN_DISTANCE_M &&
     angleDifference(
       bearing,
-      bearingBetween(vehicle.lat, vehicle.lon, other.lat, other.lon)
+      bearingBetween(vehicle.lat, vehicle.lon, other.lat, other.lon),
     ) > BEHIND_ANGLE
   );
 }
@@ -65,7 +65,7 @@ function updateRoadEntries(previousEntries, insideRoadIds, lastCheckedAt, now) {
       : {};
 
   return Object.fromEntries(
-    insideRoadIds.map((id) => [id, remembered[id] ?? now])
+    insideRoadIds.map((id) => [id, remembered[id] ?? now]),
   );
 }
 
@@ -203,11 +203,12 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
     // Only when there's one other vehicle, so the screen can name it
     otherVehicleType:
-      conflicts.length === 1 ? conflicts[0].vehicleType ?? null : null,
+      conflicts.length === 1 ? (conflicts[0].vehicleType ?? null) : null,
     otherCount: conflicts.length,
   });
 
-  if (mustGiveWayTo.length > 0) return alert("GIVE_WAY", "danger", mustGiveWayTo);
+  if (mustGiveWayTo.length > 0)
+    return alert("GIVE_WAY", "danger", mustGiveWayTo);
   if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", givingWay);
   if (vehicleEntering) return alert("VEHICLE_ENTERING", "warning");
 

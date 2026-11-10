@@ -21,42 +21,33 @@ function compassPoint(degrees) {
 }
 
 function DrivePanel({ alert }) {
-  const {
-    vehicles,
-    egoVehicle,
-    myVehicleId,
-  } = useVehicle();
+  const { vehicles, egoVehicle, myVehicleId } = useVehicle();
 
-  const hasPosition =
-    egoVehicle.active && egoVehicle.lat !== null;
+  const hasPosition = egoVehicle.active && egoVehicle.lat !== null;
 
-  const direction = hasPosition
-    ? travelDirection(egoVehicle)
-    : null;
+  const direction = hasPosition ? travelDirection(egoVehicle) : null;
 
   const arrowAngle = useTurnAngle(direction);
 
   const inNarrowRoad = Boolean(alert?.roadId);
 
-  const inThisRoad = hasPosition && inNarrowRoad
-    ? Object.values(vehicles)
-        .filter(
-          (v) =>
-            v.vehicleId !== myVehicleId &&
-            v.active &&
-            v.inSameRoad
-        )
-        .map((v) => ({
-          ...v,
-          distance: haversineDistance(
-            egoVehicle.lat,
-            egoVehicle.lon,
-            v.lat,
-            v.lon
-          ),
-        }))
-        .sort((a, b) => a.distance - b.distance)
-    : [];
+  const inThisRoad =
+    hasPosition && inNarrowRoad
+      ? Object.values(vehicles)
+          .filter(
+            (v) => v.vehicleId !== myVehicleId && v.active && v.inSameRoad,
+          )
+          .map((v) => ({
+            ...v,
+            distance: haversineDistance(
+              egoVehicle.lat,
+              egoVehicle.lon,
+              v.lat,
+              v.lon,
+            ),
+          }))
+          .sort((a, b) => a.distance - b.distance)
+      : [];
 
   return (
     <aside className="cv-panel cv-drive-panel">
@@ -98,9 +89,7 @@ function DrivePanel({ alert }) {
         <div>
           <span className="cv-section-label">Road</span>
           <strong>
-            {inNarrowRoad
-              ? displayRoadName(alert.roadName)
-              : "Regular road"}
+            {inNarrowRoad ? displayRoadName(alert.roadName) : "Regular road"}
           </strong>
         </div>
       </section>
@@ -113,22 +102,23 @@ function DrivePanel({ alert }) {
           </div>
 
           {inThisRoad.length === 0 ? (
-            <p className="cv-nearby-empty">
-              No other vehicles in this road
-            </p>
+            <p className="cv-nearby-empty">No other vehicles in this road</p>
           ) : (
             <ul>
               {inThisRoad.slice(0, MAX_VEHICLES_SHOWN).map((v) => (
                 <li key={v.vehicleId}>
                   <span className="cv-nearby-icon">
-                    <Icon name={VEHICLE_LABELS[v.vehicleType] ? v.vehicleType : "car"} size={16} />
+                    <Icon
+                      name={
+                        VEHICLE_LABELS[v.vehicleType] ? v.vehicleType : "car"
+                      }
+                      size={16}
+                    />
                   </span>
 
                   <div>
                     <strong>{displayVehicleName(v)}</strong>
-                    <span>
-                      {isMoving(v) ? "Moving" : "Stopped"}
-                    </span>
+                    <span>{isMoving(v) ? "Moving" : "Stopped"}</span>
                   </div>
                 </li>
               ))}

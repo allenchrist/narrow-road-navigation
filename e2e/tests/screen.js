@@ -65,7 +65,9 @@ module.exports = async ({ check, sleep, createDriver, openDashboard }) => {
   check("the button changes to exit", Boolean(await page.$(EXIT)));
 
   const size = await page.evaluate(() => {
-    const map = document.querySelector(".leaflet-container").getBoundingClientRect();
+    const map = document
+      .querySelector(".leaflet-container")
+      .getBoundingClientRect();
     return map.width === innerWidth && map.height === innerHeight;
   });
   check("the map fills the screen", size);
@@ -126,15 +128,24 @@ module.exports = async ({ check, sleep, createDriver, openDashboard }) => {
   await page.evaluate(() => window.__locks.last.release());
   await setVisibility("hidden");
   state = await locks();
-  check("nothing is requested while hidden", state.held === 0 && state.requests === base);
+  check(
+    "nothing is requested while hidden",
+    state.held === 0 && state.requests === base,
+  );
 
   await setVisibility("visible");
   state = await locks();
-  check("it's kept awake again on return", state.held === 1 && state.requests === base + 1);
+  check(
+    "it's kept awake again on return",
+    state.held === 1 && state.requests === base + 1,
+  );
 
   await setVisibility("visible");
   state = await locks();
-  check("no second lock if one is held", state.held === 1 && state.requests === base + 1);
+  check(
+    "no second lock if one is held",
+    state.held === 1 && state.requests === base + 1,
+  );
 
   await page.evaluate(() => {
     window.__locks.refuse = true;
@@ -142,7 +153,10 @@ module.exports = async ({ check, sleep, createDriver, openDashboard }) => {
   });
   await setVisibility("visible");
   state = await locks();
-  check("a refusal does no harm", state.held === 0 && state.requests === base + 2);
+  check(
+    "a refusal does no harm",
+    state.held === 0 && state.requests === base + 2,
+  );
 
   await page.evaluate(() => {
     window.__locks.refuse = false;
@@ -162,17 +176,22 @@ module.exports = async ({ check, sleep, createDriver, openDashboard }) => {
       delete Navigator.prototype.wakeLock;
     },
   });
-  check("a browser without it still opens the dashboard", Boolean(await page.$(".cv-topbar")));
+  check(
+    "a browser without it still opens the dashboard",
+    Boolean(await page.$(".cv-topbar")),
+  );
   await page.close();
 
   // ---------- Small screens ----------
   page = await openDashboard(username, token, { width: 390, height: 844 });
   const fits = await page.evaluate(() => {
     const bar = document.querySelector(".cv-topbar").getBoundingClientRect();
-    return [...document.querySelectorAll(".cv-topbar button")].every((button) => {
-      const box = button.getBoundingClientRect();
-      return box.left >= bar.left && box.right <= bar.right;
-    });
+    return [...document.querySelectorAll(".cv-topbar button")].every(
+      (button) => {
+        const box = button.getBoundingClientRect();
+        return box.left >= bar.left && box.right <= bar.right;
+      },
+    );
   });
   check("the top bar fits a phone-sized screen", fits);
 };

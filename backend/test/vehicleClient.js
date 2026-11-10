@@ -38,12 +38,26 @@ const SIMULATED_DEVICES = [
   {
     label: "SIMULATOR_1",
     deviceId: "test-device-001",
-    startPos: { lat: 10.958063, lon: 76.956192, heading: 0,   latDelta:  0.000015, lonDelta:  0.000005, headingDelta:  0.8 },
+    startPos: {
+      lat: 10.958063,
+      lon: 76.956192,
+      heading: 0,
+      latDelta: 0.000015,
+      lonDelta: 0.000005,
+      headingDelta: 0.8,
+    },
   },
   {
     label: "SIMULATOR_2",
     deviceId: "test-device-002",
-    startPos: { lat: 10.958300, lon: 76.956500, heading: 180, latDelta: -0.000012, lonDelta: -0.000003, headingDelta: -0.6 },
+    startPos: {
+      lat: 10.9583,
+      lon: 76.9565,
+      heading: 180,
+      latDelta: -0.000012,
+      lonDelta: -0.000003,
+      headingDelta: -0.6,
+    },
   },
 ];
 
@@ -81,7 +95,9 @@ function createSimulatedPhone({ label, deviceId, startPos }) {
 
       if (msg.type === "registered") {
         assignedVehicleId = msg.vehicleId;
-        console.log(`[${label}] Assigned ${assignedVehicleId} (deviceId: ${msg.deviceId})`);
+        console.log(
+          `[${label}] Assigned ${assignedVehicleId} (deviceId: ${msg.deviceId})`,
+        );
         startTelemetry();
         return;
       }
@@ -99,7 +115,7 @@ function createSimulatedPhone({ label, deviceId, startPos }) {
 
       if (running) {
         console.log(
-          `[${label}] Disconnected (was ${prev ?? "unassigned"}, code ${code}) — reconnecting in ${RECONNECT_DELAY_MS}ms`
+          `[${label}] Disconnected (was ${prev ?? "unassigned"}, code ${code}) — reconnecting in ${RECONNECT_DELAY_MS}ms`,
         );
         // Reconnect with the SAME deviceId — backend will restore the same vehicleId
         reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS);
@@ -124,15 +140,15 @@ function createSimulatedPhone({ label, deviceId, startPos }) {
 
       // Telemetry has NO vehicleId — the connection identifies the device
       const telemetry = {
-        lat:     parseFloat(pos.lat.toFixed(7)),
-        lon:     parseFloat(pos.lon.toFixed(7)),
+        lat: parseFloat(pos.lat.toFixed(7)),
+        lon: parseFloat(pos.lon.toFixed(7)),
         heading: parseFloat(pos.heading.toFixed(1)),
-        accelX:  parseFloat((Math.random() * 0.4 - 0.2).toFixed(3)),
-        accelY:  parseFloat((Math.random() * 0.4 - 0.2).toFixed(3)),
-        accelZ:  parseFloat((9.5 + Math.random() * 0.2).toFixed(3)),
-        gyroX:   parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
-        gyroY:   parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
-        gyroZ:   parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
+        accelX: parseFloat((Math.random() * 0.4 - 0.2).toFixed(3)),
+        accelY: parseFloat((Math.random() * 0.4 - 0.2).toFixed(3)),
+        accelZ: parseFloat((9.5 + Math.random() * 0.2).toFixed(3)),
+        gyroX: parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
+        gyroY: parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
+        gyroZ: parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
       };
 
       ws.send(JSON.stringify(telemetry));

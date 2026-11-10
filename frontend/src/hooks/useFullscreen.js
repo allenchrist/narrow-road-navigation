@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
  * that don't allow it, such as iPhones.
  */
 export function useFullscreen() {
-  const [isFullscreen, setIsFullscreen] = useState(
-    () => Boolean(document.fullscreenElement)
+  const [isFullscreen, setIsFullscreen] = useState(() =>
+    Boolean(document.fullscreenElement),
   );
 
   useEffect(() => {

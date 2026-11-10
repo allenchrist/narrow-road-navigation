@@ -20,10 +20,7 @@ function useClock() {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const id = setInterval(
-      () => setNow(new Date()),
-      1000
-    );
+    const id = setInterval(() => setNow(new Date()), 1000);
 
     return () => clearInterval(id);
   }, []);
@@ -99,11 +96,7 @@ function TopBarMenu({ label, icon, children }) {
 }
 
 function TopBar() {
-  const {
-    username,
-    backendConnected,
-    gpsStatus,
-  } = useVehicle();
+  const { username, backendConnected, gpsStatus } = useVehicle();
 
   const navigate = useNavigate();
   const clock = useClock();
@@ -132,11 +125,7 @@ function TopBar() {
             tone={backendConnected ? "good" : "bad"}
           />
 
-          <StatusChip
-            label="GPS"
-            text={gps.text}
-            tone={gps.tone}
-          />
+          <StatusChip label="GPS" text={gps.text} tone={gps.tone} />
         </div>
 
         <time className="cv-clock">
@@ -152,17 +141,11 @@ function TopBar() {
             className="cv-icon-button"
             onClick={fullscreen.toggleFullscreen}
             aria-label={
-              fullscreen.isFullscreen
-                ? "Exit full screen"
-                : "Full screen"
+              fullscreen.isFullscreen ? "Exit full screen" : "Full screen"
             }
           >
             <Icon
-              name={
-                fullscreen.isFullscreen
-                  ? "fullscreenExit"
-                  : "fullscreen"
-              }
+              name={fullscreen.isFullscreen ? "fullscreenExit" : "fullscreen"}
             />
           </button>
         )}
@@ -172,9 +155,7 @@ function TopBar() {
             type="button"
             role="menuitem"
             onClick={() =>
-              navigate(
-                `/${encodeURIComponent(username)}/suggest-narrow-road`
-              )
+              navigate(`/${encodeURIComponent(username)}/suggest-narrow-road`)
             }
           >
             <Icon name="add" size={18} />

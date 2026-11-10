@@ -99,7 +99,10 @@ const mailServer = http.createServer((request, response) => {
   request.on("data", (chunk) => (body += chunk));
 
   request.on("end", () => {
-    sentEmails.push({ ...JSON.parse(body), apiKey: request.headers["api-key"] });
+    sentEmails.push({
+      ...JSON.parse(body),
+      apiKey: request.headers["api-key"],
+    });
     response.writeHead(201, { "Content-Type": "application/json" });
     response.end("{}");
   });
@@ -136,7 +139,7 @@ async function createDriver(username, vehicleType) {
       vehicleType,
     },
     null,
-    { "X-Forwarded-For": `10.8.0.${++driverNumber}` }
+    { "X-Forwarded-For": `10.8.0.${++driverNumber}` },
   );
 
   if (created.status !== 201) {
@@ -191,17 +194,23 @@ async function main() {
       MAIL_FROM_ADDRESS: "sender@example.com",
     };
 
-    const setup = spawnSync(process.execPath, ["database/init.js", "--simulator-roads"], {
-      cwd: BACKEND,
-      env: { ...process.env, ...serverEnv },
-      encoding: "utf8",
-    });
+    const setup = spawnSync(
+      process.execPath,
+      ["database/init.js", "--simulator-roads"],
+      {
+        cwd: BACKEND,
+        env: { ...process.env, ...serverEnv },
+        encoding: "utf8",
+      },
+    );
 
     if (setup.status !== 0) {
       throw new Error(`db:init failed:\n${setup.stdout}${setup.stderr}`);
     }
 
-    await new Promise((resolve) => mailServer.listen(MAIL_PORT, "127.0.0.1", resolve));
+    await new Promise((resolve) =>
+      mailServer.listen(MAIL_PORT, "127.0.0.1", resolve),
+    );
 
     const server = start(["server.js"], BACKEND, serverEnv);
     await waitFor(`${API}/health`, server);
@@ -216,13 +225,23 @@ async function main() {
 
       await waitFor(`http://127.0.0.1:${PLAIN_API_PORT}/health`, realServer);
 
-      return { url: `http://127.0.0.1:${PLAIN_API_PORT}`, stop: () => realServer.kill() };
+      return {
+        url: `http://127.0.0.1:${PLAIN_API_PORT}`,
+        stop: () => realServer.kill(),
+      };
     }
 
     const site = start(
-      ["node_modules/vite/bin/vite.js", "--port", String(SITE_PORT), "--strictPort", "--host", "127.0.0.1"],
+      [
+        "node_modules/vite/bin/vite.js",
+        "--port",
+        String(SITE_PORT),
+        "--strictPort",
+        "--host",
+        "127.0.0.1",
+      ],
       FRONTEND,
-      { VITE_BACKEND_URL: API }
+      { VITE_BACKEND_URL: API },
     );
     await waitFor(SITE, site);
 
@@ -253,7 +272,9 @@ async function main() {
       page.on("console", (message) => {
         if (
           message.type() === "error" &&
-          !/ERR_|Failed to load resource|Refused for testing/.test(message.text())
+          !/ERR_|Failed to load resource|Refused for testing/.test(
+            message.text(),
+          )
         ) {
           problems.push(message.text().slice(0, 200));
         }
@@ -273,10 +294,10 @@ async function main() {
         (sessionToken, name) =>
           localStorage.setItem(
             "driverSession",
-            JSON.stringify({ token: sessionToken, username: name })
+            JSON.stringify({ token: sessionToken, username: name }),
           ),
         token,
-        username
+        username,
       );
     }
 
@@ -337,7 +358,10 @@ async function main() {
     }
 
     console.log("");
-    check(`no errors in the browser ${JSON.stringify(problems)}`, problems.length === 0);
+    check(
+      `no errors in the browser ${JSON.stringify(problems)}`,
+      problems.length === 0,
+    );
   } finally {
     await browser?.close().catch(() => {});
 

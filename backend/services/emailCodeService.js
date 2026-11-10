@@ -32,7 +32,7 @@ async function createCode(email, purpose, payload = {}) {
     FROM email_codes
     WHERE email = $1 AND purpose = $2 AND last_sent_at > NOW() - $3 * INTERVAL '1 second';
     `,
-    [key, purpose, RESEND_WAIT_SECONDS]
+    [key, purpose, RESEND_WAIT_SECONDS],
   );
 
   if (recent.rows[0]) {
@@ -52,7 +52,13 @@ async function createCode(email, purpose, payload = {}) {
       expires_at = EXCLUDED.expires_at,
       last_sent_at = EXCLUDED.last_sent_at;
     `,
-    [key, purpose, hashCode(key, purpose, code), JSON.stringify(payload), CODE_LIFETIME_MINUTES]
+    [
+      key,
+      purpose,
+      hashCode(key, purpose, code),
+      JSON.stringify(payload),
+      CODE_LIFETIME_MINUTES,
+    ],
   );
 
   return { code };
@@ -72,7 +78,7 @@ async function checkCode(email, purpose, code) {
     WHERE email = $1 AND purpose = $2 AND attempts < $3 AND expires_at > NOW()
     RETURNING code_hash, payload;
     `,
-    [key, purpose, MAX_ATTEMPTS]
+    [key, purpose, MAX_ATTEMPTS],
   );
 
   const row = result.rows[0];
@@ -84,7 +90,10 @@ async function checkCode(email, purpose, code) {
   const expected = Buffer.from(row.code_hash);
   const actual = Buffer.from(hashCode(key, purpose, String(code)));
 
-  if (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {
+  if (
+    expected.length !== actual.length ||
+    !crypto.timingSafeEqual(expected, actual)
+  ) {
     return { error: "That code isn't right. Check it and try again." };
   }
 
@@ -94,7 +103,7 @@ async function checkCode(email, purpose, code) {
 async function deleteCode(email, purpose) {
   await pool.query(
     "DELETE FROM email_codes WHERE email = $1 AND purpose = $2;",
-    [cleanEmail(email), purpose]
+    [cleanEmail(email), purpose],
   );
 }
 

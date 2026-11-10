@@ -1,0 +1,9 @@
+# Not formatted: generated files, data, and the READMEs, which are laid out by hand
+node_modules
+dist
+package-lock.json
+*.md
+backend/data
+backend/test/fixtures
+backend/tools/download
+backend/tools/narrowRoads.found*.json

@@ -1,15 +1,27 @@
 // Every action on the admin page. Named so it runs first, before other tests add roads.
 
-const POLYGON = [[10.958, 76.956], [10.958, 76.957], [10.959, 76.957]];
+const POLYGON = [
+  [10.958, 76.956],
+  [10.958, 76.957],
+  [10.959, 76.957],
+];
 
-module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver, newPage }) => {
+module.exports = async ({
+  SITE,
+  ADMIN_PASSWORD,
+  check,
+  sleep,
+  post,
+  createDriver,
+  newPage,
+}) => {
   const driver = await createDriver("admin_test_driver");
 
   for (const name of ["Approve Me", "Reject Me", "Leave Me"]) {
     await post(
       "/api/narrow-road-suggestions",
       { name, polygon: POLYGON, reason: `Reason for ${name}` },
-      driver
+      driver,
     );
   }
 
@@ -23,7 +35,9 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
     return confirmAnswer ? dialog.accept() : dialog.dismiss();
   });
 
-  let searchReply = [{ lat: "10.958", lon: "76.956", display_name: "Somewhere" }];
+  let searchReply = [
+    { lat: "10.958", lon: "76.956", display_name: "Somewhere" },
+  ];
   let refuseWrites = false;
 
   await page.setRequestInterception(true);
@@ -55,7 +69,9 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   const text = () => page.evaluate(() => document.body.innerText);
 
   const counts = () =>
-    page.$$eval(".admin-count", (items) => items.map((item) => Number(item.innerText)));
+    page.$$eval(".admin-count", (items) =>
+      items.map((item) => Number(item.innerText)),
+    );
 
   const roads = async () => (await counts())[1];
   const pending = async () => (await counts())[0];
@@ -63,7 +79,7 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   const clickText = async (label) => {
     const clicked = await page.evaluate((target) => {
       const button = [...document.querySelectorAll("button")].find(
-        (item) => item.innerText.trim() === target
+        (item) => item.innerText.trim() === target,
       );
       button?.click();
       return Boolean(button);
@@ -91,17 +107,18 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
     const clicked = await page.evaluate(
       (name, target) => {
         const item = [...document.querySelectorAll(".admin-road-item")].find(
-          (row) => row.querySelector("strong").innerText.trim() === name
+          (row) => row.querySelector("strong").innerText.trim() === name,
         );
         const button =
-          item && [...item.querySelectorAll("button")].find(
-            (candidate) => candidate.innerText.trim() === target
+          item &&
+          [...item.querySelectorAll("button")].find(
+            (candidate) => candidate.innerText.trim() === target,
           );
         button?.click();
         return Boolean(button);
       },
       itemName,
-      label
+      label,
     );
 
     if (!clicked) {
@@ -130,7 +147,11 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   };
 
   const hasError = async (message) =>
-    (await page.$$eval(".admin-error", (items) => items.map((item) => item.innerText))).includes(message);
+    (
+      await page.$$eval(".admin-error", (items) =>
+        items.map((item) => item.innerText),
+      )
+    ).includes(message);
 
   await page.goto(`${SITE}/admin`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector('input[type="password"]');
@@ -144,21 +165,36 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   check("the pending suggestions load", (await pending()) === 3);
 
   // ---------- Filter ----------
-  check("suggestions show first", (await text()).includes("Sent by admin_test_driver"));
+  check(
+    "suggestions show first",
+    (await text()).includes("Sent by admin_test_driver"),
+  );
   await showRoads();
-  check("the other tab shows the roads", Boolean(await page.$(".admin-road-filter")));
+  check(
+    "the other tab shows the roads",
+    Boolean(await page.$(".admin-road-filter")),
+  );
   await setInput(".admin-road-filter", "zzzz");
-  check("a filter with no match says so", (await text()).includes("No roads match that name."));
+  check(
+    "a filter with no match says so",
+    (await text()).includes("No roads match that name."),
+  );
   await setInput(".admin-road-filter", "");
 
   // ---------- Search ----------
   await clickText("Search");
   await sleep(200);
-  check("an empty search says so", (await text()).includes("Enter a location to search"));
+  check(
+    "an empty search says so",
+    (await text()).includes("Enter a location to search"),
+  );
   await setInput(".admin-header-search input", "Some Place");
   await page.keyboard.press("Enter");
   await sleep(1500);
-  check("a search with a result shows no error", !(await page.$(".admin-search-error")));
+  check(
+    "a search with a result shows no error",
+    !(await page.$(".admin-search-error")),
+  );
 
   searchReply = [];
   await clickText("Search");
@@ -168,7 +204,10 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   searchReply = [{ lat: "not", lon: "numbers" }];
   await clickText("Search");
   await sleep(500);
-  check("a bad reply says so", (await text()).includes("Invalid location returned"));
+  check(
+    "a bad reply says so",
+    (await text()).includes("Invalid location returned"),
+  );
 
   searchReply = [
     { lat: "10.958", lon: "76.956", display_name: "First" },
@@ -176,7 +215,10 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   ];
   await clickText("Search");
   await sleep(1800);
-  check("other matches are offered here too", Boolean(await page.$(".search-matches")));
+  check(
+    "other matches are offered here too",
+    Boolean(await page.$(".search-matches")),
+  );
 
   // ---------- Marking a road ----------
   await clickText("Mark narrow road");
@@ -191,7 +233,10 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
   await clickMap(0.545, 0.47);
   check("points are counted", (await text()).includes("Points: 4"));
   await showSuggestions();
-  check("marking over a suggestion doesn't select it", !(await text()).includes("Selected"));
+  check(
+    "marking over a suggestion doesn't select it",
+    !(await text()).includes("Selected"),
+  );
   await showRoads();
   await clickText("Undo");
   await sleep(200);
@@ -199,7 +244,10 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
 
   await clickText("Save road");
   await sleep(200);
-  check("a road needs a name", await hasError("Enter a name for the narrow road"));
+  check(
+    "a road needs a name",
+    await hasError("Enter a name for the narrow road"),
+  );
 
   await clickText("Cancel");
   await sleep(200);
@@ -277,7 +325,10 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
 
   await showRoads();
   await setInput(".admin-road-filter", "Approve Me");
-  check("the approved road is in the saved list", (await page.$$(".admin-road-item")).length === 1);
+  check(
+    "the approved road is in the saved list",
+    (await page.$$(".admin-road-item")).length === 1,
+  );
 
   // ---------- Staying and leaving ----------
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -287,6 +338,9 @@ module.exports = async ({ SITE, ADMIN_PASSWORD, check, sleep, post, createDriver
 
   await clickText("Sign out");
   await sleep(600);
-  check("signing out returns to the password", Boolean(await page.$('input[type="password"]')));
+  check(
+    "signing out returns to the password",
+    Boolean(await page.$('input[type="password"]')),
+  );
   check("every confirmation was shown", confirmations.length === 7);
 };

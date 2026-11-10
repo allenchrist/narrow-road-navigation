@@ -9,8 +9,7 @@ const SESSION_MESSAGES = {
   "User not found": {
     icon: "person",
     title: "Account not found",
-    detail: () =>
-      "This account no longer exists. Log in with another one.",
+    detail: () => "This account no longer exists. Log in with another one.",
     showLogOut: true,
   },
   "No device is associated with this account": {
@@ -32,8 +31,7 @@ const SESSION_MESSAGES = {
 const CONNECTING = {
   icon: "cloudOff",
   title: "Connecting to the server",
-  detail: () =>
-    "This can take up to a minute if the server has been idle.",
+  detail: () => "This can take up to a minute if the server has been idle.",
   waiting: true,
 };
 
@@ -56,11 +54,7 @@ const UNKNOWN_ERROR = {
  * and explains what the user needs to do.
  */
 function SessionOverlay() {
-  const {
-    myVehicleId,
-    backendConnected,
-    sessionError,
-  } = useVehicle();
+  const { myVehicleId, backendConnected, sessionError } = useVehicle();
 
   const navigate = useNavigate();
 
@@ -71,8 +65,8 @@ function SessionOverlay() {
   const content = !backendConnected
     ? CONNECTING
     : sessionError
-    ? SESSION_MESSAGES[sessionError] ?? UNKNOWN_ERROR
-    : IDENTIFYING;
+      ? (SESSION_MESSAGES[sessionError] ?? UNKNOWN_ERROR)
+      : IDENTIFYING;
 
   return (
     <div className="cv-overlay">
@@ -86,11 +80,7 @@ function SessionOverlay() {
         <p>{content.detail()}</p>
 
         {content.waiting && (
-          <div
-            className="cv-spinner"
-            role="progressbar"
-            aria-label="Waiting"
-          />
+          <div className="cv-spinner" role="progressbar" aria-label="Waiting" />
         )}
 
         {content.showLogOut && (

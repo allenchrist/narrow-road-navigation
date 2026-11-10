@@ -1,9 +1,6 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 
-import {
-  getDriverSession,
-  signOutDriver,
-} from "../../services/driverSession";
+import { getDriverSession, signOutDriver } from "../../services/driverSession";
 import Icon from "./Icon";
 
 /**
@@ -25,12 +22,7 @@ function RequireDriver({ children }) {
       return children;
     }
 
-    return (
-      <Navigate
-        to={`/${encodeURIComponent(session.username)}`}
-        replace
-      />
-    );
+    return <Navigate to={`/${encodeURIComponent(session.username)}`} replace />;
   }
 
   return (

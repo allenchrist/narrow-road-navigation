@@ -4,10 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const { requireAdmin } = require("../middleware/authMiddleware");
 const { getAllVehicles } = require("../services/vehicleState");
-const {
-  createRateLimiter,
-  getClientIp,
-} = require("../utils/rateLimit");
+const { createRateLimiter, getClientIp } = require("../utils/rateLimit");
 
 const router = express.Router();
 
@@ -46,10 +43,7 @@ router.post("/login", (req, res) => {
 
     const address = getClientIp(req);
 
-    if (
-      failedByAddress.isBlocked(address) ||
-      failedOverall.isBlocked("all")
-    ) {
+    if (failedByAddress.isBlocked(address) || failedOverall.isBlocked("all")) {
       return res.status(429).json({
         message: "Too many attempts. Try again in 15 minutes.",
       });
@@ -57,10 +51,7 @@ router.post("/login", (req, res) => {
 
     const { password } = req.body ?? {};
 
-    if (
-      typeof password !== "string" ||
-      !passwordMatches(password, expected)
-    ) {
+    if (typeof password !== "string" || !passwordMatches(password, expected)) {
       failedByAddress.record(address);
       failedOverall.record("all");
 
@@ -69,11 +60,9 @@ router.post("/login", (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { role: "admin" },
-      process.env.JWT_SECRET,
-      { expiresIn: "12h" }
-    );
+    const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET, {
+      expiresIn: "12h",
+    });
 
     res.json({ token });
   } catch (error) {

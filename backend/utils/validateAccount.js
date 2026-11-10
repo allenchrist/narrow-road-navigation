@@ -66,10 +66,7 @@ function validateRegistration({
     return { error: "That username isn't available." };
   }
 
-  if (
-    cleanEmail.length > MAX_EMAIL_LENGTH ||
-    !EMAIL_PATTERN.test(cleanEmail)
-  ) {
+  if (cleanEmail.length > MAX_EMAIL_LENGTH || !EMAIL_PATTERN.test(cleanEmail)) {
     return { error: "Enter a valid email address." };
   }
 

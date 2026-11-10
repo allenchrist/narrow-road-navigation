@@ -5,9 +5,7 @@ const {
   getVehiclesForDashboard,
   getVisibleVehicles,
 } = require("../services/vehicleState");
-const {
-  getVehicleForDevice,
-} = require("../services/deviceRegistry");
+const { getVehicleForDevice } = require("../services/deviceRegistry");
 
 const {
   findUserByUsername,
@@ -40,7 +38,7 @@ function initSocketServer(httpServer) {
     try {
       decoded = jwt.verify(
         socket.handshake.auth?.token,
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
       );
     } catch {
       next(new Error(NOT_AUTHORIZED));
@@ -68,119 +66,95 @@ function initSocketServer(httpServer) {
   io.on("connection", (socket) => {
     socket.join(userRoom(socket.data.username));
 
-    console.log(
-      `[Socket.IO] Dashboard connected: ${socket.id}`
-    );
+    console.log(`[Socket.IO] Dashboard connected: ${socket.id}`);
 
     // --------------------------------------------------
     // AUTOMATIC USERNAME → DEVICE → VEHICLE IDENTIFICATION
     // --------------------------------------------------
 
-    socket.on(
-      "session:identify",
-      async () => {
-        const normalizedUsername = socket.data.username;
+    socket.on("session:identify", async () => {
+      const normalizedUsername = socket.data.username;
 
-        // Set again below, if this account still has a vehicle
-        socket.data.vehicleId = null;
+      // Set again below, if this account still has a vehicle
+      socket.data.vehicleId = null;
 
-        try {
-          // ----------------------------------------------
-          // Find user in PostgreSQL
-          // ----------------------------------------------
+      try {
+        // ----------------------------------------------
+        // Find user in PostgreSQL
+        // ----------------------------------------------
 
-          const user =
-            await findUserByUsername(
-              normalizedUsername
-            );
+        const user = await findUserByUsername(normalizedUsername);
 
-          if (!user) {
-            socket.emit("session:error", {
-              message: "User not found",
-            });
-
-            return;
-          }
-
-          // ----------------------------------------------
-          // Get the device associated with this user
-          // ----------------------------------------------
-
-          const deviceId =
-            user.device_id;
-
-          if (!deviceId) {
-            socket.emit("session:error", {
-              message:
-                "No device is associated with this account",
-            });
-
-            return;
-          }
-
-          // ----------------------------------------------
-          // Device → Vehicle lookup
-          // ----------------------------------------------
-
-          const vehicleId =
-            getVehicleForDevice(
-              deviceId
-            );
-
-          if (!vehicleId) {
-            socket.emit("session:error", {
-              message:
-                "Device is not currently connected",
-            });
-
-            return;
-          }
-
-          // ----------------------------------------------
-          // Dashboard successfully identified
-          // ----------------------------------------------
-
-          socket.data.vehicleId = vehicleId;
-
-          socket.emit(
-            "session:assigned",
-            {
-              vehicleId,
-              username: normalizedUsername,
-            }
-          );
-
-          // A dashboard can identify again on an existing socket,
-          // so it needs the current vehicles here as well.
-          socket.emit("vehicles:update", {
-            vehicles: getVisibleVehicles(
-              getVehiclesForDashboard(),
-              vehicleId
-            ),
-          });
-
-        } catch (error) {
-          console.error(
-            `[Socket.IO] Username identification failed for ${normalizedUsername}:`,
-            error.message
-          );
-
+        if (!user) {
           socket.emit("session:error", {
-            message:
-              "Failed to identify dashboard",
+            message: "User not found",
           });
+
+          return;
         }
+
+        // ----------------------------------------------
+        // Get the device associated with this user
+        // ----------------------------------------------
+
+        const deviceId = user.device_id;
+
+        if (!deviceId) {
+          socket.emit("session:error", {
+            message: "No device is associated with this account",
+          });
+
+          return;
+        }
+
+        // ----------------------------------------------
+        // Device → Vehicle lookup
+        // ----------------------------------------------
+
+        const vehicleId = getVehicleForDevice(deviceId);
+
+        if (!vehicleId) {
+          socket.emit("session:error", {
+            message: "Device is not currently connected",
+          });
+
+          return;
+        }
+
+        // ----------------------------------------------
+        // Dashboard successfully identified
+        // ----------------------------------------------
+
+        socket.data.vehicleId = vehicleId;
+
+        socket.emit("session:assigned", {
+          vehicleId,
+          username: normalizedUsername,
+        });
+
+        // A dashboard can identify again on an existing socket,
+        // so it needs the current vehicles here as well.
+        socket.emit("vehicles:update", {
+          vehicles: getVisibleVehicles(getVehiclesForDashboard(), vehicleId),
+        });
+      } catch (error) {
+        console.error(
+          `[Socket.IO] Username identification failed for ${normalizedUsername}:`,
+          error.message,
+        );
+
+        socket.emit("session:error", {
+          message: "Failed to identify dashboard",
+        });
       }
-    );
+    });
 
     // --------------------------------------------------
     // DISCONNECT
     // --------------------------------------------------
 
     socket.on("disconnect", () => {
-      console.log(
-        `[Socket.IO] Dashboard disconnected: ${socket.id}`
-      );
+      console.log(`[Socket.IO] Dashboard disconnected: ${socket.id}`);
     });
   });
 

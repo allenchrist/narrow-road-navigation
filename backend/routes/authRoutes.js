@@ -44,8 +44,14 @@ const accountsByAddress = createRateLimiter({ max: 10, windowMs: HOUR_MS });
 const accountsOverall = createRateLimiter({ max: 100, windowMs: HOUR_MS });
 
 // Only failed logins count, so normal use is never limited
-const failedLoginsByAddress = createRateLimiter({ max: 20, windowMs: LOGIN_WINDOW_MS });
-const failedLoginsByUsername = createRateLimiter({ max: 10, windowMs: LOGIN_WINDOW_MS });
+const failedLoginsByAddress = createRateLimiter({
+  max: 20,
+  windowMs: LOGIN_WINDOW_MS,
+});
+const failedLoginsByUsername = createRateLimiter({
+  max: 10,
+  windowMs: LOGIN_WINDOW_MS,
+});
 
 // Only for simulators and tests. Real accounts go through /register/start.
 router.post("/register", async (req, res) => {
@@ -93,12 +99,7 @@ router.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await registerUser(
-      username,
-      email,
-      passwordHash,
-      vehicleType
-    );
+    const user = await registerUser(username, email, passwordHash, vehicleType);
 
     accountsByAddress.record(address);
     accountsOverall.record("all");
@@ -176,7 +177,7 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "30d",
-      }
+      },
     );
 
     return res.status(200).json({
@@ -228,8 +229,10 @@ router.post("/device", authenticateToken, async (req, res) => {
 
     const previousDeviceId = user.device_id;
 
-    const { user: updatedUser, previousOwner } =
-      await linkDeviceToUser(user.id, normalizedDeviceId);
+    const { user: updatedUser, previousOwner } = await linkDeviceToUser(
+      user.id,
+      normalizedDeviceId,
+    );
 
     // Logging in on a new phone moves the account to it
     if (previousDeviceId && previousDeviceId !== normalizedDeviceId) {
@@ -247,7 +250,7 @@ router.post("/device", authenticateToken, async (req, res) => {
     }
 
     console.log(
-      `[Auth] Device associated: ${updatedUser.username} → ${updatedUser.device_id}`
+      `[Auth] Device associated: ${updatedUser.username} → ${updatedUser.device_id}`,
     );
 
     return res.status(200).json({
@@ -259,10 +262,7 @@ router.post("/device", authenticateToken, async (req, res) => {
       deviceId: updatedUser.device_id,
     });
   } catch (error) {
-    console.error(
-      "[Auth] Device association failed:",
-      error.message
-    );
+    console.error("[Auth] Device association failed:", error.message);
 
     return res.status(500).json({
       message: "Failed to associate device.",
@@ -392,7 +392,7 @@ router.get("/vehicle", authenticateToken, async (req, res) => {
       : null;
 
     const vehicle = getVehiclesForDashboard().find(
-      (candidate) => candidate.vehicleId === vehicleId
+      (candidate) => candidate.vehicleId === vehicleId,
     );
 
     if (!vehicle) {

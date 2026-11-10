@@ -138,8 +138,8 @@ export function useRoadEditor(map) {
       if (isEditing) {
         setRoads((previous) =>
           previous.map((road) =>
-            road.id === editingRoadId ? data.road : road
-          )
+            road.id === editingRoadId ? data.road : road,
+          ),
         );
       } else {
         setRoads((previous) => [...previous, data.road]);

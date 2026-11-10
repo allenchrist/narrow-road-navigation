@@ -24,7 +24,8 @@ const zlib = require("zlib");
 const readline = require("readline");
 
 const DOWNLOAD = process.argv[2] || path.join(__dirname, "download");
-const OUTPUT = process.argv[3] || path.join(__dirname, "narrowRoads.found.json");
+const OUTPUT =
+  process.argv[3] || path.join(__dirname, "narrowRoads.found.json");
 
 // Coimbatore and its suburbs
 const BBOX = { south: 10.9, west: 76.85, north: 11.1, east: 77.1 };
@@ -69,7 +70,14 @@ const SMOOTHING_SAMPLES = 5;
 // Corners that change the line by less than this are removed
 const SIMPLIFY_M = 0.4;
 
-const ROAD_TYPES = new Set(["residential", "unclassified", "living_street", "service", "tertiary", "track"]);
+const ROAD_TYPES = new Set([
+  "residential",
+  "unclassified",
+  "living_street",
+  "service",
+  "tertiary",
+  "track",
+]);
 const SKIP_SERVICE = new Set(["parking_aisle", "driveway", "drive-through"]);
 const SKIP_ACCESS = new Set(["no", "private"]);
 
@@ -78,13 +86,19 @@ const LAT0 = (BBOX.south + BBOX.north) / 2;
 const M_PER_LAT = 110574;
 const M_PER_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
 
-const toXY = (lat, lon) => [(lon - BBOX.west) * M_PER_LON, (lat - BBOX.south) * M_PER_LAT];
+const toXY = (lat, lon) => [
+  (lon - BBOX.west) * M_PER_LON,
+  (lat - BBOX.south) * M_PER_LAT,
+];
 const toLatLon = ([x, y]) => [
   Math.round((y / M_PER_LAT + BBOX.south) * 1e7) / 1e7,
   Math.round((x / M_PER_LON + BBOX.west) * 1e7) / 1e7,
 ];
 const inBox = (lat, lon, margin) =>
-  lat > BBOX.south - margin && lat < BBOX.north + margin && lon > BBOX.west - margin && lon < BBOX.east + margin;
+  lat > BBOX.south - margin &&
+  lat < BBOX.north + margin &&
+  lon > BBOX.west - margin &&
+  lon < BBOX.east + margin;
 
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 
@@ -100,8 +114,16 @@ function addRing(points) {
     const [x2, y2] = points[i + 1];
     const edge = [x1, y1, x2, y2];
 
-    for (let cx = Math.floor(Math.min(x1, x2) / CELL_M); cx <= Math.floor(Math.max(x1, x2) / CELL_M); cx++) {
-      for (let cy = Math.floor(Math.min(y1, y2) / CELL_M); cy <= Math.floor(Math.max(y1, y2) / CELL_M); cy++) {
+    for (
+      let cx = Math.floor(Math.min(x1, x2) / CELL_M);
+      cx <= Math.floor(Math.max(x1, x2) / CELL_M);
+      cx++
+    ) {
+      for (
+        let cy = Math.floor(Math.min(y1, y2) / CELL_M);
+        cy <= Math.floor(Math.max(y1, y2) / CELL_M);
+        cy++
+      ) {
         const key = cellKey(cx, cy);
 
         if (!grid.has(key)) grid.set(key, []);
@@ -113,7 +135,9 @@ function addRing(points) {
 
 async function loadMicrosoftBuildings() {
   const lines = readline.createInterface({
-    input: fs.createReadStream(path.join(DOWNLOAD, "ms_buildings.csv.gz")).pipe(zlib.createGunzip()),
+    input: fs
+      .createReadStream(path.join(DOWNLOAD, "ms_buildings.csv.gz"))
+      .pipe(zlib.createGunzip()),
   });
 
   let count = 0;
@@ -135,7 +159,9 @@ async function loadMicrosoftBuildings() {
 }
 
 function loadOsmBuildings() {
-  const { elements } = JSON.parse(fs.readFileSync(path.join(DOWNLOAD, "osm_buildings.json"), "utf8"));
+  const { elements } = JSON.parse(
+    fs.readFileSync(path.join(DOWNLOAD, "osm_buildings.json"), "utf8"),
+  );
 
   let count = 0;
 
@@ -158,8 +184,16 @@ function castRay([px, py], [dx, dy]) {
   const checked = new Set();
   let nearest = Infinity;
 
-  for (let cx = Math.floor(Math.min(px, ex) / CELL_M); cx <= Math.floor(Math.max(px, ex) / CELL_M); cx++) {
-    for (let cy = Math.floor(Math.min(py, ey) / CELL_M); cy <= Math.floor(Math.max(py, ey) / CELL_M); cy++) {
+  for (
+    let cx = Math.floor(Math.min(px, ex) / CELL_M);
+    cx <= Math.floor(Math.max(px, ex) / CELL_M);
+    cx++
+  ) {
+    for (
+      let cy = Math.floor(Math.min(py, ey) / CELL_M);
+      cy <= Math.floor(Math.max(py, ey) / CELL_M);
+      cy++
+    ) {
       for (const edge of grid.get(cellKey(cx, cy)) ?? []) {
         if (checked.has(edge)) continue;
         checked.add(edge);
@@ -174,7 +208,8 @@ function castRay([px, py], [dx, dy]) {
         const along = ((x1 - px) * sy - (y1 - py) * sx) / denominator;
         const onEdge = ((x1 - px) * dy - (y1 - py) * dx) / denominator;
 
-        if (along >= 0 && onEdge >= 0 && onEdge <= 1 && along < nearest) nearest = along;
+        if (along >= 0 && onEdge >= 0 && onEdge <= 1 && along < nearest)
+          nearest = along;
       }
     }
   }
@@ -196,7 +231,10 @@ function sampleLine(points) {
     const ty = (points[i + 1][1] - points[i][1]) / length;
 
     for (let d = offset; d <= length; d += STEP_M) {
-      samples.push({ point: [points[i][0] + tx * d, points[i][1] + ty * d], left: [-ty, tx] });
+      samples.push({
+        point: [points[i][0] + tx * d, points[i][1] + ty * d],
+        left: [-ty, tx],
+      });
     }
 
     offset = (offset - length) % STEP_M;
@@ -248,7 +286,7 @@ function findStretches(samples) {
   const kept = stretches.filter(
     (s) =>
       (s.end - s.start) * STEP_M >= MIN_LENGTH_M &&
-      s.narrowCount / (s.end - s.start + 1) >= MIN_NARROW_SHARE
+      s.narrowCount / (s.end - s.start + 1) >= MIN_NARROW_SHARE,
   );
 
   const joined = [];
@@ -304,7 +342,11 @@ function simplify(points, tolerance) {
   let index = 0;
 
   for (let i = 1; i < points.length - 1; i++) {
-    const offLine = Math.abs((b[0] - a[0]) * (a[1] - points[i][1]) - (a[0] - points[i][0]) * (b[1] - a[1])) / length;
+    const offLine =
+      Math.abs(
+        (b[0] - a[0]) * (a[1] - points[i][1]) -
+          (a[0] - points[i][0]) * (b[1] - a[1]),
+      ) / length;
 
     if (offLine > farthest) {
       farthest = offLine;
@@ -326,15 +368,24 @@ function outline(line, halfWidth) {
     const before = line[Math.max(0, i - 1)];
     const after = line[Math.min(line.length - 1, i + 1)];
     const length = distance(before, after) || 1;
-    const left = [-(after[1] - before[1]) / length, (after[0] - before[0]) / length];
+    const left = [
+      -(after[1] - before[1]) / length,
+      (after[0] - before[0]) / length,
+    ];
 
     // At a bend the corner sits further out, so the width stays even
     let scale = 1;
 
     if (i > 0 && i < line.length - 1) {
       const inLength = distance(before, point) || 1;
-      const inLeft = [-(point[1] - before[1]) / inLength, (point[0] - before[0]) / inLength];
-      scale = Math.min(2, 1 / Math.max(0.5, left[0] * inLeft[0] + left[1] * inLeft[1]));
+      const inLeft = [
+        -(point[1] - before[1]) / inLength,
+        (point[0] - before[0]) / inLength,
+      ];
+      scale = Math.min(
+        2,
+        1 / Math.max(0.5, left[0] * inLeft[0] + left[1] * inLeft[1]),
+      );
     }
 
     const d = halfWidth * scale;
@@ -345,13 +396,17 @@ function outline(line, halfWidth) {
     };
   });
 
-  const ring = [...sides.map((s) => s.left), ...sides.map((s) => s.right).reverse()];
+  const ring = [
+    ...sides.map((s) => s.left),
+    ...sides.map((s) => s.right).reverse(),
+  ];
 
   return [...ring, ring[0]];
 }
 
 function segmentsCross(a, b, c, d) {
-  const turn = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  const turn = (p, q, r) =>
+    (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
 
   return turn(a, b, c) * turn(a, b, d) < 0 && turn(c, d, a) * turn(c, d, b) < 0;
 }
@@ -360,21 +415,26 @@ function crossesItself(ring) {
   for (let i = 0; i + 1 < ring.length; i++) {
     for (let j = i + 2; j + 1 < ring.length; j++) {
       if (i === 0 && j + 2 === ring.length) continue;
-      if (segmentsCross(ring[i], ring[i + 1], ring[j], ring[j + 1])) return true;
+      if (segmentsCross(ring[i], ring[i + 1], ring[j], ring[j + 1]))
+        return true;
     }
   }
 
   return false;
 }
 
-const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+const median = (values) =>
+  [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
 const direction = (from, to) => Math.atan2(to[1] - from[1], to[0] - from[0]);
 
 function angleBetween(a, b) {
   const difference = Math.abs(a - b) % (2 * Math.PI);
 
-  return ((difference > Math.PI ? 2 * Math.PI - difference : difference) * 180) / Math.PI;
+  return (
+    ((difference > Math.PI ? 2 * Math.PI - difference : difference) * 180) /
+    Math.PI
+  );
 }
 
 // Joins stretches that continue each other, such as one lane split in two
@@ -404,7 +464,10 @@ function joinStretches(stretches) {
             distance(aEnd, line[0]) <= JOIN_DISTANCE_M &&
             angleBetween(aDirection, bDirection) <= JOIN_ANGLE_DEGREES
           ) {
-            a.line = [...aLine, ...line.slice(distance(aEnd, line[0]) < 0.5 ? 1 : 0)];
+            a.line = [
+              ...aLine,
+              ...line.slice(distance(aEnd, line[0]) < 0.5 ? 1 : 0),
+            ];
             a.gaps.push(...b.gaps);
             a.ways.push(...b.ways);
             a.name ??= b.name;
@@ -421,16 +484,22 @@ function joinStretches(stretches) {
 }
 
 function lineLength(line) {
-  return line.slice(1).reduce((sum, point, i) => sum + distance(line[i], point), 0);
+  return line
+    .slice(1)
+    .reduce((sum, point, i) => sum + distance(line[i], point), 0);
 }
 
 (async () => {
   const microsoft = await loadMicrosoftBuildings();
   const openStreetMap = loadOsmBuildings();
 
-  console.log(`Buildings: ${microsoft} from Microsoft, ${openStreetMap} from OpenStreetMap`);
+  console.log(
+    `Buildings: ${microsoft} from Microsoft, ${openStreetMap} from OpenStreetMap`,
+  );
 
-  const { elements: roads } = JSON.parse(fs.readFileSync(path.join(DOWNLOAD, "osm_roads.json"), "utf8"));
+  const { elements: roads } = JSON.parse(
+    fs.readFileSync(path.join(DOWNLOAD, "osm_roads.json"), "utf8"),
+  );
 
   let stretches = [];
 
@@ -447,7 +516,9 @@ function lineLength(line) {
       continue;
     }
 
-    const points = way.geometry.filter((p) => inBox(p.lat, p.lon, 0)).map((p) => toXY(p.lat, p.lon));
+    const points = way.geometry
+      .filter((p) => inBox(p.lat, p.lon, 0))
+      .map((p) => toXY(p.lat, p.lon));
 
     if (points.length < 2) continue;
 
@@ -473,7 +544,10 @@ function lineLength(line) {
 
   const found = stretches.flatMap((stretch) => {
     const gap = median(stretch.gaps);
-    const halfWidth = Math.min(MAX_HALF_WIDTH_M, Math.max(MIN_HALF_WIDTH_M, gap / 2));
+    const halfWidth = Math.min(
+      MAX_HALF_WIDTH_M,
+      Math.max(MIN_HALF_WIDTH_M, gap / 2),
+    );
 
     // A tight bend can fold the outline over itself, which would confuse the
     // inside check. Smoothing the line more usually fixes it, else it's left out.
@@ -507,19 +581,38 @@ function lineLength(line) {
 
   fs.writeFileSync(
     OUTPUT,
-    JSON.stringify(found.map(({ widthM: _w, lengthM: _l, ...road }) => road), null, 2) + "\n"
+    JSON.stringify(
+      found.map(({ widthM: _w, lengthM: _l, ...road }) => road),
+      null,
+      2,
+    ) + "\n",
   );
 
   const totalKm = found.reduce((sum, r) => sum + r.lengthM, 0) / 1000;
 
-  console.log(`Narrow stretches measured: ${measured}, after joining: ${stretches.length}`);
+  console.log(
+    `Narrow stretches measured: ${measured}, after joining: ${stretches.length}`,
+  );
   console.log(`Left out because a bend folded the outline: ${selfCrossing}`);
-  console.log(`Narrow roads written: ${found.length}, ${totalKm.toFixed(1)} km, to ${OUTPUT}`);
-  console.log(`With a street name: ${found.filter((r) => !/^Narrow Road \d+$/.test(r.name)).length}`);
+  console.log(
+    `Narrow roads written: ${found.length}, ${totalKm.toFixed(1)} km, to ${OUTPUT}`,
+  );
+  console.log(
+    `With a street name: ${found.filter((r) => !/^Narrow Road \d+$/.test(r.name)).length}`,
+  );
 
   // For review, alongside the output
   fs.writeFileSync(
     OUTPUT.replace(/\.json$/, ".review.json"),
-    JSON.stringify(found.map(({ id, name, widthM, lengthM }) => ({ id, name, widthM, lengthM })), null, 1)
+    JSON.stringify(
+      found.map(({ id, name, widthM, lengthM }) => ({
+        id,
+        name,
+        widthM,
+        lengthM,
+      })),
+      null,
+      1,
+    ),
   );
 })();

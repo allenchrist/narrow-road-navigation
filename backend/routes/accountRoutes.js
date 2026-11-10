@@ -36,8 +36,7 @@ const UNIQUE_VIOLATION = "23505";
 const SIGNUP_PURPOSE = "signup";
 const PASSWORD_PURPOSE = "password";
 
-const FORGOT_REPLY =
-  "If that email has an account, we've sent it a code.";
+const FORGOT_REPLY = "If that email has an account, we've sent it a code.";
 
 const NO_EMAIL_MESSAGE =
   "Email isn't set up on the server yet, so accounts can't be created.";
@@ -46,8 +45,14 @@ const signupsByAddress = createRateLimiter({ max: 10, windowMs: HOUR_MS });
 const signupsOverall = createRateLimiter({ max: 100, windowMs: HOUR_MS });
 const emailsByAddress = createRateLimiter({ max: 10, windowMs: HOUR_MS });
 const emailsToAddress = createRateLimiter({ max: 5, windowMs: HOUR_MS });
-const failedCodesByAddress = createRateLimiter({ max: 20, windowMs: FIFTEEN_MINUTES_MS });
-const failedDeletesByUser = createRateLimiter({ max: 5, windowMs: FIFTEEN_MINUTES_MS });
+const failedCodesByAddress = createRateLimiter({
+  max: 20,
+  windowMs: FIFTEEN_MINUTES_MS,
+});
+const failedDeletesByUser = createRateLimiter({
+  max: 5,
+  windowMs: FIFTEEN_MINUTES_MS,
+});
 
 const isText = (value) => typeof value === "string" && value.trim().length > 0;
 
@@ -184,7 +189,7 @@ router.post("/register/verify", async (req, res) => {
       details.username,
       details.email,
       details.passwordHash,
-      details.vehicleType
+      details.vehicleType,
     );
 
     await deleteCode(email, SIGNUP_PURPOSE);

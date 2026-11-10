@@ -52,7 +52,7 @@ function SuggestNarrowRoad() {
         if (!cancelled && vehicle?.lat != null) {
           // Doesn't move a map the driver has already searched
           setSearchLocation(
-            (current) => current ?? { lat: vehicle.lat, lon: vehicle.lon }
+            (current) => current ?? { lat: vehicle.lat, lon: vehicle.lon },
           );
         }
       } catch {
@@ -111,7 +111,7 @@ function SuggestNarrowRoad() {
             polygon: points,
             reason: reason.trim(),
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -133,25 +133,18 @@ function SuggestNarrowRoad() {
   if (submitted) {
     return (
       <div className="suggest-road-page">
-
         <div className="suggest-road-success">
-
           <div className="suggest-success-icon">
             <Icon name="check" size={32} />
           </div>
 
-          <h1>
-            Suggestion sent
-          </h1>
+          <h1>Suggestion sent</h1>
 
           <p>
-            Thanks. An administrator will review
-            your narrow road suggestion.
+            Thanks. An administrator will review your narrow road suggestion.
           </p>
 
-          <p className="suggest-success-status">
-            Pending review
-          </p>
+          <p className="suggest-success-status">Pending review</p>
 
           <button
             type="button"
@@ -160,23 +153,16 @@ function SuggestNarrowRoad() {
           >
             Back to dashboard
           </button>
-
         </div>
-
       </div>
     );
   }
 
   return (
     <div className="suggest-road-page">
-
-      <SuggestHeader
-        search={search}
-        onBack={backToDashboard}
-      />
+      <SuggestHeader search={search} onBack={backToDashboard} />
 
       <div className="suggest-road-content">
-
         <SuggestMap
           search={search}
           drawing={drawing}
@@ -198,14 +184,10 @@ function SuggestNarrowRoad() {
           onReasonChange={setReason}
           onStartDrawing={startDrawing}
           onCancelDrawing={cancelDrawing}
-          onUndo={() =>
-            setPoints((previous) => previous.slice(0, -1))
-          }
+          onUndo={() => setPoints((previous) => previous.slice(0, -1))}
           onSubmit={submitSuggestion}
         />
-
       </div>
-
     </div>
   );
 }
