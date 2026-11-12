@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="440" viewBox="0 0 200 440">
+<defs>
+<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".3" stop-color="#f5f7fa"/><stop offset=".65" stop-color="#dde2e8"/><stop offset="1" stop-color="#8d969f"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40566a"/><stop offset=".35" stop-color="#172635"/><stop offset="1" stop-color="#02070c"/></linearGradient>
+<linearGradient id="light" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#7fd6ff"/></linearGradient>
+<linearGradient id="tail" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ff7777"/><stop offset="1" stop-color="#b30c20"/></linearGradient>
+</defs>
+<rect x="6" y="64" width="20" height="62" rx="7" fill="#0c1218"/><rect x="174" y="64" width="20" height="62" rx="7" fill="#0c1218"/><rect x="6" y="318" width="20" height="62" rx="7" fill="#0c1218"/><rect x="174" y="318" width="20" height="62" rx="7" fill="#0c1218"/>
+<rect x="2" y="96" width="20" height="10" rx="4" fill="#707a84"/><rect x="178" y="96" width="20" height="10" rx="4" fill="#707a84"/>
+<rect x="16" y="8" width="168" height="424" rx="34" fill="url(#body)" stroke="#707a84" stroke-width="4"/>
+<path d="M34 92C36 64 52 46 76 44H124C148 46 164 64 166 92C122 82 78 82 34 92Z" fill="url(#glass)"/>
+<rect x="44" y="14" width="26" height="10" rx="5" fill="url(#light)"/><rect x="130" y="14" width="26" height="10" rx="5" fill="url(#light)"/>
+<rect x="34" y="104" width="132" height="312" rx="16" fill="#f7f9fb" stroke="#c9d0d7" stroke-width="3"/>
+<rect x="46" y="114" width="54" height="22" rx="8" fill="#e0242f"/><rect x="100" y="114" width="54" height="22" rx="8" fill="#2f7cf6"/>
+<rect x="80" y="214" width="40" height="112" rx="5" fill="#e0242f"/><rect x="44" y="250" width="112" height="40" rx="5" fill="#e0242f"/>
+<rect x="16" y="150" width="10" height="230" rx="4" fill="#e0242f"/><rect x="174" y="150" width="10" height="230" rx="4" fill="#e0242f"/>
+<rect x="40" y="420" width="30" height="8" rx="4" fill="url(#tail)"/><rect x="130" y="420" width="30" height="8" rx="4" fill="url(#tail)"/>
+</svg>

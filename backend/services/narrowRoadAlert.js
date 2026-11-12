@@ -4,6 +4,7 @@ const {
   distanceBetween,
   getTravelBearing,
 } = require("../utils/geo");
+const { isPriorityVehicle } = require("../utils/vehicleTypes");
 
 const NO_ALERT = { kind: "NONE", level: "none" };
 
@@ -70,21 +71,40 @@ function updateRoadEntries(previousEntries, insideRoadIds, lastCheckedAt, now) {
 }
 
 /**
- * The vehicle that entered first keeps going. Comparing exact times, with the
- * ID only for an exact tie, gives every vehicle a fixed place in the order, so
- * three or more vehicles can never all be told to give way to each other.
+ * A priority vehicle, such as an ambulance, keeps going whoever came first.
+ * Otherwise, or between two priority vehicles, the vehicle that entered first
+ * keeps going. Comparing exact times, with the ID only for an exact tie, gives
+ * every vehicle a fixed place in the order, so three or more vehicles can
+ * never all be told to give way to each other.
+ *
+ * Returns the winner's ID, and whether priority decided it.
  */
 function chooseRightOfWay(a, b, roadIds) {
+  const aPriority = isPriorityVehicle(a.vehicleType);
+  const bPriority = isPriorityVehicle(b.vehicleType);
+
+  if (aPriority !== bPriority) {
+    return {
+      winnerId: aPriority ? a.vehicleId : b.vehicleId,
+      byPriority: true,
+    };
+  }
+
   const entered = (vehicle) =>
     Math.min(...roadIds.map((id) => vehicle.roadEnteredAt[id]));
 
   const difference = entered(a) - entered(b);
 
-  if (difference !== 0) {
-    return difference < 0 ? a.vehicleId : b.vehicleId;
-  }
+  const winnerId =
+    difference !== 0
+      ? difference < 0
+        ? a.vehicleId
+        : b.vehicleId
+      : a.vehicleId < b.vehicleId
+        ? a.vehicleId
+        : b.vehicleId;
 
-  return a.vehicleId < b.vehicleId ? a.vehicleId : b.vehicleId;
+  return { winnerId, byPriority: false };
 }
 
 /**
@@ -119,7 +139,7 @@ function createRightOfWayTracker() {
 
       if (!noConflict) {
         pairs.set(key, {
-          winnerId: chooseRightOfWay(a, b, roadIds),
+          ...chooseRightOfWay(a, b, roadIds),
           passed: false,
         });
       }
@@ -174,7 +194,8 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   const mustGiveWayTo = [];
   const givingWay = [];
   const passedBy = [];
-  let vehicleEntering = false;
+  const entering = [];
+  let byPriority = false;
 
   for (const other of others) {
     const pair = rightOfWay.get(vehicle, other);
@@ -184,6 +205,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
 
       if (!pair.passed) {
         (won ? givingWay : mustGiveWayTo).push(other);
+        byPriority ||= pair.byPriority;
       } else if (!won) {
         passedBy.push(other);
       }
@@ -191,7 +213,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
       getRelation(vehicle, other) !== "SAME_DIRECTION" &&
       other.approachingRoads.some((road) => roadIds.has(road.id))
     ) {
-      vehicleEntering = true;
+      entering.push(other);
     }
   }
 
@@ -205,12 +227,18 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
     otherVehicleType:
       conflicts.length === 1 ? (conflicts[0].vehicleType ?? null) : null,
     otherCount: conflicts.length,
+
+    // An ambulance decided it, rather than who came first
+    byPriority,
   });
 
   if (mustGiveWayTo.length > 0)
     return alert("GIVE_WAY", "danger", mustGiveWayTo);
   if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", givingWay);
-  if (vehicleEntering) return alert("VEHICLE_ENTERING", "warning");
+
+  // Says what is coming, so an approaching ambulance is named
+  if (entering.length > 0)
+    return alert("VEHICLE_ENTERING", "warning", entering);
 
   // The driver who gave way is told when they can go. Like the instruction
   // before it, this lasts until the two no longer share the road.

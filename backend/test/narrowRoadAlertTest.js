@@ -98,6 +98,53 @@ function kindsAfterUpdate(tracker, vehicles) {
 }
 
 const tests = {
+  "an ambulance that entered last still has right of way": () => {
+    const first = { ...insideEastbound(), vehicleType: "car" };
+    const ambulance = { ...insideWestbound(), vehicleType: "ambulance" };
+    const tracker = createRightOfWayTracker();
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, ambulance]), [
+      "GIVE_WAY",
+      "RIGHT_OF_WAY",
+    ]);
+    assert.strictEqual(
+      buildNarrowRoadAlert(first, [ambulance], tracker).byPriority,
+      true,
+    );
+    assert.strictEqual(
+      buildNarrowRoadAlert(first, [ambulance], tracker).otherVehicleType,
+      "ambulance",
+    );
+  },
+  "between two ambulances, the first in keeps going": () => {
+    const first = { ...insideEastbound(), vehicleType: "ambulance" };
+    const later = { ...insideWestbound(), vehicleType: "ambulance" };
+    const tracker = createRightOfWayTracker();
+    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, later]), [
+      "RIGHT_OF_WAY",
+      "GIVE_WAY",
+    ]);
+    assert.strictEqual(
+      buildNarrowRoadAlert(later, [first], tracker).byPriority,
+      false,
+    );
+  },
+  "a normal meeting isn't marked as priority": () => {
+    const first = { ...insideEastbound(), vehicleType: "car" };
+    const later = { ...insideWestbound(), vehicleType: "bus" };
+    const tracker = createRightOfWayTracker();
+    tracker.update([first, later]);
+    assert.strictEqual(
+      buildNarrowRoadAlert(later, [first], tracker).byPriority,
+      false,
+    );
+  },
+  "an approaching ambulance is named": () => {
+    const inside = insideEastbound();
+    const ambulance = { ...aheadWestbound(), vehicleType: "ambulance" };
+    const alert = alertFor(inside, [ambulance]);
+    assert.strictEqual(alert.kind, "VEHICLE_ENTERING");
+    assert.strictEqual(alert.otherVehicleType, "ambulance");
+  },
   "far away gets no alert": () => {
     assert.strictEqual(kind(vehicleAt(11.01, 77.01, MOVING, EAST)), "NONE");
   },

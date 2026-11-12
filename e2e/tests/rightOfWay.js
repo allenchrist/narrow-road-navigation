@@ -2,6 +2,7 @@
 module.exports = async ({
   SITE,
   API,
+  ADMIN_PASSWORD,
   check,
   sleep,
   post,
@@ -105,6 +106,41 @@ module.exports = async ({
     "the road you're in is outlined on the map",
     (await carB.$$(".cv-current-road")).length > 0,
   );
+
+  // The admin page shows both cars live, with their alerts
+  const { token: adminToken } = (
+    await post("/api/admin/login", { password: ADMIN_PASSWORD })
+  ).body;
+  const admin = await newPage();
+  await admin.goto(`${SITE}/`, { waitUntil: "domcontentloaded" });
+  await admin.evaluate(
+    (token) => sessionStorage.setItem("adminToken", token),
+    adminToken,
+  );
+  await admin.goto(`${SITE}/admin`, { waitUntil: "domcontentloaded" });
+  await admin.waitForSelector(".admin-tabs");
+  await admin.evaluate(() =>
+    [...document.querySelectorAll(".admin-tabs button")]
+      .find((tab) => tab.innerText.startsWith("Live"))
+      .click(),
+  );
+  await sleep(3000);
+  const liveText = await admin.evaluate(
+    () => document.querySelector(".admin-tab-panel").innerText,
+  );
+  check(
+    "the admin page lists both cars live",
+    (await admin.$$(".admin-live-item")).length === 2,
+  );
+  check(
+    "it shows each car's driver and alert",
+    liveText.includes("sim_car_b") && liveText.includes("Give way"),
+  );
+  check(
+    "the cars are on the admin map",
+    (await admin.$$(".cv-marker-other")).length === 2,
+  );
+  await admin.close();
 
   // The top bar says when a position is getting old
   const gpsOf = (page) =>

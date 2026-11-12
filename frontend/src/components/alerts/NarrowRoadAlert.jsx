@@ -37,7 +37,8 @@ const MESSAGES = {
     icon: "car",
     tone: "warning",
     title: "Vehicle about to enter",
-    detail: () => "Slow down, another vehicle is approaching this road",
+    detail: (other) =>
+      `Slow down, ${other === "the other vehicle" ? "another vehicle" : other} is approaching this road`,
     scene: { other: "Approaching", own: "In the road", outside: true },
   },
   ROAD_CLEAR: {
@@ -53,6 +54,24 @@ const MESSAGES = {
     tone: "caution",
     title: "Narrow road",
     detail: () => "Proceed with caution",
+  },
+};
+
+// When an ambulance decided who goes, rather than who came first
+const PRIORITY_MESSAGES = {
+  GIVE_WAY: {
+    detail: (other) => `Pull over and let ${other} pass`,
+    reason: (other) => `${other} has priority`,
+    scene: {
+      other: "Priority",
+      own: "Wait here",
+      goes: "other",
+      stopLine: true,
+    },
+  },
+  RIGHT_OF_WAY: {
+    detail: () => "Continue, others are giving way to you",
+    scene: { other: "Giving way", own: "Priority", goes: "own" },
   },
 };
 
@@ -164,11 +183,15 @@ function Steps({ active }) {
 }
 
 function NarrowRoadAlert({ alert, vehicle }) {
-  const message = MESSAGES[alert?.kind];
+  const basic = MESSAGES[alert?.kind];
 
-  if (!message) {
+  if (!basic) {
     return null;
   }
+
+  const message = alert.byPriority
+    ? { ...basic, ...PRIORITY_MESSAGES[alert.kind] }
+    : basic;
 
   const other = otherName(alert);
 

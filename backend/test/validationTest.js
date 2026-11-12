@@ -35,7 +35,14 @@ const tests = {
     assert.strictEqual(validateRegistration(good).vehicleType, "car");
   },
   "every vehicle type is accepted": () => {
-    for (const vehicleType of ["car", "truck", "lorry", "bus", "auto"]) {
+    for (const vehicleType of [
+      "car",
+      "truck",
+      "lorry",
+      "bus",
+      "auto",
+      "ambulance",
+    ]) {
       assert.strictEqual(
         validateRegistration({ ...good, vehicleType }).vehicleType,
         vehicleType,

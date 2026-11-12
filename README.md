@@ -44,7 +44,9 @@ The right of way, give way and road clear alerts show the narrow road from the s
 
 ### Vehicle types
 
-Each driver chooses a car, truck, lorry, bus or auto when signing up in the app, and can change it later. Older accounts count as cars. The type sets the vehicle's image on the map and how the panel and alerts name it, and it doesn't affect who gives way.
+Each driver chooses a car, truck, lorry, bus, auto or ambulance when signing up in the app, and can change it later. Older accounts count as cars. The type sets the vehicle's image on the map and how the panel and alerts name it.
+
+An **ambulance** is a priority vehicle: it always has right of way, even if it entered last, and the other driver is told to pull over and let it pass. Between two ambulances, the usual rule applies. Anyone can choose this type, so in real use it would need checking.
 
 ### Who gives way
 
@@ -221,7 +223,7 @@ These go in `backend/.env`, or in the host's environment settings.
 | `/` | Driver login, with **Forgot password?** to change a password with an emailed code. Accounts are created and deleted in the phone app |
 | `/your-username` | The dashboard. The full-screen button is in the top bar, and the menu has Suggest a narrow road and Log out |
 | `/your-username/suggest-narrow-road` | Mark a narrow road on the map and send it for review |
-| `/admin` | Mark, edit and delete roads, and approve or reject suggestions |
+| `/admin` | **Live** shows every connected vehicle on the map and in a list, with its driver and the alert its screen shows, refreshed every 2 seconds. Also mark, edit and delete roads, and approve or reject suggestions, including roads drivers recorded in the app |
 
 ## Run the tests
 

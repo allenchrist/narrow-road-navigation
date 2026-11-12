@@ -2,9 +2,11 @@ import { useState } from "react";
 
 import AdminHeader from "../components/admin/AdminHeader";
 import AdminMap from "../components/admin/AdminMap";
+import LiveVehicleList from "../components/admin/LiveVehicleList";
 import RoadList from "../components/admin/RoadList";
 import SuggestionList from "../components/admin/SuggestionList";
 
+import { useLiveVehicles } from "../hooks/useLiveVehicles";
 import { useLocationSearch } from "../hooks/useLocationSearch";
 import { useRoadEditor } from "../hooks/useRoadEditor";
 import { useSuggestionReview } from "../hooks/useSuggestionReview";
@@ -16,6 +18,11 @@ function AdminPage({ onSignOut }) {
   const search = useLocationSearch(map);
   const editor = useRoadEditor(map);
   const reviewState = useSuggestionReview(map, editor.loadRoads);
+  const live = useLiveVehicles();
+
+  function showVehicle(vehicle) {
+    map?.setView([vehicle.lat, vehicle.lon], Math.max(map.getZoom(), 18));
+  }
 
   // Clicking a suggestion on the map also shows it in the list
   const review = {
@@ -52,6 +59,7 @@ function AdminPage({ onSignOut }) {
           search={search}
           editor={editor}
           review={review}
+          liveVehicles={live.vehicles}
           onMapReady={setMap}
         />
 
@@ -78,6 +86,7 @@ function AdminPage({ onSignOut }) {
 
           <div className="admin-tabs" role="tablist">
             {[
+              ["live", "Live", live.vehicles.length],
               ["suggestions", "Suggestions", review.pendingSuggestions.length],
               ["roads", "Saved roads", editor.roads.length],
             ].map(([id, label, count]) => (
@@ -96,7 +105,9 @@ function AdminPage({ onSignOut }) {
           </div>
 
           <div className="admin-tab-panel" role="tabpanel">
-            {tab === "suggestions" ? (
+            {tab === "live" ? (
+              <LiveVehicleList live={live} onShow={showVehicle} />
+            ) : tab === "suggestions" ? (
               <SuggestionList review={review} />
             ) : (
               <RoadList editor={editor} onEditRoad={startEditingRoad} />

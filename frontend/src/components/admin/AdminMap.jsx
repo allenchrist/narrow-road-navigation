@@ -8,10 +8,12 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
+import { ALERT_TINTS } from "../../utils/alerts";
 import SearchMatches from "../common/SearchMatches";
+import VehicleMarker from "../map/VehicleMarker";
 import { DrawingLayer, FlyToLocation, MapController } from "../map/mapHelpers";
 
-function AdminMap({ search, editor, review, onMapReady }) {
+function AdminMap({ search, editor, review, liveVehicles, onMapReady }) {
   const { searchLocation, searchError } = search;
   const { roads, drawing, currentPolygon, addPoint } = editor;
   const { pendingSuggestions, selectedSuggestionId, viewSuggestion } = review;
@@ -77,6 +79,37 @@ function AdminMap({ search, editor, review, onMapReady }) {
             />
           );
         })}
+
+        {/* Live vehicles, each ringed in the colour of its alert */}
+
+        {liveVehicles.map((vehicle) => {
+          const tint = vehicle.active
+            ? ALERT_TINTS[vehicle.narrowRoadAlert?.kind]
+            : null;
+
+          return tint ? (
+            <CircleMarker
+              key={`ring-${vehicle.vehicleId}`}
+              center={[vehicle.lat, vehicle.lon]}
+              radius={24}
+              interactive={false}
+              pathOptions={{
+                color: tint,
+                weight: 2,
+                fillColor: tint,
+                fillOpacity: 0.18,
+              }}
+            />
+          ) : null;
+        })}
+
+        {liveVehicles.map((vehicle) => (
+          <VehicleMarker
+            key={`vehicle-${vehicle.vehicleId}`}
+            vehicleData={vehicle}
+            isEgo={false}
+          />
+        ))}
 
         {/* Search result */}
 

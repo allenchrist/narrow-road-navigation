@@ -73,8 +73,9 @@ module.exports = async ({
       items.map((item) => Number(item.innerText)),
     );
 
-  const roads = async () => (await counts())[1];
-  const pending = async () => (await counts())[0];
+  // The tabs are Live, Suggestions and Saved roads, in that order
+  const roads = async () => (await counts())[2];
+  const pending = async () => (await counts())[1];
 
   const clickText = async (label) => {
     const clicked = await page.evaluate((target) => {

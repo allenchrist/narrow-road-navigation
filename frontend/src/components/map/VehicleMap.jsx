@@ -15,6 +15,7 @@ import {
   useSmoothPosition,
   useSteadyTarget,
 } from "../../hooks/useSmoothPosition";
+import { ALERT_TINTS } from "../../utils/alerts";
 import { isMoving } from "../../utils/display";
 import Icon from "../common/Icon";
 import { MapController } from "./mapHelpers";
@@ -36,16 +37,6 @@ const ALERT_OFFSET_SHARE = 0.18;
 // Shown until the first GPS position arrives
 const DEFAULT_CENTER = [20, 78];
 const DEFAULT_ZOOM = 5;
-
-// The road you're in is tinted to match the alert card, softly enough that
-// the map underneath still shows through
-const ROAD_TINTS = {
-  GIVE_WAY: "#ff5c63",
-  RIGHT_OF_WAY: "#43d17a",
-  ROAD_CLEAR: "#43d17a",
-  VEHICLE_ENTERING: "#ff9b3d",
-  IN_NARROW_ROAD: "#f2b84b",
-};
 
 const TILE_LAYERS = {
   map: {
@@ -156,7 +147,9 @@ function FollowEgo({
  * so the band is drawn wider than the road itself, in screen pixels.
  */
 function CurrentRoads({ roads, kind }) {
-  const tint = ROAD_TINTS[kind] ?? ROAD_TINTS.IN_NARROW_ROAD;
+  // The road you're in is tinted to match the alert card, softly enough that
+  // the map underneath still shows through
+  const tint = ALERT_TINTS[kind] ?? ALERT_TINTS.IN_NARROW_ROAD;
 
   return roads.flatMap((road) => [
     <Polygon
