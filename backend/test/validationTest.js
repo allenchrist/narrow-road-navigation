@@ -41,7 +41,7 @@ const tests = {
       "lorry",
       "bus",
       "auto",
-      "ambulance",
+      "priority",
     ]) {
       assert.strictEqual(
         validateRegistration({ ...good, vehicleType }).vehicleType,

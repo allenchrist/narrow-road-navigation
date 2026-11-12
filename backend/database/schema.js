@@ -26,6 +26,11 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS vehicle_type TEXT NOT NULL DEFAULT 'car';
   `);
 
+  // The ambulance type was widened to every priority vehicle
+  await pool.query(`
+    UPDATE users SET vehicle_type = 'priority' WHERE vehicle_type = 'ambulance';
+  `);
+
   // Raised when a password changes, which ends every older login
   await pool.query(`
     ALTER TABLE users

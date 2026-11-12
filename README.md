@@ -44,9 +44,9 @@ The right of way, give way and road clear alerts show the narrow road from the s
 
 ### Vehicle types
 
-Each driver chooses a car, truck, lorry, bus, auto or ambulance when signing up in the app, and can change it later. Older accounts count as cars. The type sets the vehicle's image on the map and how the panel and alerts name it.
+Each driver chooses a car, truck, lorry, bus, auto or priority vehicle when signing up in the app, and can change it later. Older accounts count as cars. The type sets the vehicle's image on the map and how the panel and alerts name it.
 
-An **ambulance** is a priority vehicle: it always has right of way, even if it entered last, and the other driver is told to pull over and let it pass. Between two ambulances, the usual rule applies. Anyone can choose this type, so in real use it would need checking.
+A **priority vehicle** is any emergency vehicle, such as an ambulance, fire engine or police car. It always has right of way, even if it entered last, and the other driver is told to pull over and let it pass. Between two priority vehicles, the usual rule applies. Anyone can choose this type, so in real use it would need checking. Accounts saved as the earlier ambulance type become priority vehicles when the server starts.
 
 ### Who gives way
 

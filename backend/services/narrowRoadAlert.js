@@ -71,7 +71,8 @@ function updateRoadEntries(previousEntries, insideRoadIds, lastCheckedAt, now) {
 }
 
 /**
- * A priority vehicle, such as an ambulance, keeps going whoever came first.
+ * A priority vehicle, such as an ambulance or fire engine, keeps going
+ * whoever came first.
  * Otherwise, or between two priority vehicles, the vehicle that entered first
  * keeps going. Comparing exact times, with the ID only for an exact tie, gives
  * every vehicle a fixed place in the order, so three or more vehicles can
@@ -228,7 +229,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
       conflicts.length === 1 ? (conflicts[0].vehicleType ?? null) : null,
     otherCount: conflicts.length,
 
-    // An ambulance decided it, rather than who came first
+    // A priority vehicle decided it, rather than who came first
     byPriority,
   });
 
@@ -236,7 +237,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
     return alert("GIVE_WAY", "danger", mustGiveWayTo);
   if (givingWay.length > 0) return alert("RIGHT_OF_WAY", "warning", givingWay);
 
-  // Says what is coming, so an approaching ambulance is named
+  // Says what is coming, so an approaching priority vehicle is named
   if (entering.length > 0)
     return alert("VEHICLE_ENTERING", "warning", entering);
 

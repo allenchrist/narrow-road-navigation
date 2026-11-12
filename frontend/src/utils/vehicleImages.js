@@ -9,8 +9,9 @@ import otherCar from "../assets/other-car.svg";
 import otherLorry from "../assets/other-lorry.svg";
 import otherTruck from "../assets/other-truck.svg";
 
-// An ambulance looks the same whoever drives it, so it's always recognised
-import ambulance from "../assets/ambulance.svg";
+// An emergency vehicle looks the same whoever drives it, so it's always
+// recognised: white, with red and blue lights and markings
+import priority from "../assets/priority.svg";
 
 // Seen from above, facing up. Your own vehicle is white and others amber.
 // Sizes are for your own on the map: a bus looks longer than a car and an
@@ -21,7 +22,7 @@ export const VEHICLE_IMAGES = {
   lorry: { own: egoLorry, other: otherLorry, width: 34, height: 82 },
   bus: { own: egoBus, other: otherBus, width: 32, height: 83 },
   auto: { own: egoAuto, other: otherAuto, width: 32, height: 53 },
-  ambulance: { own: ambulance, other: ambulance, width: 34, height: 75 },
+  priority: { own: priority, other: priority, width: 34, height: 75 },
 };
 
 export function vehicleImage(vehicleType) {

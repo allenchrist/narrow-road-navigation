@@ -57,13 +57,14 @@ const MESSAGES = {
   },
 };
 
-// When an ambulance decided who goes, rather than who came first
+// When a priority vehicle, such as an ambulance, decided who goes, rather
+// than who came first
 const PRIORITY_MESSAGES = {
   GIVE_WAY: {
     detail: (other) => `Pull over and let ${other} pass`,
-    reason: (other) => `${other} has priority`,
+    reason: (other) => `${other} has right of way`,
     scene: {
-      other: "Priority",
+      other: "Goes first",
       own: "Wait here",
       goes: "other",
       stopLine: true,
@@ -71,9 +72,12 @@ const PRIORITY_MESSAGES = {
   },
   RIGHT_OF_WAY: {
     detail: () => "Continue, others are giving way to you",
-    scene: { other: "Giving way", own: "Priority", goes: "own" },
+    scene: { other: "Giving way", own: "Goes first", goes: "own" },
   },
 };
+
+// Shorter names for the road picture, where space is tight
+const SCENE_NAMES = { priority: "Priority" };
 
 // "the bus", or "other vehicles" when there is more than one
 function otherName(alert) {
@@ -108,7 +112,11 @@ function SceneVehicle({ type, own, facing, label, highlight }) {
       </span>
 
       <span className="cv-scene-label">
-        <b>{own ? "You" : capitalize(VEHICLE_LABELS[type] ?? "Vehicle")}</b>
+        <b>
+          {own
+            ? "You"
+            : (SCENE_NAMES[type] ?? VEHICLE_LABELS[type] ?? "Vehicle")}
+        </b>
         {label}
       </span>
     </div>

@@ -15,7 +15,7 @@ export const VEHICLE_LABELS = {
   lorry: "Lorry",
   bus: "Bus",
   auto: "Auto",
-  ambulance: "Ambulance",
+  priority: "Priority vehicle",
 };
 
 // VEHICLE_002 on a bus account becomes Bus 002

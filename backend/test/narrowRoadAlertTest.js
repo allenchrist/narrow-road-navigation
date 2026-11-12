@@ -98,26 +98,26 @@ function kindsAfterUpdate(tracker, vehicles) {
 }
 
 const tests = {
-  "an ambulance that entered last still has right of way": () => {
+  "a priority vehicle that entered last still has right of way": () => {
     const first = { ...insideEastbound(), vehicleType: "car" };
-    const ambulance = { ...insideWestbound(), vehicleType: "ambulance" };
+    const priorityVehicle = { ...insideWestbound(), vehicleType: "priority" };
     const tracker = createRightOfWayTracker();
-    assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, ambulance]), [
-      "GIVE_WAY",
-      "RIGHT_OF_WAY",
-    ]);
+    assert.deepStrictEqual(
+      kindsAfterUpdate(tracker, [first, priorityVehicle]),
+      ["GIVE_WAY", "RIGHT_OF_WAY"],
+    );
     assert.strictEqual(
-      buildNarrowRoadAlert(first, [ambulance], tracker).byPriority,
+      buildNarrowRoadAlert(first, [priorityVehicle], tracker).byPriority,
       true,
     );
     assert.strictEqual(
-      buildNarrowRoadAlert(first, [ambulance], tracker).otherVehicleType,
-      "ambulance",
+      buildNarrowRoadAlert(first, [priorityVehicle], tracker).otherVehicleType,
+      "priority",
     );
   },
-  "between two ambulances, the first in keeps going": () => {
-    const first = { ...insideEastbound(), vehicleType: "ambulance" };
-    const later = { ...insideWestbound(), vehicleType: "ambulance" };
+  "between two priority vehicles, the first in keeps going": () => {
+    const first = { ...insideEastbound(), vehicleType: "priority" };
+    const later = { ...insideWestbound(), vehicleType: "priority" };
     const tracker = createRightOfWayTracker();
     assert.deepStrictEqual(kindsAfterUpdate(tracker, [first, later]), [
       "RIGHT_OF_WAY",
@@ -138,12 +138,12 @@ const tests = {
       false,
     );
   },
-  "an approaching ambulance is named": () => {
+  "an approaching priority vehicle is named": () => {
     const inside = insideEastbound();
-    const ambulance = { ...aheadWestbound(), vehicleType: "ambulance" };
-    const alert = alertFor(inside, [ambulance]);
+    const priorityVehicle = { ...aheadWestbound(), vehicleType: "priority" };
+    const alert = alertFor(inside, [priorityVehicle]);
     assert.strictEqual(alert.kind, "VEHICLE_ENTERING");
-    assert.strictEqual(alert.otherVehicleType, "ambulance");
+    assert.strictEqual(alert.otherVehicleType, "priority");
   },
   "far away gets no alert": () => {
     assert.strictEqual(kind(vehicleAt(11.01, 77.01, MOVING, EAST)), "NONE");

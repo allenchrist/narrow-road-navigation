@@ -1,9 +1,10 @@
 const DEFAULT_VEHICLE_TYPE = "car";
 
-const VEHICLE_TYPES = ["car", "truck", "lorry", "bus", "auto", "ambulance"];
+// "priority" covers every emergency vehicle: ambulances, fire engines, police
+const VEHICLE_TYPES = ["car", "truck", "lorry", "bus", "auto", "priority"];
 
 // These always get right of way in a narrow road
-const PRIORITY_VEHICLE_TYPES = ["ambulance"];
+const PRIORITY_VEHICLE_TYPES = ["priority"];
 
 const VEHICLE_TYPE_ERROR = `Vehicle type must be one of: ${VEHICLE_TYPES.join(", ")}.`;
 

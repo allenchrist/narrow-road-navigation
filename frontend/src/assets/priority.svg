@@ -12,7 +12,7 @@
 <rect x="44" y="14" width="26" height="10" rx="5" fill="url(#light)"/><rect x="130" y="14" width="26" height="10" rx="5" fill="url(#light)"/>
 <rect x="34" y="104" width="132" height="312" rx="16" fill="#f7f9fb" stroke="#c9d0d7" stroke-width="3"/>
 <rect x="46" y="114" width="54" height="22" rx="8" fill="#e0242f"/><rect x="100" y="114" width="54" height="22" rx="8" fill="#2f7cf6"/>
-<rect x="80" y="214" width="40" height="112" rx="5" fill="#e0242f"/><rect x="44" y="250" width="112" height="40" rx="5" fill="#e0242f"/>
-<rect x="16" y="150" width="10" height="230" rx="4" fill="#e0242f"/><rect x="174" y="150" width="10" height="230" rx="4" fill="#e0242f"/>
+<rect x="44" y="236" width="28" height="28" fill="#e0242f"/><rect x="72" y="236" width="28" height="28" fill="#2f7cf6"/><rect x="100" y="236" width="28" height="28" fill="#e0242f"/><rect x="128" y="236" width="28" height="28" fill="#2f7cf6"/><rect x="44" y="264" width="28" height="28" fill="#2f7cf6"/><rect x="72" y="264" width="28" height="28" fill="#e0242f"/><rect x="100" y="264" width="28" height="28" fill="#2f7cf6"/><rect x="128" y="264" width="28" height="28" fill="#e0242f"/>
+<rect x="16" y="150" width="10" height="230" rx="4" fill="#e0242f"/><rect x="174" y="150" width="10" height="230" rx="4" fill="#2f7cf6"/>
 <rect x="40" y="420" width="30" height="8" rx="4" fill="url(#tail)"/><rect x="130" y="420" width="30" height="8" rx="4" fill="url(#tail)"/>
 </svg>
