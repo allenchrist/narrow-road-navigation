@@ -156,8 +156,9 @@ function CurrentRoads({ roads, kind }) {
       key={`${road.id}-band-${tint}`}
       positions={road.polygon}
       interactive={false}
+      // Applied when the shape is created, so it isn't a path option
+      className="cv-current-road"
       pathOptions={{
-        className: "cv-current-road",
         color: tint,
         weight: 18,
         opacity: 0.18,
@@ -169,8 +170,8 @@ function CurrentRoads({ roads, kind }) {
       key={`${road.id}-line-${tint}`}
       positions={road.polygon}
       interactive={false}
+      className="cv-current-road"
       pathOptions={{
-        className: "cv-current-road",
         color: tint,
         weight: 1.5,
         opacity: 0.6,

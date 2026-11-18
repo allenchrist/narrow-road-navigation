@@ -366,6 +366,8 @@ module.exports = async ({
     "logging out forgets the login",
     (await page.evaluate(() => localStorage.getItem("driverSession"))) === null,
   );
+  // The address changes a moment before the login page has drawn
+  await page.waitForSelector('input[type="password"]');
   check(
     "the login form starts empty",
     (await page.$eval('input[type="password"]', (input) => input.value)) === "",
@@ -436,6 +438,7 @@ module.exports = async ({
     ),
   );
 
+  await resetPage.waitForSelector('input[type="password"]');
   await resetPage.type('input[type="text"]', "web_reset");
   await resetPage.type('input[type="password"]', "web-reset-new-password");
   await resetPage.keyboard.press("Enter");

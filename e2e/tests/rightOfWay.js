@@ -5,6 +5,7 @@ module.exports = async ({
   ADMIN_PASSWORD,
   check,
   sleep,
+  waitUntil,
   post,
   newPage,
   logIn,
@@ -104,7 +105,7 @@ module.exports = async ({
   );
   check(
     "the road you're in is outlined on the map",
-    (await carB.$$(".cv-current-road")).length > 0,
+    await waitUntil(async () => (await carB.$$(".cv-current-road")).length > 0),
   );
 
   // The admin page shows both cars live, with their alerts

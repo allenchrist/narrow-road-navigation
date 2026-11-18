@@ -231,9 +231,37 @@ async function main() {
       };
     }
 
+    // A built copy, as Vercel serves it. The development server compiles
+    // pages as they open and can reload them, which made tests flaky.
+    const siteDist = path.join(os.tmpdir(), "connected-vehicle-e2e-site");
+    const build = spawnSync(
+      process.execPath,
+      [
+        "node_modules/vite/bin/vite.js",
+        "build",
+        "--outDir",
+        siteDist,
+        "--emptyOutDir",
+      ],
+      {
+        cwd: FRONTEND,
+        env: { ...process.env, VITE_BACKEND_URL: API },
+        encoding: "utf8",
+      },
+    );
+
+    if (build.status !== 0) {
+      throw new Error(
+        `The website didn't build:\n${build.stdout}${build.stderr}`,
+      );
+    }
+
     const site = start(
       [
         "node_modules/vite/bin/vite.js",
+        "preview",
+        "--outDir",
+        siteDist,
         "--port",
         String(SITE_PORT),
         "--strictPort",
@@ -262,8 +290,11 @@ async function main() {
       }
     };
 
+    // Each page has its own storage, like a separate browser, so two drivers
+    // logged in at once don't overwrite each other's login
     async function newPage({ width = 1280, height = 800, before } = {}) {
-      const page = await browser.newPage();
+      const context = await browser.createBrowserContext();
+      const page = await context.newPage();
 
       await page.setViewport({ width, height });
 
