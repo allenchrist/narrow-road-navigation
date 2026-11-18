@@ -27,6 +27,7 @@ function PageLoading() {
 
 import "./styles/dashboard.css";
 import "./styles/pages.css";
+import "./styles/light.css";
 
 function App() {
   return (

@@ -1,0 +1,111 @@
+/* =========================================================
+   LIGHT MODE
+   The same layout with light colours, and the map in its
+   normal colours. Dark mode is the default and is unchanged.
+   ========================================================= */
+
+:root[data-theme="light"] {
+  --cv-bg: #f4f6f9;
+  --cv-surface: rgba(255, 255, 255, 0.95);
+  --cv-surface-solid: #ffffff;
+  --cv-raised: #eef2f6;
+  --cv-border: #d6dde4;
+
+  --cv-text: #101820;
+  --cv-text-2: #48566a;
+  --cv-text-3: #6b7886;
+
+  /* Darker than in dark mode, so it reads on white */
+  --cv-accent: #0a7fc0;
+  --cv-on-accent: #ffffff;
+  --cv-good: #1d9a52;
+  --cv-warn: #b7791f;
+  --cv-bad: #d93a42;
+
+  --cv-shadow: 0 6px 24px rgba(16, 24, 32, 0.12);
+
+  /* Used by the page background outside the car screen */
+  --bg-primary: #f4f6f9;
+  --text-primary: #101820;
+  --accent: #0a7fc0;
+
+  color-scheme: light;
+}
+
+/* The map in its normal colours */
+:root[data-theme="light"] .cv-map--map .leaflet-tile {
+  filter: none;
+}
+
+/* A soft fade at the map's edges, light instead of dark */
+:root[data-theme="light"] .cv-map::after {
+  background:
+    linear-gradient(to bottom, rgba(244, 246, 249, 0.6), transparent 22%),
+    linear-gradient(to top, rgba(244, 246, 249, 0.5), transparent 18%),
+    linear-gradient(to right, rgba(244, 246, 249, 0.5), transparent 30%);
+}
+
+/* Screens laid over the map, such as "Waiting for your phone" */
+:root[data-theme="light"] .cv-overlay {
+  background: rgba(244, 246, 249, 0.75);
+}
+
+/* The map credits in the corner */
+:root[data-theme="light"] .cv-map-canvas .leaflet-control-attribution,
+:root[data-theme="light"] .admin-map .leaflet-control-attribution,
+:root[data-theme="light"]
+  .suggest-road-map-wrapper
+  .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* The road in the alert card's picture */
+:root[data-theme="light"] .cv-scene-road::before {
+  border-color: #b9c3cd;
+  background: #e4e9ef;
+}
+
+:root[data-theme="light"] .cv-scene--outside .cv-scene-road::before {
+  border-left-color: #9aa6b2;
+}
+
+:root[data-theme="light"] .cv-scene-image img,
+:root[data-theme="light"] .cv-marker-ego img,
+:root[data-theme="light"] .cv-marker-other img {
+  filter: drop-shadow(0 2px 4px rgba(16, 24, 32, 0.35));
+}
+
+:root[data-theme="light"] .cv-alert {
+  box-shadow: 0 12px 32px rgba(16, 24, 32, 0.18);
+}
+
+/* Messages in forms */
+:root[data-theme="light"] .cv-form-success {
+  color: #157a40;
+}
+
+:root[data-theme="light"] .cv-form-error {
+  color: #b42a31;
+}
+
+/* Admin page */
+:root[data-theme="light"] .admin-count,
+:root[data-theme="light"] .admin-road-item:hover {
+  border-color: #b9c3cd;
+}
+
+:root[data-theme="light"] .admin-count {
+  background: rgba(16, 24, 32, 0.07);
+}
+
+:root[data-theme="light"] .admin-error,
+:root[data-theme="light"] .suggest-error,
+:root[data-theme="light"] .admin-search-error,
+:root[data-theme="light"] .suggest-search-error,
+:root[data-theme="light"] .admin-delete-button {
+  color: #b42a31;
+}
+
+:root[data-theme="light"] .search-matches button:hover {
+  background: rgba(16, 24, 32, 0.05);
+}

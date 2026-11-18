@@ -10,6 +10,13 @@
       content="Pass narrow roads with confidence. See nearby vehicles and know who should give way."
     />
     <title>Connected Vehicle</title>
+    <script>
+      try {
+        if (localStorage.getItem("theme") === "light") {
+          document.documentElement.dataset.theme = "light";
+        }
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

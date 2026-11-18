@@ -320,6 +320,33 @@ module.exports = async ({
   );
 
   await page.waitForSelector('button[aria-label="Account"]');
+
+  // Light mode, from the same menu, remembered after a reload
+  const theme = () =>
+    page.evaluate(() => document.documentElement.dataset.theme);
+  const clickMenuItem = (label) =>
+    page.evaluate(
+      (target) =>
+        [...document.querySelectorAll(".cv-menu-list button")]
+          .find((button) => button.innerText.includes(target))
+          .click(),
+      label,
+    );
+  check("the website starts in dark mode", (await theme()) === "dark");
+  await page.click('button[aria-label="Account"]');
+  await page.waitForSelector(".cv-menu-note");
+  await clickMenuItem("Light mode");
+  check("the account menu switches to light mode", (await theme()) === "light");
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector('button[aria-label="Account"]');
+  check("light mode is remembered", (await theme()) === "light");
+  await page.click('button[aria-label="Account"]');
+  await page.waitForSelector(".cv-menu-note");
+  await clickMenuItem("Dark mode");
+  check("and it switches back", (await theme()) === "dark");
+  await page.click('button[aria-label="Account"]');
+  await sleep(200);
+
   check(
     "logging out starts hidden behind the icon",
     !(await page.$(".cv-menu-note")),

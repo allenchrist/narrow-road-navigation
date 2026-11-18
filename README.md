@@ -26,6 +26,8 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
 2. The server checks each position against the saved narrow roads and compares nearby cars.
 3. The driver logs in to the dashboard with the same account. The map shows their car and other cars within 2 km. Inside a narrow road, the panel lists the vehicles in that road.
 
+**Dark or light:** the website and the app both start dark. The account menu (the person icon on the car screen, or the car icon in the app) switches to light mode, which shows the map in its normal colours. Each device remembers its choice.
+
 Inside a narrow road, the map outlines it softly, tinted to match the alert. Other road shapes aren't shown to drivers. Alerts only appear once a car is inside a narrow road.
 
 If a car's position is more than 5 seconds old, the top bar shows **Weak signal**. After 15 seconds, the car stops counting.

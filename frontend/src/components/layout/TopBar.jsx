@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useVehicle } from "../../context/VehicleContext";
 import { useFullscreen } from "../../hooks/useFullscreen";
 import { signOutDriver } from "../../services/driverSession";
+import { getTheme, saveTheme } from "../../utils/theme";
 import Icon from "../common/Icon";
 
 const GPS_LABELS = {
@@ -99,6 +100,7 @@ function TopBar() {
   const { username, backendConnected, gpsStatus } = useVehicle();
 
   const navigate = useNavigate();
+  const [theme, setTheme] = useState(getTheme);
   const clock = useClock();
   const fullscreen = useFullscreen();
 
@@ -163,8 +165,25 @@ function TopBar() {
           </button>
         </TopBarMenu>
 
-        <TopBarMenu label="Account" icon="logout">
+        <TopBarMenu label="Account" icon="person">
           <p className="cv-menu-note">Logged in as {username}</p>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              const next = theme === "light" ? "dark" : "light";
+
+              saveTheme(next);
+              setTheme(next);
+            }}
+          >
+            <Icon
+              name={theme === "light" ? "darkMode" : "lightMode"}
+              size={18}
+            />
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
 
           <button
             type="button"
