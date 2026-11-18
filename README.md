@@ -234,6 +234,8 @@ These go in `backend/.env`, or in the host's environment settings.
 | `npm run test:alerts` | `backend` | Alert and right-of-way rules | Nothing else |
 | `npm run test:validation` | `backend` | Input checks | Nothing else |
 | `npm run test:state` | `backend` | The live vehicle list, such as forgetting vehicles gone for over an hour | Nothing else |
+| `npm run test:geofence` | `backend` | Road checks, which only look at roads near a vehicle, give the same answers as checking every road, and are faster | Nothing else |
+| `npm run test:cleanup` | `backend` | Expired email codes and old rejected suggestions are deleted, and nothing else is | A test database in `DATABASE_URL`. It adds and deletes test rows |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
 | `npm run simulate` | `backend` | Every alert, using two simulated cars | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
 | `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |

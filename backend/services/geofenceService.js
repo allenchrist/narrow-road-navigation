@@ -20,6 +20,71 @@ const MAX_ROAD_TOLERANCE_M = 15;
 // For phones that don't report accuracy
 const DEFAULT_ROAD_TOLERANCE_M = 10;
 
+// ── Roads near a point ──────────────────────────────────────────────────
+// Checking every road on every GPS update gets slow as roads are added, so
+// each road is listed under the squares of the map it's near. A vehicle is
+// then only checked against the roads listed under its own square.
+
+// About 550 m across
+const CELL_DEGREES = 0.005;
+
+// The furthest any check looks from a road, so a road is listed in every
+// square a vehicle could be in while that road still matters
+const REACH_M =
+  Math.max(APPROACH_DISTANCE_M, WAITING_DISTANCE_M, MAX_ROAD_TOLERANCE_M) + 10;
+
+const METRES_PER_DEGREE = 111320;
+
+// Built once for each list of roads, which is replaced whenever one changes
+const roadIndexes = new WeakMap();
+
+const cellOf = (degrees) => Math.floor(degrees / CELL_DEGREES);
+
+function buildRoadIndex(roads) {
+  const cells = new Map();
+
+  for (const road of roads) {
+    if (!Array.isArray(road.polygon) || road.polygon.length === 0) continue;
+
+    const lats = road.polygon.map((point) => Number(point[0]));
+    const lons = road.polygon.map((point) => Number(point[1]));
+    const middleLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+
+    const latMargin = REACH_M / METRES_PER_DEGREE;
+    const lonMargin =
+      REACH_M / (METRES_PER_DEGREE * Math.cos((middleLat * Math.PI) / 180));
+
+    for (
+      let x = cellOf(Math.min(...lons) - lonMargin);
+      x <= cellOf(Math.max(...lons) + lonMargin);
+      x++
+    ) {
+      for (
+        let y = cellOf(Math.min(...lats) - latMargin);
+        y <= cellOf(Math.max(...lats) + latMargin);
+        y++
+      ) {
+        const key = `${x},${y}`;
+
+        // In the same order as the full list, so overlapping roads come
+        // out in the same order as before
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(road);
+      }
+    }
+  }
+
+  return cells;
+}
+
+function roadsNear(roads, lat, lon) {
+  if (!roadIndexes.has(roads)) {
+    roadIndexes.set(roads, buildRoadIndex(roads));
+  }
+
+  return roadIndexes.get(roads).get(`${cellOf(lon)},${cellOf(lat)}`) ?? [];
+}
+
 function getRoadTolerance(accuracy) {
   return typeof accuracy === "number"
     ? Math.min(MAX_ROAD_TOLERANCE_M, Math.max(MIN_ROAD_TOLERANCE_M, accuracy))
@@ -87,7 +152,7 @@ function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
 
   const tolerance = getRoadTolerance(accuracy);
 
-  for (const road of roads) {
+  for (const road of roadsNear(roads, Number(lat), Number(lon))) {
     const nearest = nearestPointOnPolygon(lat, lon, road.polygon);
 
     if (!nearest) {

@@ -17,7 +17,9 @@
     "test:validation": "node test/validationTest.js",
     "test:state": "node test/vehicleStateTest.js",
     "format": "prettier --write . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
-    "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore"
+    "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
+    "test:geofence": "node test/geofenceTest.js",
+    "test:cleanup": "node test/cleanupTest.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

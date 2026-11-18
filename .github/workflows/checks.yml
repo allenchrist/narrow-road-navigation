@@ -72,8 +72,12 @@ jobs:
         run: npm run test:validation
       - name: Live vehicle list
         run: npm run test:state
+      - name: Road checks
+        run: npm run test:geofence
       - name: Set up the database, with roads the simulator can drive through
         run: npm run db:init-demo
+      - name: Cleaning up old records
+        run: npm run test:cleanup
       - name: Start the server
         run: |
           npm start > server.log 2>&1 &

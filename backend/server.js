@@ -52,6 +52,7 @@ const {
 } = require("./services/vehicleState");
 const { getDeviceCount, loadDevices } = require("./services/deviceRegistry");
 const { loadNarrowRoads } = require("./services/narrowRoadService");
+const { cleanUpOldRecords } = require("./services/cleanupService");
 
 // Dashboards get the fleet on a timer rather than on every GPS packet.
 // This also tells them when a vehicle goes stale, which no packet would.
@@ -60,6 +61,8 @@ const FLEET_BROADCAST_MS = 1000;
 const DATABASE_RETRY_MS = 10000;
 
 const FORGET_CHECK_MS = 10 * 60 * 1000;
+
+const CLEANUP_EVERY_MS = 24 * 60 * 60 * 1000;
 
 // Render stops the server soon after asking it to shut down
 const SHUTDOWN_TIMEOUT_MS = 5000;
@@ -143,6 +146,24 @@ setInterval(() => {
   }
 }, FORGET_CHECK_MS);
 
+// Expired email codes and old rejected suggestions. A failure only means
+// they wait until the next run.
+async function cleanUp() {
+  try {
+    const { emailCodes, rejectedSuggestions } = await cleanUpOldRecords();
+
+    if (emailCodes > 0 || rejectedSuggestions > 0) {
+      console.log(
+        `[Database] Cleaned up ${emailCodes} expired email codes and ${rejectedSuggestions} old rejected suggestions`,
+      );
+    }
+  } catch (error) {
+    console.error("[Database] Cleanup failed:", error.message);
+  }
+}
+
+setInterval(cleanUp, CLEANUP_EVERY_MS);
+
 const PORT = process.env.PORT || config.port;
 
 /**
@@ -162,6 +183,8 @@ async function loadSavedData() {
     );
 
     notifyAllDashboards();
+
+    cleanUp();
   } catch (error) {
     console.error(
       `[Database] Could not load saved data, retrying in ${DATABASE_RETRY_MS / 1000}s:`,
