@@ -150,7 +150,7 @@ The simulator's password is written in its code. If your database is one other p
 
 ## Demo with phones
 
-The app only makes encrypted connections, so phones need the server hosted online rather than running on a laptop. See the [app's README](https://github.com/allenchrist/VehicleSensorModule) to install it.
+The app only makes encrypted connections, so phones need the server hosted online rather than running on a laptop. To install it, download [connected-vehicle.apk](https://github.com/allenchrist/VehicleSensorModule/releases/latest/download/connected-vehicle.apk) on the phone, also linked from the login page as **Get the Android app**. The [app's README](https://github.com/allenchrist/VehicleSensorModule) explains how to publish a new version.
 
 1. Create a different account in the app on each phone, and tap **Connect**.
 2. Log in to the dashboard with each account, using two browsers or devices.

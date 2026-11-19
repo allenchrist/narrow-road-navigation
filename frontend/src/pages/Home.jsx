@@ -8,6 +8,10 @@ import { usePageTitle } from "../hooks/usePageTitle";
 import { getDriverSession, signInDriver } from "../services/driverSession";
 import { wakeServer } from "../services/passwordReset";
 
+// Always the newest version, published from the app's repository
+const APP_DOWNLOAD_URL =
+  "https://github.com/allenchrist/VehicleSensorModule/releases/latest/download/connected-vehicle.apk";
+
 const FEATURES = [
   {
     icon: "car",
@@ -177,7 +181,10 @@ function Home() {
             </button>
 
             <p className="cv-form-note">
-              New here? Create an account in the phone app.
+              New here? Create an account in the phone app.{" "}
+              <a className="cv-app-link" href={APP_DOWNLOAD_URL}>
+                Get the Android app
+              </a>
             </p>
           </form>
         )}

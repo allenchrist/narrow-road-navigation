@@ -1372,6 +1372,17 @@
   text-align: center;
 }
 
+.cv-app-link {
+  color: var(--cv-accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.cv-app-link:hover {
+  text-decoration: underline;
+}
+
 .cv-password {
   position: relative;
 }
