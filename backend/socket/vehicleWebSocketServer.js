@@ -9,6 +9,9 @@
  *   SERVER → CLIENT:  { type: "registered", deviceId: "...", vehicleId: "VEHICLE_001" }
  *
  * After registration, messages are telemetry, or { type: "heading", heading }
+ *
+ *   SERVER → CLIENT:  { type: "mountain", roadName } when the phone gets on
+ *                     or off a ghat road, with roadName null when off one
  * when only the compass has changed, so the screen can follow a turn quickly.
  * The connection itself identifies the device — no vehicleId needed in packets.
  *
@@ -30,6 +33,7 @@ const {
   updateVehicleHeading,
   setVehicleType,
   setVehicleConnected,
+  getHillRoadName,
 } = require("../services/vehicleState");
 const {
   broadcastFleetUpdate,
@@ -138,6 +142,9 @@ function initVehicleWebSocketServer(httpServer, path) {
     let registered = false;
     let checkingLogin = false;
     let lastTelemetryAt = 0;
+
+    // The ghat road last told to the phone, so it's only told of changes
+    let toldHillRoad;
     let lastHeadingAt = 0;
     let warnedAboutTelemetry = false;
 
@@ -388,6 +395,14 @@ function initVehicleWebSocketServer(httpServer, path) {
       updateVehicleTelemetry(vehicleId, result.data);
       updateLastSeen(deviceId);
       scheduleFleetUpdate();
+
+      // Mountain Mode, for the app's home screen. Older app versions ignore it.
+      const hillRoad = getHillRoadName(vehicleId);
+
+      if (hillRoad !== toldHillRoad) {
+        toldHillRoad = hillRoad;
+        ws.send(JSON.stringify({ type: "mountain", roadName: hillRoad }));
+      }
     });
 
     // ── DISCONNECT ───────────────────────────────────────────────────────────

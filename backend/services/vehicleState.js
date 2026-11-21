@@ -466,6 +466,11 @@ function getBusyRoads() {
   return occupancy.busyRoads();
 }
 
+/** The ghat road this vehicle is on, for Mountain Mode, or null. */
+function getHillRoadName(vehicleId) {
+  return vehicles.get(vehicleId)?.hill?.roadName ?? null;
+}
+
 function getVehicleCount() {
   return vehicles.size;
 }
@@ -482,4 +487,5 @@ module.exports = {
   getVisibleVehicles,
   getVehicleCount,
   getBusyRoads,
+  getHillRoadName,
 };
