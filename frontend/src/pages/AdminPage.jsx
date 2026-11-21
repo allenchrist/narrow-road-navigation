@@ -2,10 +2,12 @@ import { useState } from "react";
 
 import AdminHeader from "../components/admin/AdminHeader";
 import AdminMap from "../components/admin/AdminMap";
+import HillRoadList from "../components/admin/HillRoadList";
 import LiveVehicleList from "../components/admin/LiveVehicleList";
 import RoadList from "../components/admin/RoadList";
 import SuggestionList from "../components/admin/SuggestionList";
 
+import { useHillRoads } from "../hooks/useHillRoads";
 import { useLiveVehicles } from "../hooks/useLiveVehicles";
 import { useLocationSearch } from "../hooks/useLocationSearch";
 import { useRoadEditor } from "../hooks/useRoadEditor";
@@ -19,6 +21,11 @@ function AdminPage({ onSignOut }) {
   const editor = useRoadEditor(map);
   const reviewState = useSuggestionReview(map, editor.loadRoads);
   const live = useLiveVehicles();
+  const hill = useHillRoads();
+
+  function showHillRoad(road) {
+    map?.fitBounds(road.line, { padding: [30, 30] });
+  }
 
   function showVehicle(vehicle) {
     map?.setView([vehicle.lat, vehicle.lon], Math.max(map.getZoom(), 18));
@@ -61,6 +68,7 @@ function AdminPage({ onSignOut }) {
           review={review}
           liveVehicles={live.vehicles}
           roadStatuses={live.roadStatuses}
+          hill={hill}
           onMapReady={setMap}
         />
 
@@ -90,6 +98,7 @@ function AdminPage({ onSignOut }) {
               ["live", "Live", live.vehicles.length],
               ["suggestions", "Suggestions", review.pendingSuggestions.length],
               ["roads", "Saved roads", editor.roads.length],
+              ["hills", "Ghat roads", hill.roads.length],
             ].map(([id, label, count]) => (
               <button
                 key={id}
@@ -110,6 +119,8 @@ function AdminPage({ onSignOut }) {
               <LiveVehicleList live={live} onShow={showVehicle} />
             ) : tab === "suggestions" ? (
               <SuggestionList review={review} />
+            ) : tab === "hills" ? (
+              <HillRoadList hill={hill} onShow={showHillRoad} />
             ) : (
               <RoadList editor={editor} onEditRoad={startEditingRoad} />
             )}

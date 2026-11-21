@@ -464,6 +464,14 @@ async function downloadWaysAround(polygons, { timeoutMs = 30000 } = {}) {
 
   const query = `[out:json][timeout:${Math.ceil(timeoutMs / 1000)}];(${boxes});out body geom;`;
 
+  return downloadFromOverpass(query, timeoutMs);
+}
+
+/**
+ * The ways an Overpass query returns, from the first server that answers.
+ * Throws if none can be reached.
+ */
+async function downloadFromOverpass(query, timeoutMs = 30000) {
   const problems = [];
 
   for (const url of OVERPASS_URLS) {
@@ -508,6 +516,7 @@ module.exports = {
   shapeEndEntrances,
   downloadWays,
   downloadWaysAround,
+  downloadFromOverpass,
   waysNear,
   LANE_LENGTH_M,
 };

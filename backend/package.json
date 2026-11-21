@@ -21,7 +21,10 @@
     "test:geofence": "node test/geofenceTest.js",
     "test:cleanup": "node test/cleanupTest.js",
     "test:occupancy": "node test/roadOccupancyTest.js",
-    "roads:entrances": "node tools/findRoadEntrances.js"
+    "roads:entrances": "node tools/findRoadEntrances.js",
+    "roads:hills": "node tools/findHillRoads.js",
+    "test:mountain": "node test/mountainTest.js",
+    "simulate:mountain": "node test/mountainSimulator.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

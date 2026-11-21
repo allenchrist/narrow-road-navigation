@@ -695,6 +695,50 @@
   font-weight: 600;
 }
 
+/* Ghat roads: hairpin numbers and waiting points */
+.admin-bend-number span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #9c6cff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-wait-point span {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #ff9b3d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}
+
+.admin-bend-delete {
+  margin-top: 8px;
+  padding: 4px 10px;
+  border: 1px solid #ff5c63;
+  border-radius: 6px;
+  background: transparent;
+  color: #ff5c63;
+  cursor: pointer;
+}
+
+.admin-hill-help {
+  margin: 0 0 12px;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* What the road colours on the admin map mean */
 .admin-map-legend {
   position: absolute;
@@ -726,6 +770,16 @@
   width: 12px;
   height: 12px;
   border-radius: 3px;
+}
+
+.admin-legend-swatch--bend {
+  border-radius: 50%;
+  background: #9c6cff;
+}
+
+.admin-legend-swatch--wait {
+  border-radius: 50%;
+  background: #ff9b3d;
 }
 
 .admin-legend-swatch--entrance {

@@ -14,6 +14,7 @@ import {
   ROAD_STATUS_TINTS,
 } from "../../utils/alerts";
 import SearchMatches from "../common/SearchMatches";
+import HillRoadLayer from "./HillRoadLayer";
 import VehicleMarker from "../map/VehicleMarker";
 import { DrawingLayer, FlyToLocation, MapController } from "../map/mapHelpers";
 
@@ -23,6 +24,7 @@ function AdminMap({
   review,
   liveVehicles,
   roadStatuses = {},
+  hill = null,
   onMapReady,
 }) {
   const { searchLocation, searchError } = search;
@@ -102,6 +104,10 @@ function AdminMap({
             />,
           ]),
         )}
+
+        {/* Ghat roads for Mountain Mode, with their hairpins */}
+
+        {hill && !drawing && <HillRoadLayer hill={hill} />}
 
         {/* Drivers' suggestions */}
 
@@ -227,6 +233,14 @@ function AdminMap({
           <li>
             <span className="admin-legend-swatch admin-legend-swatch--entrance" />
             Entrance
+          </li>
+          <li>
+            <span className="admin-legend-swatch admin-legend-swatch--bend" />
+            Hairpin
+          </li>
+          <li>
+            <span className="admin-legend-swatch admin-legend-swatch--wait" />
+            Waiting point
           </li>
         </ul>
       )}

@@ -73,6 +73,18 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS entrances JSONB;
   `);
 
+  // Ghat roads for Mountain Mode, with their hairpin bends. Copied from
+  // data/hillRoads.json when the server starts; the admin can change bends.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS hill_roads (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      line JSONB NOT NULL,
+      bends JSONB NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS narrow_road_suggestions (
       id TEXT PRIMARY KEY,

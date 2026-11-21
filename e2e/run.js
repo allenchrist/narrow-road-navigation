@@ -346,8 +346,8 @@ async function main() {
       return page;
     }
 
-    function runSimulator() {
-      return start(["test/simulator.js"], BACKEND, { BACKEND_URL: API });
+    function runSimulator(script = "test/simulator.js") {
+      return start([script], BACKEND, { BACKEND_URL: API });
     }
 
     const context = {

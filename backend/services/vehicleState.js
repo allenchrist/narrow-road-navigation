@@ -15,6 +15,8 @@ const {
 } = require("./narrowRoadAlert");
 const { updateEntrances } = require("./entranceWatch");
 const { createOccupancyTracker } = require("./roadOccupancy");
+const { createMountainTracker, updateHillPosition } = require("./mountainMode");
+const { getHillRoads, getHillRoadById } = require("./hillRoadService");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
 const { getNarrowRoadById } = require("./narrowRoadService");
 const { DEFAULT_VEHICLE_TYPE } = require("../utils/vehicleTypes");
@@ -42,6 +44,8 @@ const vehicles = new Map();
 const rightOfWay = createRightOfWayTracker();
 
 const occupancy = createOccupancyTracker(getRelation);
+
+const mountain = createMountainTracker(getHillRoadById);
 
 function registerVehicle(vehicleId) {
   if (vehicles.has(vehicleId)) {
@@ -102,6 +106,10 @@ function registerVehicle(vehicleId) {
       entranceHistory: {},
       leftRoadAt: {},
 
+      // Where it is on a ghat road, for Mountain Mode, or null
+      hill: null,
+      mountain: null,
+
       // What the infotainment screen should show
       narrowRoadAlert: NO_ALERT,
 
@@ -126,6 +134,18 @@ function updateVehicleTelemetry(vehicleId, data) {
 
   const geofence = resolveGeofenceState(existing, data, now);
 
+  // A poor position doesn't move it along a ghat road
+  const hill =
+    typeof data.accuracy === "number" && data.accuracy > MAX_GEOFENCE_ACCURACY_M
+      ? existing.hill
+      : updateHillPosition(
+          existing.hill,
+          data.lat,
+          data.lon,
+          getHillRoads(),
+          now,
+        );
+
   vehicles.set(vehicleId, {
     ...existing,
 
@@ -149,6 +169,7 @@ function updateVehicleTelemetry(vehicleId, data) {
     lastChangedAt: now,
 
     ...geofence,
+    hill,
   });
 }
 
@@ -301,10 +322,12 @@ function updateNarrowRoadAlerts() {
 
   rightOfWay.update(activeVehicles);
   occupancy.update(activeVehicles, now);
+  mountain.update(activeVehicles, now);
 
   for (const vehicle of allVehicles) {
     if (!vehicle.active) {
       vehicle.narrowRoadAlert = NO_ALERT;
+      vehicle.mountain = null;
       vehicle.otherVehiclesInSameNarrowRoad = 0;
       continue;
     }
@@ -313,12 +336,20 @@ function updateNarrowRoadAlerts() {
       (other) => other.vehicleId !== vehicle.vehicleId,
     );
 
-    vehicle.narrowRoadAlert = buildNarrowRoadAlert(
+    const narrowRoadAlert = buildNarrowRoadAlert(
       vehicle,
       others,
       rightOfWay,
       occupancy,
     );
+
+    // On a ghat road, the bend alert shows unless a narrow road needs one
+    vehicle.narrowRoadAlert =
+      narrowRoadAlert.kind === "NONE"
+        ? (mountain.alertFor(vehicle.vehicleId) ?? NO_ALERT)
+        : narrowRoadAlert;
+
+    vehicle.mountain = mountain.infoFor(vehicle.vehicleId);
 
     vehicle.otherVehiclesInSameNarrowRoad = others.filter((other) =>
       other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id)),
@@ -354,6 +385,7 @@ function getVehiclesForDashboard() {
     active: vehicle.active,
     weakSignal: vehicle.active && now - vehicle.lastReceivedAt > WEAK_SIGNAL_MS,
     narrowRoadAlert: vehicle.narrowRoadAlert,
+    mountain: vehicle.mountain,
   }));
 }
 
@@ -414,7 +446,7 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
         distanceBetween(own.lat, own.lon, vehicle.lat, vehicle.lon) <=
           NEARBY_RADIUS_M,
     )
-    .map(({ narrowRoadAlert: _alert, ...vehicle }) => ({
+    .map(({ narrowRoadAlert: _alert, mountain: _mountain, ...vehicle }) => ({
       ...vehicle,
       inSameRoad: (vehicles.get(vehicle.vehicleId)?.insideRoadIds ?? []).some(
         (id) => ownRoadIds.includes(id),

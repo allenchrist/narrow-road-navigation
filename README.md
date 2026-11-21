@@ -1,6 +1,9 @@
 # Narrow Road Navigation
 
-A connected-vehicle system that helps drivers pass safely through narrow roads. When two cars meet head on in a road too narrow to share, each driver is told who should keep going and who should give way.
+A connected-vehicle system that helps drivers on two kinds of dangerous road:
+
+- **Narrow roads**, too narrow for two vehicles to pass. Drivers are told at the entrance whether to go or wait, and inside, who keeps going and who gives way.
+- **Ghat roads**, with blind hairpin bends. In **Mountain Mode**, vehicles meeting at a bend are told to keep left, and a car is told to wait before the bend while a bus or lorry, which needs the whole road, turns.
 
 This is a college project. We can't modify a real car, so two pieces stand in for its hardware:
 
@@ -28,7 +31,7 @@ This is a college project. We can't modify a real car, so two pieces stand in fo
 
 **Dark or light:** the website and the app both start dark. The account menu (the person icon on the car screen, or the car icon in the app) switches to light mode, which shows the map in its normal colours. Each device remembers its choice.
 
-Inside a narrow road, the map outlines it softly, tinted to match the alert. Other road shapes aren't shown to drivers. Alerts only appear once a car is inside a narrow road.
+Inside a narrow road, the map outlines it softly, tinted to match the alert. Other road shapes aren't shown to drivers. Alerts start at a narrow road's entrance, or on a ghat road.
 
 If a car's position is more than 5 seconds old, the top bar shows **Weak signal**. After 15 seconds, the car stops counting.
 
@@ -95,6 +98,35 @@ Every narrow road is **available**, **reserved** or **occupied**, worked out fro
 - When the last car leaves, the road goes to the next car waiting, who is told to go.
 
 The dashboard shows the road ahead in green, amber or red, with a dot at your entrance. The admin's live map colours every road by its status and shows each entrance and its approach lanes.
+
+## Mountain Mode
+
+On the **Ooty, Valparai and Yercaud ghat roads**, the dashboard switches to Mountain Mode by itself. The panel shows the ghat road, which way you're going, and the next hairpin, such as **Hairpin 5 of 18 in 90 m**, and the map highlights that bend.
+
+**Where a vehicle is.** Each ghat road is one line from the bottom of the ghat to the top, measured in metres. Each position is placed on it, within 15 m allowing for GPS error. On a hairpin, two arms of the road can be 20 to 30 m apart, so a vehicle stays on the arm it was on unless it clearly moves. Its direction, up or down, comes from its last 3 readings along the road, which follows the road round bends where a compass would spin. Its speed is averaged over the last 3 seconds.
+
+**Meeting at a bend.** Each vehicle's time to reach the next bend is its distance along the road divided by its speed. Two vehicles from opposite directions are warned when both would reach the same bend within 20 seconds and be in its turning zone at the same time, allowing 3 seconds either way. A vehicle stopped or crawling within 50 m of a bend counts as being at it.
+
+| Who meets | What each is told |
+|---|---|
+| Car and car | Both: **Vehicle round the bend**, keep left. Nobody stops |
+| Bus, lorry or truck, and a car | Car: **Stop before the bend**, with a waiting point 30 m before the bend on the map. The bus: **Take the bend** |
+| Two buses, lorries or trucks | The one going **uphill** goes first, as the hill road rule says |
+| A car already in the bend | It finishes the bend, and the bus waits |
+| A priority vehicle | It goes first |
+| A car behind a bus near a bend | **Don't overtake** |
+
+The vehicle that waited is told **Bend clear** once the other has come out of the bend on its side. Each decision stays fixed until then, so a driver who stops isn't told something different.
+
+| Alert | Colour |
+|---|---|
+| **Stop before the bend** | Red |
+| **Take the bend** | Green |
+| **Bend clear** | Green |
+| **Vehicle round the bend** | Yellow |
+| **Don't overtake** | Yellow |
+
+On the admin page, **Ghat roads** lists the roads. The map shows each road in purple, its hairpins numbered from the bottom, and the waiting points. Drag a waiting point to move it along the road, or click a hairpin's number to delete a bend the map got wrong. The bends above it are numbered one lower.
 
 ## What's in this repository
 
@@ -175,14 +207,30 @@ The simulator's password is written in its code. If your database is one other p
 | Step | Car A sees | Car B sees |
 |---|---|---|
 | Car A drives towards the road | Nothing | |
+| Car A reaches the entrance of the empty road | Go ahead | |
 | Car A enters | Narrow road | |
-| Car B is about to enter the far end | Vehicle about to enter | |
+| Car B reaches the far entrance | Vehicle waiting | Wait at the entrance |
+| Car B waits there | Vehicle waiting | Wait at the entrance |
 | Car B enters, coming towards Car A | You have right of way | Give way |
 | Car B's phone goes silent | Narrow road | |
 | Car B comes back | You have right of way | Give way |
 | Car B stops to let Car A through | You have right of way | Give way |
 | Car A passes Car B | Narrow road | Road clear |
 | Car A leaves | Nothing | |
+
+**Mountain Mode** has its own simulator. It drives `sim_car_a` up the Yercaud ghat road as a car and `sim_car_b` down it as a bus, to the same hairpin. It works with either database, as the ghat roads are added when the server starts:
+
+```
+npm run simulate:mountain
+```
+
+| Step | The car sees | The bus sees |
+|---|---|---|
+| Both head for the same hairpin | Stop before the bend | Take the bend |
+| The car stops at the waiting point | Stop before the bend | Take the bend |
+| The bus takes the bend | Stop before the bend | Take the bend |
+| The bus is out of the bend | Bend clear | |
+| The car takes the bend | Nothing | |
 
 ## Demo with phones
 
@@ -230,6 +278,24 @@ npm run roads:entrances
 
 It downloads the roads around every narrow road in one request, and tries again for a few minutes if OpenStreetMap is busy. When the server starts, any road without entrances gets them from this file if its shape matches, so the imported roads never need OpenStreetMap. Roads added or changed on the admin page are looked up on OpenStreetMap in the background, one at a time. Until then, and if OpenStreetMap can't be reached, the ends of the shape are used, and it tries again every 30 minutes.
 
+### Ghat roads
+
+`backend/data/hillRoads.json` holds the Ooty, Valparai and Yercaud ghat roads and their hairpins. `tools/findHillRoads.js` follows the main road from the bottom of each ghat to the top in OpenStreetMap, measures it, and finds the hairpins from its shape: where the road turns at least 165° within 120 m. A sharp turn at a junction, or one more than 5 km from any other, is a turn in a town and is left out. Each bend's turning zone is at least 40 m long, and its waiting points are 30 m before it on each side.
+
+| Ghat road | From, to | Length | Hairpins found | Signposted |
+|---|---|---|---|---|
+| Valparai | Aliyar Dam to Valparai (SH78) | 41.3 km | 42 | 40 |
+| Ooty | Kallar to Ooty, through Coonoor (NH181) | 42.5 km | 13 | 14 between Kallar and Coonoor |
+| Yercaud | Salem to Yercaud (SH188) | 20.3 km | 18 | 20 |
+
+The counts are close but not exact, because a few sharp curves look like hairpins on the map and a few gentle hairpins don't. The admin page can delete a wrong one. To find them again:
+
+```
+npm run roads:hills
+```
+
+The server copies roads into the database when it starts, if they aren't there yet. Roads already there are kept, so changes made on the admin page stay.
+
 **Map data:** roads and buildings © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. Buildings also from [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), available under the Open Database License.
 
 ## Before a demo
@@ -270,7 +336,7 @@ These go in `backend/.env`, or in the host's environment settings.
 | `/` | Driver login, with **Forgot password?** to change a password with an emailed code. Accounts are created and deleted in the phone app |
 | `/your-username` | The dashboard. The full-screen button is in the top bar, and the menu has Suggest a narrow road and Log out |
 | `/your-username/suggest-narrow-road` | Mark a narrow road on the map and send it for review |
-| `/admin` | **Live** shows every connected vehicle on the map and in a list, with its driver and the alert its screen shows, refreshed every 2 seconds. The map colours each narrow road available, reserved or occupied, and shows its entrances. Also mark, edit and delete roads, and approve or reject suggestions, including roads drivers recorded in the app |
+| `/admin` | **Live** shows every connected vehicle on the map and in a list, with its driver and the alert its screen shows, refreshed every 2 seconds. The map colours each narrow road available, reserved or occupied, and shows its entrances. **Ghat roads** shows the Mountain Mode roads and their hairpins. Also mark, edit and delete roads, and approve or reject suggestions, including roads drivers recorded in the app |
 
 ## Run the tests
 
@@ -278,12 +344,14 @@ These go in `backend/.env`, or in the host's environment settings.
 |---|---|---|---|
 | `npm run test:alerts` | `backend` | Alert and right-of-way rules | Nothing else |
 | `npm run test:occupancy` | `backend` | Finding entrances and approach lanes, cars arriving at them, and who is told to go or wait | Nothing else |
+| `npm run test:mountain` | `backend` | Finding hairpins, placing vehicles on a ghat road, and what vehicles meeting at a bend are told | Nothing else |
 | `npm run test:validation` | `backend` | Input checks | Nothing else |
 | `npm run test:state` | `backend` | The live vehicle list, such as forgetting vehicles gone for over an hour | Nothing else |
 | `npm run test:geofence` | `backend` | Road checks, which only look at roads near a vehicle, give the same answers as checking every road, and are faster | Nothing else |
 | `npm run test:cleanup` | `backend` | Expired email codes and old rejected suggestions are deleted, and nothing else is | A test database in `DATABASE_URL`. It adds and deletes test rows |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
 | `npm run simulate` | `backend` | Every alert, using two simulated cars | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
+| `npm run simulate:mountain` | `backend` | Mountain Mode, using a simulated car and bus at a Yercaud hairpin | The server running |
 | `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |
 | `npm run format:check` | `backend`, `frontend` or `e2e` | That the code follows the shared style. `npm run format` fixes it | Nothing else |
 | `npm run build` | `frontend` | That the website builds | Nothing else |
@@ -294,11 +362,12 @@ GitHub runs all of these on every push, using a temporary database. Results are 
 ## Limits
 
 - **GPS accuracy:** many narrow roads are about 3 m wide, which is close to GPS error, so a car counts as inside when it's within 8 to 15 m of a road's edge. A car on a parallel road can trigger an alert.
-- **Short reversing:** alerts start inside the road, so the later car may need to reverse a short way.
+- **Short reversing:** a car that drives in after being told to wait, or arrives too fast to be noticed at the entrance, may need to reverse a short way.
 - **Road data:** only lanes with buildings close on both sides are found, and building outlines can be a little out, so a few roads may be missing or slightly too wide or narrow. See [Narrow road data](#narrow-road-data).
 - **Split roads:** a street can be saved as several road shapes that touch. Two cars in different shapes of the same street don't count as sharing a road, unless they're close enough to the join to count as inside both.
 - **Only cars using the system count:** other vehicles are invisible to it.
-- **No slope data:** it can't apply the usual rule that favours the car going uphill.
+- **Uphill rule only on ghat roads:** narrow roads have no slope data, so the rule that favours the vehicle going uphill only applies at hairpins in Mountain Mode, where the road is measured from the bottom.
+- **Mountain Mode needs signal:** some stretches of ghat road have no mobile signal, and no warnings can be given there. Hairpin counts come from map data, so they can differ slightly from the signposts.
 - **Live state is in memory:** if the server restarts, cars reappear as their next updates arrive and right-of-way decisions start again.
 - **Faked positions:** a logged-in user who fakes their GPS could see cars within 2 km of the faked position.
 

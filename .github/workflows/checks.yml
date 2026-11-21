@@ -71,6 +71,8 @@ jobs:
         run: npm run test:alerts
       - name: Road entrances and occupancy
         run: npm run test:occupancy
+      - name: Mountain Mode
+        run: npm run test:mountain
       - name: Input validation
         run: npm run test:validation
       - name: Live vehicle list
@@ -89,6 +91,8 @@ jobs:
         run: npm test
       - name: Two-car simulator
         run: npm run simulate
+      - name: Mountain Mode simulator
+        run: npm run simulate:mountain
       - name: Server log
         if: failure()
         run: cat server.log

@@ -429,6 +429,31 @@
   color: var(--cv-warn);
 }
 
+/* Mountain Mode: the ghat road and the next hairpin */
+.cv-mountain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(86, 199, 255, 0.08);
+  color: var(--cv-accent);
+}
+
+.cv-mountain strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--cv-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cv-mountain-bend {
+  display: block;
+  margin-top: 2px;
+  color: var(--cv-text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .cv-nearby-header {
   display: flex;
   align-items: center;
@@ -1536,8 +1561,20 @@
     text-overflow: ellipsis;
   }
 
-  .cv-road-status > div {
+  .cv-road-status > div,
+  .cv-mountain > div {
     min-width: 0;
+  }
+
+  .cv-mountain {
+    grid-column: 1 / -1;
+  }
+
+  .cv-mountain strong {
+    overflow: hidden;
+    font-size: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   /* The nearest vehicle only. The map shows the others. */

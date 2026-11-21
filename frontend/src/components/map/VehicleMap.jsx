@@ -2,7 +2,9 @@ import {
   CircleMarker,
   MapContainer,
   Polygon,
+  Polyline,
   TileLayer,
+  Tooltip,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -222,6 +224,53 @@ function EntranceRoad({ road }) {
   ];
 }
 
+/**
+ * Mountain Mode: the next hairpin's turning zone, and where to wait when
+ * told to stop before it.
+ */
+function MountainBend({ mountain, alert }) {
+  const zone = mountain.nextBend?.zone;
+  const tint = ALERT_TINTS[alert?.kind] ?? "#56c7ff";
+
+  return (
+    <>
+      {zone && (
+        <Polyline
+          key={`bend-${mountain.nextBend.number}-${tint}`}
+          positions={zone}
+          interactive={false}
+          className="cv-bend-zone"
+          pathOptions={{
+            color: tint,
+            weight: 12,
+            opacity: 0.45,
+            lineCap: "round",
+          }}
+        />
+      )}
+
+      {alert?.waitPoint && (
+        <CircleMarker
+          center={alert.waitPoint}
+          radius={9}
+          interactive={false}
+          className="cv-wait-point"
+          pathOptions={{
+            color: "#ffffff",
+            weight: 3,
+            fillColor: ALERT_TINTS.BEND_STOP,
+            fillOpacity: 1,
+          }}
+        >
+          <Tooltip permanent direction="top" offset={[0, -10]}>
+            Wait here
+          </Tooltip>
+        </CircleMarker>
+      )}
+    </>
+  );
+}
+
 function VehicleMap({ alert, soundOn, soundUnlocked, onToggleSound }) {
   const { vehicles, egoVehicle, myVehicleId } = useVehicle();
 
@@ -316,6 +365,10 @@ function VehicleMap({ alert, soundOn, soundUnlocked, onToggleSound }) {
 
         {showingAlert && egoVehicle.entranceRoad && (
           <EntranceRoad road={egoVehicle.entranceRoad} />
+        )}
+
+        {hasEgoGps && egoVehicle.mountain && (
+          <MountainBend mountain={egoVehicle.mountain} alert={alert} />
         )}
 
         {vehicleList.map((v) => (

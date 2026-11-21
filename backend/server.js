@@ -36,6 +36,7 @@ const accountRoutes = require("./routes/accountRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const roadRoutes = require("./routes/roadRoutes");
 const suggestionRoutes = require("./routes/suggestionRoutes");
+const hillRoutes = require("./routes/hillRoutes");
 const {
   initSocketServer,
   broadcastFleetUpdate,
@@ -56,6 +57,7 @@ const {
   loadNarrowRoads,
 } = require("./services/narrowRoadService");
 const { cleanUpOldRecords } = require("./services/cleanupService");
+const { loadHillRoads } = require("./services/hillRoadService");
 
 // Dashboards get the fleet on a timer rather than on every GPS packet.
 // This also tells them when a vehicle goes stale, which no packet would.
@@ -90,6 +92,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/narrow-roads", roadRoutes);
 app.use("/api/narrow-road-suggestions", suggestionRoutes);
+app.use("/api/hill-roads", hillRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -179,10 +182,11 @@ async function loadSavedData() {
     await ensureSchema();
 
     const roads = await loadNarrowRoads();
+    const hillRoads = await loadHillRoads();
     const deviceCount = await loadDevices();
 
     console.log(
-      `[Database] Loaded ${roads.length} narrow roads and ${deviceCount} devices`,
+      `[Database] Loaded ${roads.length} narrow roads, ${hillRoads.length} ghat roads and ${deviceCount} devices`,
     );
 
     notifyAllDashboards();

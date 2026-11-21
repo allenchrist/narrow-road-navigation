@@ -90,6 +90,46 @@ const MESSAGES = {
         : `${capitalize(other)} is about to enter from the other end`,
     reason: () => "You'll be told when it's clear",
   },
+  // Mountain Mode, at a hairpin bend
+  BEND_STOP: {
+    icon: "yield",
+    tone: "stop",
+    title: "Stop before the bend",
+    detail: (other) =>
+      `${capitalize(other)} is coming from the opposite direction`,
+    reason: (other, alert) =>
+      `Wait at the marked point · Hairpin ${alert.bendNumber}`,
+  },
+  BEND_GO: {
+    icon: "arrowUp",
+    tone: "go",
+    title: "Take the bend",
+    detail: (other) =>
+      `${capitalize(other)} is waiting for you on the other side`,
+    reason: (other, alert) => `Hairpin ${alert.bendNumber}`,
+  },
+  BEND_KEEP_LEFT: {
+    icon: "car",
+    tone: "caution",
+    title: "Vehicle round the bend",
+    detail: () => "A vehicle is coming from the opposite direction. Keep left",
+    reason: (other, alert) => `Hairpin ${alert.bendNumber}`,
+  },
+  BEND_CLEAR: {
+    icon: "check",
+    tone: "clear",
+    title: "Bend clear",
+    detail: () => "Go ahead",
+    reason: (other, alert) => `Hairpin ${alert.bendNumber}`,
+  },
+  BEND_NO_OVERTAKE: {
+    icon: "warning",
+    tone: "caution",
+    title: "Don't overtake",
+    detail: (other) => `${capitalize(other)} ahead is turning at the bend`,
+    reason: (other, alert) => `Hairpin ${alert.bendNumber}`,
+  },
+
   ENTRY_PRIORITY: {
     icon: "car",
     tone: "warning",
@@ -249,7 +289,7 @@ function NarrowRoadAlert({ alert, vehicle }) {
   const other = otherName(alert);
 
   const note = [
-    message.reason && capitalize(message.reason(other)),
+    message.reason && capitalize(message.reason(other, alert)),
     hasRoadName(alert.roadName) ? alert.roadName : null,
   ]
     .filter(Boolean)

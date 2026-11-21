@@ -8,6 +8,7 @@ import {
   isMoving,
   travelDirection,
 } from "../../utils/display";
+import { INSIDE_ROAD_ALERTS } from "../../utils/alerts";
 import Icon from "../common/Icon";
 
 const MAX_VEHICLES_SHOWN = 4;
@@ -20,6 +21,32 @@ function compassPoint(degrees) {
   return COMPASS_POINTS[Math.round(normalized / 45) % COMPASS_POINTS.length];
 }
 
+/** On a ghat road: which hairpin you're at or coming to, and which way. */
+function MountainStatus({ mountain }) {
+  const { inBend, nextBend, bendCount, heading } = mountain;
+
+  const where = inBend
+    ? `In hairpin ${inBend} of ${bendCount}`
+    : nextBend
+      ? `Hairpin ${nextBend.number} of ${bendCount} in ${nextBend.distanceM} m`
+      : `${bendCount} hairpins`;
+
+  return (
+    <section className="cv-mountain" data-testid="mountain-mode">
+      <Icon name="mountain" />
+
+      <div>
+        <span className="cv-section-label">
+          Mountain mode
+          {heading && ` · Going ${heading === "UP" ? "uphill" : "downhill"}`}
+        </span>
+        <strong>{mountain.roadName}</strong>
+        <span className="cv-mountain-bend">{where}</span>
+      </div>
+    </section>
+  );
+}
+
 function DrivePanel({ alert }) {
   const { vehicles, egoVehicle, myVehicleId } = useVehicle();
 
@@ -29,7 +56,9 @@ function DrivePanel({ alert }) {
 
   const arrowAngle = useTurnAngle(direction);
 
-  const inNarrowRoad = Boolean(alert?.roadId);
+  const inNarrowRoad = INSIDE_ROAD_ALERTS.has(alert?.kind);
+
+  const mountain = hasPosition ? egoVehicle.mountain : null;
 
   const inThisRoad =
     hasPosition && inNarrowRoad
@@ -89,10 +118,16 @@ function DrivePanel({ alert }) {
         <div>
           <span className="cv-section-label">Road</span>
           <strong>
-            {inNarrowRoad ? displayRoadName(alert.roadName) : "Regular road"}
+            {inNarrowRoad
+              ? displayRoadName(alert.roadName)
+              : mountain
+                ? "Ghat road"
+                : "Regular road"}
           </strong>
         </div>
       </section>
+
+      {mountain && <MountainStatus mountain={mountain} />}
 
       {inNarrowRoad && (
         <section className="cv-nearby">
