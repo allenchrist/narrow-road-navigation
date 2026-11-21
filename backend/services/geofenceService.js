@@ -1,5 +1,11 @@
 const { getAllNarrowRoads } = require("./narrowRoadService");
-const { angleDifference, nearestPointOnPolygon } = require("../utils/geo");
+const {
+  angleDifference,
+  bearingBetween,
+  distanceBetween,
+  nearestPointOnLine,
+  nearestPointOnPolygon,
+} = require("../utils/geo");
 
 // How far ahead a moving vehicle is warned about a narrow road
 const APPROACH_DISTANCE_M = 150;
@@ -19,6 +25,24 @@ const MAX_ROAD_TOLERANCE_M = 15;
 
 // For phones that don't report accuracy
 const DEFAULT_ROAD_TOLERANCE_M = 10;
+
+// ── Entrances ───────────────────────────────────────────────────────────
+// A vehicle can only be arriving at an entrance from one of the roads that
+// lead to it. This close to one of those roads, allowing for GPS error, it's
+// on that road.
+const LANE_TOLERANCE_M = 12;
+
+// Entrances are looked at from this far away. Whether a vehicle counts as
+// arriving is decided over several readings, in entranceWatch.
+const ENTRANCE_LOOK_M = 55;
+
+// Where a road's connecting roads aren't known, only this close to an end
+const END_LOOK_M = 25;
+
+// Moving within this angle of the way to the entrance counts as towards it,
+// and beyond the opposite angle as away from it
+const TOWARDS_ANGLE_DEGREES = 45;
+const AWAY_ANGLE_DEGREES = 135;
 
 // ── Roads near a point ──────────────────────────────────────────────────
 // Checking every road on every GPS update gets slow as roads are added, so
@@ -138,6 +162,77 @@ function isPointInsidePolygon(lat, lon, polygon) {
   return inside;
 }
 
+/**
+ * The entrance of a road this vehicle is nearest, if it's on a road leading
+ * to one, or near an end of a road whose connecting roads aren't known.
+ * Says whether it's moving towards the entrance, away from it, or neither,
+ * or null when it's stopped.
+ */
+function entranceCandidate(lat, lon, travelBearing, road) {
+  let best = null;
+
+  (road.entrances ?? []).forEach((entrance, index) => {
+    const [entranceLat, entranceLon] = entrance.point;
+    const distanceM = distanceBetween(lat, lon, entranceLat, entranceLon);
+    const hasLanes = entrance.lanes?.length > 0;
+
+    if (distanceM > (hasLanes ? ENTRANCE_LOOK_M : END_LOOK_M)) return;
+    if (best && best.distanceM <= distanceM) return;
+
+    let towardsBearing = null;
+
+    if (hasLanes) {
+      let nearest = null;
+
+      for (const lane of entrance.lanes) {
+        const onLane = nearestPointOnLine(lat, lon, lane);
+
+        if (onLane && (!nearest || onLane.distanceM < nearest.distanceM)) {
+          nearest = { ...onLane, lane };
+        }
+      }
+
+      if (!nearest || nearest.distanceM > LANE_TOLERANCE_M) return;
+
+      // Lanes run from the entrance outwards, so towards it is backwards
+      const from = nearest.lane[nearest.index + 1];
+      const to = nearest.lane[nearest.index];
+
+      towardsBearing = bearingBetween(from[0], from[1], to[0], to[1]);
+    } else if (distanceM >= 1) {
+      towardsBearing = bearingBetween(lat, lon, entranceLat, entranceLon);
+    }
+
+    let heading = null;
+
+    if (travelBearing !== null) {
+      const angle =
+        towardsBearing === null
+          ? 90
+          : angleDifference(travelBearing, towardsBearing);
+
+      heading =
+        angle <= TOWARDS_ANGLE_DEGREES
+          ? "towards"
+          : angle >= AWAY_ANGLE_DEGREES
+            ? "away"
+            : "across";
+    }
+
+    best = {
+      roadId: road.id,
+      roadName: road.name,
+      entrance: index,
+      point: entrance.point,
+      onLane: hasLanes,
+      distanceM,
+      heading,
+    };
+  });
+
+  return best;
+}
+
 // --------------------------------------------------
 // Roads a vehicle is inside or approaching.
 // travelBearing is null when it is stopped.
@@ -149,6 +244,7 @@ function isPointInsidePolygon(lat, lon, polygon) {
 function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
   const insideRoads = [];
   const approachingRoads = [];
+  const entranceCandidates = [];
 
   const tolerance = getRoadTolerance(accuracy);
 
@@ -181,6 +277,12 @@ function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
         distanceM: nearest.distanceM,
       });
     }
+
+    const candidate = entranceCandidate(lat, lon, travelBearing, road);
+
+    if (candidate) {
+      entranceCandidates.push(candidate);
+    }
   }
 
   approachingRoads.sort((a, b) => a.distanceM - b.distanceM);
@@ -191,6 +293,7 @@ function computeGeofenceState(lat, lon, travelBearing, roads, accuracy) {
     narrowRoadName: insideRoads[0]?.name ?? null,
     insideRoadIds: insideRoads.map((road) => road.id),
     approachingRoads,
+    entranceCandidates,
   };
 }
 

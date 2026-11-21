@@ -8,6 +8,7 @@ const { getVehicleForDevice } = require("../services/deviceRegistry");
 const {
   getAllVehicles,
   getVehiclesForDashboard,
+  getBusyRoads,
 } = require("../services/vehicleState");
 const { createRateLimiter, getClientIp } = require("../utils/rateLimit");
 
@@ -127,7 +128,8 @@ router.get("/live", requireAdmin, async (_req, res) => {
         username: byVehicle.get(vehicle.vehicleId) ?? null,
       }));
 
-    res.json({ vehicles });
+    // Roads that aren't available, as roadId → RESERVED or OCCUPIED
+    res.json({ vehicles, roads: getBusyRoads() });
   } catch (error) {
     console.error("[Admin] Live vehicles failed:", error.message);
 

@@ -17,6 +17,10 @@ module.exports = {
   // positions. A shorter limit would make a working car keep dropping out.
   staleThresholdMs: parseInt(process.env.STALE_THRESHOLD_MS, 10) || 15000,
 
+  // Look up each road's entrances on OpenStreetMap. Off for tests, which
+  // shouldn't depend on another service.
+  findEntrancesOnline: process.env.ROAD_ENTRANCES_ONLINE !== "false",
+
   // Turn on once every phone runs an app version that sends a login token
   requireVehicleToken: process.env.REQUIRE_VEHICLE_TOKEN === "true",
 };

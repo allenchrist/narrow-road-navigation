@@ -66,6 +66,13 @@ async function ensureSchema() {
     );
   `);
 
+  // Where vehicles can drive in, and the roads leading there. Empty until
+  // worked out from OpenStreetMap, which the server does in the background.
+  await pool.query(`
+    ALTER TABLE narrow_roads
+    ADD COLUMN IF NOT EXISTS entrances JSONB;
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS narrow_road_suggestions (
       id TEXT PRIMARY KEY,

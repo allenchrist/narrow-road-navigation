@@ -51,7 +51,10 @@ const {
   getVehicleCount,
 } = require("./services/vehicleState");
 const { getDeviceCount, loadDevices } = require("./services/deviceRegistry");
-const { loadNarrowRoads } = require("./services/narrowRoadService");
+const {
+  findMissingEntrances,
+  loadNarrowRoads,
+} = require("./services/narrowRoadService");
 const { cleanUpOldRecords } = require("./services/cleanupService");
 
 // Dashboards get the fleet on a timer rather than on every GPS packet.
@@ -185,6 +188,9 @@ async function loadSavedData() {
     notifyAllDashboards();
 
     cleanUp();
+
+    // Roads without entrances yet, in the background
+    findMissingEntrances();
   } catch (error) {
     console.error(
       `[Database] Could not load saved data, retrying in ${DATABASE_RETRY_MS / 1000}s:`,

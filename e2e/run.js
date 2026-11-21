@@ -189,6 +189,7 @@ async function main() {
       REQUIRE_VEHICLE_TOKEN: "true",
       STALE_THRESHOLD_MS: "15000",
       ALLOW_TEST_SIGNUP: "true",
+      ROAD_ENTRANCES_ONLINE: "false",
       BREVO_API_KEY: "e2e-only-key",
       BREVO_API_URL: `http://127.0.0.1:${MAIL_PORT}/`,
       MAIL_FROM_ADDRESS: "sender@example.com",

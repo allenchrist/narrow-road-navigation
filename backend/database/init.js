@@ -34,8 +34,8 @@ async function importJsonData() {
   for (const road of readJsonFile(ROADS_FILE)) {
     const result = await pool.query(
       `
-      INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at, entrances)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (id) DO NOTHING;
       `,
       [
@@ -44,6 +44,7 @@ async function importJsonData() {
         JSON.stringify(road.polygon),
         road.createdAt,
         road.updatedAt,
+        road.entrances ? JSON.stringify(road.entrances) : null,
       ],
     );
 

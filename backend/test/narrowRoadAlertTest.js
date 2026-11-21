@@ -64,6 +64,12 @@ function moved(vehicle, lat, lon, speed, bearing) {
   };
 }
 
+// At the road's east entrance, as entranceWatch decides over several readings
+const atEastEntrance = (vehicle) => ({
+  ...vehicle,
+  atEntrances: { R1: { roadId: "R1", distanceM: 30 } },
+});
+
 const insideEastbound = () => vehicleAt(11, 77.0005, MOVING, EAST);
 const insideWestbound = () => vehicleAt(11, 77.0015, MOVING, WEST);
 const insideStopped = () => vehicleAt(11, 77.001, 0, null);
@@ -140,7 +146,10 @@ const tests = {
   },
   "an approaching priority vehicle is named": () => {
     const inside = insideEastbound();
-    const priorityVehicle = { ...aheadWestbound(), vehicleType: "priority" };
+    const priorityVehicle = {
+      ...atEastEntrance(aheadWestbound()),
+      vehicleType: "priority",
+    };
     const alert = alertFor(inside, [priorityVehicle]);
     assert.strictEqual(alert.kind, "VEHICLE_ENTERING");
     assert.strictEqual(alert.otherVehicleType, "priority");
@@ -492,12 +501,26 @@ const tests = {
       "IN_NARROW_ROAD",
     );
   },
-  "inside with a vehicle about to enter the far end": () => {
+  "inside, a car waiting at the far entrance is mentioned": () => {
+    const alert = alertFor(insideEastbound(), [
+      { ...atEastEntrance(aheadWestbound()), vehicleType: "bus" },
+    ]);
+    assert.strictEqual(alert.kind, "VEHICLE_WAITING");
+    assert.strictEqual(alert.otherVehicleType, "bus");
+  },
+  "inside, a car near the road but not at an entrance is ignored": () => {
     assert.strictEqual(
       kind(insideEastbound(), [aheadWestbound()]),
-      "VEHICLE_ENTERING",
+      "IN_NARROW_ROAD",
     );
   },
+  "inside, a car at the entrance behind, going the same way, is ignored":
+    () => {
+      assert.strictEqual(
+        kind(insideEastbound(), [atEastEntrance(aheadEastbound())]),
+        "IN_NARROW_ROAD",
+      );
+    },
   "a car just outside a thin road shape counts as on it": () => {
     // About 5.5 m beyond the road's northern edge
     const nearEdge = computeGeofenceState(11.00015, 77.001, null, [ROAD], 5);

@@ -180,14 +180,46 @@ function createRightOfWayTracker() {
   };
 }
 
+// What a vehicle at an entrance is told, from roadOccupancy
+const ENTRY_ALERTS = {
+  GO: { kind: "ENTRY_GO", level: "clear" },
+  FOLLOW: { kind: "ENTRY_FOLLOW", level: "clear" },
+  WAIT: { kind: "ENTRY_WAIT", level: "danger" },
+  PRIORITY: { kind: "ENTRY_PRIORITY", level: "warning" },
+};
+
+function entryAlert(entry) {
+  const { kind, level } = ENTRY_ALERTS[entry.action];
+
+  return {
+    kind,
+    level,
+    roadId: entry.roadId,
+    roadName: entry.roadName,
+    otherVehicleType:
+      entry.conflicts.length === 1
+        ? (entry.conflicts[0].vehicleType ?? null)
+        : null,
+    otherCount: entry.conflicts.length,
+    byPriority: entry.byPriority ?? false,
+
+    // Why to wait: OCCUPIED, someone's in the road, or RESERVED, someone at
+    // another entrance goes first
+    reason: entry.reason ?? null,
+  };
+}
+
 /**
- * Decides what the infotainment screen should tell this driver. Alerts
- * start once the vehicle is inside a narrow road. A driver who gave way is
- * told the road is clear once the other vehicle has passed.
+ * Decides what the infotainment screen should tell this driver. At an
+ * entrance, the road's occupancy says whether to go or wait. Inside, the
+ * right-of-way rules apply. A driver who gave way is told the road is clear
+ * once the other vehicle has passed.
  */
-function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
+function buildNarrowRoadAlert(vehicle, others, rightOfWay, occupancy = null) {
   if (vehicle.insideRoadIds.length === 0) {
-    return NO_ALERT;
+    const entry = occupancy?.entryFor(vehicle, others);
+
+    return entry ? entryAlert(entry) : NO_ALERT;
   }
 
   const roadIds = new Set(vehicle.insideRoadIds);
@@ -196,6 +228,7 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   const givingWay = [];
   const passedBy = [];
   const entering = [];
+  const waitingOutside = [];
   let byPriority = false;
 
   for (const other of others) {
@@ -212,9 +245,15 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
       }
     } else if (
       getRelation(vehicle, other) !== "SAME_DIRECTION" &&
-      other.approachingRoads.some((road) => roadIds.has(road.id))
+      Object.keys(other.atEntrances ?? {}).some(
+        (roadId) =>
+          roadIds.has(roadId) && !other.insideRoadIds.includes(roadId),
+      )
     ) {
-      entering.push(other);
+      // A priority vehicle comes in anyway. Others have been told to wait.
+      (isPriorityVehicle(other.vehicleType) ? entering : waitingOutside).push(
+        other,
+      );
     }
   }
 
@@ -244,6 +283,12 @@ function buildNarrowRoadAlert(vehicle, others, rightOfWay) {
   // The driver who gave way is told when they can go. Like the instruction
   // before it, this lasts until the two no longer share the road.
   if (passedBy.length > 0) return alert("ROAD_CLEAR", "clear", passedBy);
+
+  // Someone at an entrance is waiting for the road to clear
+  if (waitingOutside.length > 0) {
+    return alert("VEHICLE_WAITING", "caution", waitingOutside);
+  }
+
   return alert("IN_NARROW_ROAD", "caution");
 }
 
@@ -251,5 +296,6 @@ module.exports = {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
   updateRoadEntries,
+  getRelation,
   NO_ALERT,
 };

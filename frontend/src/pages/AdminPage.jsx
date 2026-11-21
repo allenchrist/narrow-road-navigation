@@ -60,6 +60,7 @@ function AdminPage({ onSignOut }) {
           editor={editor}
           review={review}
           liveVehicles={live.vehicles}
+          roadStatuses={live.roadStatuses}
           onMapReady={setMap}
         />
 

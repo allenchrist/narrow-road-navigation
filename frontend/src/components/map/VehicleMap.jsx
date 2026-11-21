@@ -1,4 +1,5 @@
 import {
+  CircleMarker,
   MapContainer,
   Polygon,
   TileLayer,
@@ -15,7 +16,7 @@ import {
   useSmoothPosition,
   useSteadyTarget,
 } from "../../hooks/useSmoothPosition";
-import { ALERT_TINTS } from "../../utils/alerts";
+import { ALERT_TINTS, ROAD_STATUS_TINTS } from "../../utils/alerts";
 import { isMoving } from "../../utils/display";
 import Icon from "../common/Icon";
 import { MapController } from "./mapHelpers";
@@ -183,6 +184,44 @@ function CurrentRoads({ roads, kind }) {
   ]);
 }
 
+/**
+ * At an entrance, the narrow road ahead in the colour of whether it's free,
+ * with a dot where you go in.
+ */
+function EntranceRoad({ road }) {
+  const tint = ROAD_STATUS_TINTS[road.status] ?? ROAD_STATUS_TINTS.AVAILABLE;
+
+  return [
+    <Polygon
+      key={`${road.id}-ahead-${tint}`}
+      positions={road.polygon}
+      interactive={false}
+      className="cv-entrance-road"
+      pathOptions={{
+        color: tint,
+        weight: 14,
+        opacity: 0.22,
+        fillColor: tint,
+        fillOpacity: 0.25,
+        lineJoin: "round",
+      }}
+    />,
+    <CircleMarker
+      key={`${road.id}-entrance`}
+      center={road.entrance}
+      radius={7}
+      interactive={false}
+      className="cv-entrance-dot"
+      pathOptions={{
+        color: "#ffffff",
+        weight: 2,
+        fillColor: tint,
+        fillOpacity: 1,
+      }}
+    />,
+  ];
+}
+
 function VehicleMap({ alert, soundOn, soundUnlocked, onToggleSound }) {
   const { vehicles, egoVehicle, myVehicleId } = useVehicle();
 
@@ -273,6 +312,10 @@ function VehicleMap({ alert, soundOn, soundUnlocked, onToggleSound }) {
             roads={egoVehicle.currentRoads ?? []}
             kind={alert.kind}
           />
+        )}
+
+        {showingAlert && egoVehicle.entranceRoad && (
+          <EntranceRoad road={egoVehicle.entranceRoad} />
         )}
 
         {vehicleList.map((v) => (

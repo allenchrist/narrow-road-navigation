@@ -70,6 +70,29 @@ module.exports = async ({
     (await carA.$$(".cv-marker-other")).length === 1,
   );
 
+  // Car B has reached the far entrance while Car A is inside, so it waits
+  await waitForPhase("Car B waits at the far entrance");
+  await sleep(2500);
+  check(
+    "a car at the entrance of an occupied road is told to wait",
+    (await alertOf(carB)) === "Wait at the entrance",
+  );
+  check(
+    "it says why",
+    (
+      await carB.evaluate(() => document.querySelector(".cv-alert").innerText)
+    ).includes("in the narrow road"),
+  );
+  check(
+    "its map shows the road ahead and the entrance",
+    Boolean(await carB.$(".cv-entrance-road")) &&
+      Boolean(await carB.$(".cv-entrance-dot")),
+  );
+  check(
+    "the car inside is told someone is waiting",
+    (await alertOf(carA)) === "Vehicle waiting",
+  );
+
   await waitForPhase("Car B enters after Car A");
   await sleep(5500);
   check("a car in the same road is listed", (await listedIn(carA)) === 1);
@@ -140,6 +163,14 @@ module.exports = async ({
   check(
     "the cars are on the admin map",
     (await admin.$$(".cv-marker-other")).length === 2,
+  );
+  check(
+    "the road they're in shows as occupied",
+    (await admin.$$(".admin-road--occupied")).length === 1,
+  );
+  check(
+    "road entrances show on the admin map",
+    (await admin.$$(".admin-entrance")).length > 0,
   );
   await admin.close();
 

@@ -60,8 +60,8 @@ async function replaceNarrowRoads(apply) {
     for (const road of roads) {
       await client.query(
         `
-        INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5);
+        INSERT INTO narrow_roads (id, name, polygon, created_at, updated_at, entrances)
+        VALUES ($1, $2, $3, $4, $5, $6);
         `,
         [
           road.id,
@@ -69,6 +69,7 @@ async function replaceNarrowRoads(apply) {
           JSON.stringify(road.polygon),
           road.createdAt,
           road.updatedAt,
+          road.entrances ? JSON.stringify(road.entrances) : null,
         ],
       );
     }

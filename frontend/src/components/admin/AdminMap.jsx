@@ -8,12 +8,23 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-import { ALERT_TINTS } from "../../utils/alerts";
+import {
+  ALERT_TINTS,
+  ROAD_STATUS_LABELS,
+  ROAD_STATUS_TINTS,
+} from "../../utils/alerts";
 import SearchMatches from "../common/SearchMatches";
 import VehicleMarker from "../map/VehicleMarker";
 import { DrawingLayer, FlyToLocation, MapController } from "../map/mapHelpers";
 
-function AdminMap({ search, editor, review, liveVehicles, onMapReady }) {
+function AdminMap({
+  search,
+  editor,
+  review,
+  liveVehicles,
+  roadStatuses = {},
+  onMapReady,
+}) {
   const { searchLocation, searchError } = search;
   const { roads, drawing, currentPolygon, addPoint } = editor;
   const { pendingSuggestions, selectedSuggestionId, viewSuggestion } = review;
@@ -37,20 +48,60 @@ function AdminMap({ search, editor, review, liveVehicles, onMapReady }) {
 
         <DrawingLayer drawing={drawing} onPointAdded={addPoint} />
 
-        {/* Saved roads */}
+        {/* Saved roads, coloured by whether they're free, reserved or
+            occupied right now */}
 
-        {roads.map((road) => (
-          <Polygon
-            key={`road-${road.id}`}
-            positions={road.polygon}
-            pathOptions={{
-              color: "#ff5c63",
-              weight: 3,
-              fillColor: "#ff5c63",
-              fillOpacity: 0.18,
-            }}
-          />
-        ))}
+        {roads.map((road) => {
+          const status = roadStatuses[road.id] ?? "AVAILABLE";
+          const tint = ROAD_STATUS_TINTS[status];
+
+          return (
+            <Polygon
+              key={`road-${road.id}-${status}`}
+              positions={road.polygon}
+              className={`admin-road admin-road--${status.toLowerCase()}`}
+              pathOptions={{
+                color: tint,
+                weight: 3,
+                fillColor: tint,
+                fillOpacity: status === "AVAILABLE" ? 0.18 : 0.35,
+              }}
+            />
+          );
+        })}
+
+        {/* Where vehicles drive in, and the roads leading there */}
+
+        {roads.flatMap((road) =>
+          (road.entrances ?? []).flatMap((entrance, index) => [
+            ...(entrance.lanes ?? []).map((lane, laneIndex) => (
+              <Polyline
+                key={`lane-${road.id}-${index}-${laneIndex}`}
+                positions={lane}
+                interactive={false}
+                pathOptions={{
+                  color: "#56c7ff",
+                  weight: 2,
+                  opacity: 0.7,
+                  dashArray: "4 5",
+                }}
+              />
+            )),
+            <CircleMarker
+              key={`entrance-${road.id}-${index}`}
+              center={entrance.point}
+              radius={4}
+              interactive={false}
+              className="admin-entrance"
+              pathOptions={{
+                color: "#ffffff",
+                weight: 1.5,
+                fillColor: road.entrancesFound ? "#56c7ff" : "#9aa7b4",
+                fillOpacity: 1,
+              }}
+            />,
+          ]),
+        )}
 
         {/* Drivers' suggestions */}
 
@@ -161,6 +212,24 @@ function AdminMap({ search, editor, review, liveVehicles, onMapReady }) {
       )}
 
       <SearchMatches search={search} />
+
+      {!drawing && (
+        <ul className="admin-map-legend" aria-label="Map key">
+          {Object.entries(ROAD_STATUS_LABELS).map(([status, label]) => (
+            <li key={status}>
+              <span
+                className="admin-legend-swatch"
+                style={{ background: ROAD_STATUS_TINTS[status] }}
+              />
+              {label}
+            </li>
+          ))}
+          <li>
+            <span className="admin-legend-swatch admin-legend-swatch--entrance" />
+            Entrance
+          </li>
+        </ul>
+      )}
 
       {drawing && (
         <div className="admin-drawing-help">

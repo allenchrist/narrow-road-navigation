@@ -10,8 +10,11 @@ const {
   buildNarrowRoadAlert,
   createRightOfWayTracker,
   updateRoadEntries,
+  getRelation,
   NO_ALERT,
 } = require("./narrowRoadAlert");
+const { updateEntrances } = require("./entranceWatch");
+const { createOccupancyTracker } = require("./roadOccupancy");
 const { distanceBetween, getTravelBearing } = require("../utils/geo");
 const { getNarrowRoadById } = require("./narrowRoadService");
 const { DEFAULT_VEHICLE_TYPE } = require("../utils/vehicleTypes");
@@ -37,6 +40,8 @@ const FORGET_AFTER_MS = 60 * 60 * 1000;
 const vehicles = new Map();
 
 const rightOfWay = createRightOfWayTracker();
+
+const occupancy = createOccupancyTracker(getRelation);
 
 function registerVehicle(vehicleId) {
   if (vehicles.has(vehicleId)) {
@@ -90,6 +95,12 @@ function registerVehicle(vehicleId) {
 
       approachingRoads: [],
       lastInsideAt: null,
+
+      // Entrances of narrow roads it's arriving at or waiting at, as
+      // roadId → entrance, and what decides that over several readings
+      atEntrances: {},
+      entranceHistory: {},
+      leftRoadAt: {},
 
       // What the infotainment screen should show
       narrowRoadAlert: NO_ALERT,
@@ -159,6 +170,9 @@ function resolveGeofenceState(existing, data, now) {
     return {
       ...previous,
       approachingRoads: existing.approachingRoads,
+      atEntrances: existing.atEntrances,
+      entranceHistory: existing.entranceHistory,
+      leftRoadAt: existing.leftRoadAt,
     };
   }
 
@@ -180,11 +194,25 @@ function resolveGeofenceState(existing, data, now) {
       ...previous,
       lastRoadCheckAt: now,
       approachingRoads: [],
+
+      // Still counts as inside, so not at that road's entrance
+      ...updateEntrances(
+        existing,
+        geofence.entranceCandidates,
+        previous.insideRoadIds,
+        now,
+      ),
     };
   }
 
   return {
     ...geofence,
+    ...updateEntrances(
+      existing,
+      geofence.entranceCandidates,
+      geofence.insideRoadIds,
+      now,
+    ),
     roadEnteredAt: updateRoadEntries(
       existing.roadEnteredAt,
       geofence.insideRoadIds,
@@ -272,6 +300,7 @@ function updateNarrowRoadAlerts() {
   const activeVehicles = allVehicles.filter((v) => v.active);
 
   rightOfWay.update(activeVehicles);
+  occupancy.update(activeVehicles, now);
 
   for (const vehicle of allVehicles) {
     if (!vehicle.active) {
@@ -284,7 +313,12 @@ function updateNarrowRoadAlerts() {
       (other) => other.vehicleId !== vehicle.vehicleId,
     );
 
-    vehicle.narrowRoadAlert = buildNarrowRoadAlert(vehicle, others, rightOfWay);
+    vehicle.narrowRoadAlert = buildNarrowRoadAlert(
+      vehicle,
+      others,
+      rightOfWay,
+      occupancy,
+    );
 
     vehicle.otherVehiclesInSameNarrowRoad = others.filter((other) =>
       other.insideRoadIds.some((id) => vehicle.insideRoadIds.includes(id)),
@@ -343,7 +377,7 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
   }
 
   if (!own.active || own.lat === null) {
-    return [{ ...own, currentRoads: [] }];
+    return [{ ...own, currentRoads: [], entranceRoad: null }];
   }
 
   const ownRoadIds = vehicles.get(ownVehicleId)?.insideRoadIds ?? [];
@@ -352,6 +386,24 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
     .map(getNarrowRoadById)
     .filter(Boolean)
     .map(({ id, polygon }) => ({ id, polygon }));
+
+  // At an entrance, the road ahead, coloured by whether it's free, and the
+  // entrance itself
+  const alertRoad =
+    own.narrowRoadAlert?.kind?.startsWith("ENTRY_") &&
+    getNarrowRoadById(own.narrowRoadAlert.roadId);
+
+  const entrance =
+    alertRoad && vehicles.get(ownVehicleId)?.atEntrances?.[alertRoad.id];
+
+  const entranceRoad = entrance
+    ? {
+        id: alertRoad.id,
+        polygon: alertRoad.polygon,
+        status: occupancy.statusOf(alertRoad.id),
+        entrance: entrance.point,
+      }
+    : null;
 
   const others = dashboardVehicles
     .filter(
@@ -369,7 +421,17 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
       ),
     }));
 
-  return [{ ...own, currentRoads }, ...others];
+  return [{ ...own, currentRoads, entranceRoad }, ...others];
+}
+
+/**
+ * Narrow roads that aren't available, as roadId → RESERVED or OCCUPIED, for
+ * the admin's live map. Brought up to date first.
+ */
+function getBusyRoads() {
+  updateNarrowRoadAlerts();
+
+  return occupancy.busyRoads();
 }
 
 function getVehicleCount() {
@@ -387,4 +449,5 @@ module.exports = {
   getVehiclesForDashboard,
   getVisibleVehicles,
   getVehicleCount,
+  getBusyRoads,
 };

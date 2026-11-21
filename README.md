@@ -34,10 +34,21 @@ If a car's position is more than 5 seconds old, the top bar shows **Weak signal*
 
 ## Alerts
 
+**At the entrance**, before going in:
+
+| Alert | When it shows | Colour |
+|---|---|---|
+| **Go ahead** | The road is clear and has been given to you, or the vehicle ahead in it is going your way | Green, with an arrow |
+| **Wait at the entrance** | Someone is in the road, or about to enter from another end and goes first | Red, with a give-way sign |
+| **Vehicle in the road** | You're a priority vehicle, so you aren't told to wait. Those inside are told you're coming | Orange |
+
+**Inside a narrow road:**
+
 | Alert | When it shows | Colour |
 |---|---|---|
 | **Narrow road** | You're inside a narrow road and no other car matters | Yellow |
-| **Vehicle about to enter** | Another car is heading for this road | Orange |
+| **Vehicle waiting** | A car at an entrance is waiting for you to pass | Yellow |
+| **Vehicle about to enter** | A priority vehicle is coming in | Orange |
 | **You have right of way** | Another car in this road entered after you | Green, with an arrow |
 | **Give way** | Another car in this road entered before you | Red, with a give-way sign |
 | **Road clear** | The car you gave way to has passed | Green, with a tick |
@@ -59,6 +70,31 @@ The car that entered the road first keeps going, and the car that entered last g
 - It ends when a car leaves the road or stops sending updates.
 - Cars clearly travelling the same way, or already driving apart, aren't a conflict.
 - With three or more cars, every car has one place in the order, so they can't all be told to give way.
+
+These rules are the safety net. Most meetings are avoided before anyone goes in, by the road's occupancy.
+
+### Road occupancy
+
+Every narrow road is **available**, **reserved** or **occupied**, worked out from the phones' positions about once a second. Cars are stopped at the entrance rather than meeting in the middle of the road, where backing out is hardest.
+
+| Status | Meaning |
+|---|---|
+| Available | Nobody is inside or waiting |
+| Reserved | Nobody is inside, and one car at an entrance has been given the road |
+| Occupied | One or more cars are inside |
+
+**Entrances.** An entrance is where a real road from OpenStreetMap joins the narrow road, at its ends or where a side lane comes in. Its **approach lanes** are the last 60 m of each road leading there. A car only counts as arriving if it's on one of those, within 12 m allowing for GPS error, so a car on a parallel street, or on a road that passes close by without joining, is never counted. Where no connecting road is known, the middles of the shape's two ends are used.
+
+**Arriving.** A moving car counts once it's within 50 m of an entrance and has got closer over its last 3 readings, heading towards it. A stopped car counts within 20 m. Once counted, it keeps counting while it slows and waits up to 55 m back, and stops counting when it drives away, leaves the approach lane or goes in. A car that has just driven out and stops nearby isn't treated as waiting to go back in.
+
+**Who gets the road.** When the road is free, one car at its entrances is given it: a priority vehicle first, otherwise whoever arrived first, and the vehicle ID on an exact tie, so two cars are never both told to go. A priority vehicle can take the road from a car that hasn't gone in yet.
+
+- A car told to go that stays stopped for 15 seconds, such as one parked near the entrance, or hasn't gone in after 60 seconds, loses its turn and goes to the back of the line.
+- A car whose phone stops sending updates loses its turn.
+- A car behind one that's clearly going the same way is told to follow it. If the one ahead is stopped, it waits.
+- When the last car leaves, the road goes to the next car waiting, who is told to go.
+
+The dashboard shows the road ahead in green, amber or red, with a dot at your entrance. The admin's live map colours every road by its status and shows each entrance and its approach lanes.
 
 ## What's in this repository
 
@@ -186,6 +222,14 @@ npm run db:replace-roads -- --apply replaces them
 
 Restart the server afterwards, as it keeps the roads in memory.
 
+**Entrances.** Each road in the file also lists its entrances and approach lanes, worked out from OpenStreetMap's road network. After changing the roads, work them out again:
+
+```
+npm run roads:entrances
+```
+
+It downloads the roads around every narrow road in one request, and tries again for a few minutes if OpenStreetMap is busy. When the server starts, any road without entrances gets them from this file if its shape matches, so the imported roads never need OpenStreetMap. Roads added or changed on the admin page are looked up on OpenStreetMap in the background, one at a time. Until then, and if OpenStreetMap can't be reached, the ends of the shape are used, and it tries again every 30 minutes.
+
 **Map data:** roads and buildings © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. Buildings also from [Microsoft Global ML Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints), available under the Open Database License.
 
 ## Before a demo
@@ -217,6 +261,7 @@ These go in `backend/.env`, or in the host's environment settings.
 | `PORT` | No | Server port. Defaults to 5000 |
 | `STALE_THRESHOLD_MS` | No | How long without an update before a car stops counting. Defaults to 15000. Phones without a clear view of the sky can go about 7 seconds between positions, so a much lower value makes working cars drop out |
 | `VEHICLE_WS_PATH` | No | The path phones connect to. Defaults to `/vehicle` |
+| `ROAD_ENTRANCES_ONLINE` | No | Set to `false` to never ask OpenStreetMap for road entrances, as the tests do. Roads added on the admin page then use the ends of their shape |
 
 ## Pages
 
@@ -225,13 +270,14 @@ These go in `backend/.env`, or in the host's environment settings.
 | `/` | Driver login, with **Forgot password?** to change a password with an emailed code. Accounts are created and deleted in the phone app |
 | `/your-username` | The dashboard. The full-screen button is in the top bar, and the menu has Suggest a narrow road and Log out |
 | `/your-username/suggest-narrow-road` | Mark a narrow road on the map and send it for review |
-| `/admin` | **Live** shows every connected vehicle on the map and in a list, with its driver and the alert its screen shows, refreshed every 2 seconds. Also mark, edit and delete roads, and approve or reject suggestions, including roads drivers recorded in the app |
+| `/admin` | **Live** shows every connected vehicle on the map and in a list, with its driver and the alert its screen shows, refreshed every 2 seconds. The map colours each narrow road available, reserved or occupied, and shows its entrances. Also mark, edit and delete roads, and approve or reject suggestions, including roads drivers recorded in the app |
 
 ## Run the tests
 
 | Command | Run in | What it checks | Needs |
 |---|---|---|---|
 | `npm run test:alerts` | `backend` | Alert and right-of-way rules | Nothing else |
+| `npm run test:occupancy` | `backend` | Finding entrances and approach lanes, cars arriving at them, and who is told to go or wait | Nothing else |
 | `npm run test:validation` | `backend` | Input checks | Nothing else |
 | `npm run test:state` | `backend` | The live vehicle list, such as forgetting vehicles gone for over an hour | Nothing else |
 | `npm run test:geofence` | `backend` | Road checks, which only look at roads near a vehicle, give the same answers as checking every road, and are faster | Nothing else |

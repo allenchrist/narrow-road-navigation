@@ -54,6 +54,7 @@ jobs:
       JWT_SECRET: checks-only-not-a-real-secret-0123456789
       ADMIN_PASSWORD: checks-only-admin
       ALLOW_TEST_SIGNUP: "true"
+      ROAD_ENTRANCES_ONLINE: "false"
       PORT: 5000
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +69,8 @@ jobs:
       - run: npm run lint
       - name: Alert rules
         run: npm run test:alerts
+      - name: Road entrances and occupancy
+        run: npm run test:occupancy
       - name: Input validation
         run: npm run test:validation
       - name: Live vehicle list

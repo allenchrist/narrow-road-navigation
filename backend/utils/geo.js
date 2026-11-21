@@ -93,10 +93,49 @@ function nearestPointOnPolygon(lat, lon, polygon) {
   return nearest;
 }
 
+/**
+ * Distance from a point to the nearest part of a line of [latitude,
+ * longitude] points, and which piece of the line that is, by its first point.
+ */
+function nearestPointOnLine(lat, lon, line) {
+  const metresPerDegree = toRadians(1) * EARTH_RADIUS_M;
+  const lonScale = Math.cos(toRadians(lat));
+
+  const project = ([pointLat, pointLon]) => ({
+    x: (pointLon - lon) * lonScale * metresPerDegree,
+    y: (pointLat - lat) * metresPerDegree,
+  });
+
+  let nearest = null;
+
+  for (let i = 0; i < line.length - 1; i++) {
+    const a = project(line[i]);
+    const b = project(line[i + 1]);
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lengthSquared = dx * dx + dy * dy;
+
+    const t =
+      lengthSquared === 0
+        ? 0
+        : Math.min(1, Math.max(0, -(a.x * dx + a.y * dy) / lengthSquared));
+
+    const distanceM = Math.hypot(a.x + t * dx, a.y + t * dy);
+
+    if (!nearest || distanceM < nearest.distanceM) {
+      nearest = { distanceM, index: i };
+    }
+  }
+
+  return nearest;
+}
+
 module.exports = {
   distanceBetween,
   bearingBetween,
   angleDifference,
   getTravelBearing,
   nearestPointOnPolygon,
+  nearestPointOnLine,
 };

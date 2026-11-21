@@ -19,7 +19,9 @@
     "format": "prettier --write . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
     "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
     "test:geofence": "node test/geofenceTest.js",
-    "test:cleanup": "node test/cleanupTest.js"
+    "test:cleanup": "node test/cleanupTest.js",
+    "test:occupancy": "node test/roadOccupancyTest.js",
+    "roads:entrances": "node tools/findRoadEntrances.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

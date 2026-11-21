@@ -55,7 +55,51 @@ const MESSAGES = {
     title: "Narrow road",
     detail: () => "Proceed with caution",
   },
+
+  // Someone at an entrance, who has been told to wait for this driver
+  VEHICLE_WAITING: {
+    icon: "car",
+    tone: "caution",
+    title: "Vehicle waiting",
+    detail: (other) =>
+      `${capitalize(other === "the other vehicle" ? "another vehicle" : other)} is waiting for you to pass`,
+  },
+
+  // At the entrance of a narrow road, before going in
+  ENTRY_GO: {
+    icon: "arrowUp",
+    tone: "go",
+    title: "Go ahead",
+    detail: () => "The narrow road ahead is clear",
+  },
+  ENTRY_FOLLOW: {
+    icon: "arrowUp",
+    tone: "go",
+    title: "Go ahead",
+    detail: (other) =>
+      `Follow ${other === "the other vehicle" ? "the vehicle" : other} ahead`,
+    reason: () => "Going the same way",
+  },
+  ENTRY_WAIT: {
+    icon: "yield",
+    tone: "stop",
+    title: "Wait at the entrance",
+    detail: (other, alert) =>
+      alert.reason === "OCCUPIED"
+        ? `${capitalize(other)} ${alert.otherCount > 1 ? "are" : "is"} in the narrow road`
+        : `${capitalize(other)} is about to enter from the other end`,
+    reason: () => "You'll be told when it's clear",
+  },
+  ENTRY_PRIORITY: {
+    icon: "car",
+    tone: "warning",
+    title: "Vehicle in the road",
+    detail: (other) =>
+      `${capitalize(other)} ${other === "other vehicles" ? "have" : "has"} been told you're coming`,
+  },
 };
+
+const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 // When a priority vehicle, such as an ambulance, decided who goes, rather
 // than who came first
@@ -74,6 +118,9 @@ const PRIORITY_MESSAGES = {
     detail: () => "Continue, others are giving way to you",
     scene: { other: "Giving way", own: "Goes first", goes: "own" },
   },
+  ENTRY_WAIT: {
+    reason: (other) => `${capitalize(other)} goes first`,
+  },
 };
 
 // Shorter names for the road picture, where space is tight
@@ -89,8 +136,6 @@ function otherName(alert) {
 
   return label ? `the ${label.toLowerCase()}` : "the other vehicle";
 }
-
-const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 function SceneVehicle({ type, own, facing, label, highlight }) {
   const image = vehicleImage(type);
@@ -223,7 +268,7 @@ function NarrowRoadAlert({ alert, vehicle }) {
 
         <div className="cv-alert-text">
           <strong>{message.title}</strong>
-          <span>{message.detail(other)}</span>
+          <span>{message.detail(other, alert)}</span>
           {note && <small>{note}</small>}
         </div>
       </div>

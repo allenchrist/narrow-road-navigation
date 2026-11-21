@@ -695,6 +695,48 @@
   font-weight: 600;
 }
 
+/* What the road colours on the admin map mean */
+.admin-map-legend {
+  position: absolute;
+  z-index: 1000;
+  bottom: 24px;
+  left: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--cv-border);
+  border-radius: 10px;
+  background: var(--cv-surface-solid);
+  box-shadow: var(--cv-shadow);
+  color: var(--cv-text-2);
+  font-size: 12px;
+  list-style: none;
+}
+
+.admin-map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.admin-legend-swatch--entrance {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #56c7ff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
 /* ---------------------------------------------------------
    Suggestion sent
    --------------------------------------------------------- */

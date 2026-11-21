@@ -6,11 +6,13 @@ import { adminFetch } from "../services/adminApi";
 const REFRESH_MS = 2000;
 
 /**
- * Every connected vehicle, with its driver and alert, refreshed every two
- * seconds while the admin page is open.
+ * Every connected vehicle, with its driver and alert, and which narrow roads
+ * are reserved or occupied, refreshed every two seconds while the admin page
+ * is open.
  */
 export function useLiveVehicles() {
   const [vehicles, setVehicles] = useState([]);
+  const [roadStatuses, setRoadStatuses] = useState({});
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export function useLiveVehicles() {
 
         if (!cancelled) {
           setVehicles(Array.isArray(data.vehicles) ? data.vehicles : []);
+          setRoadStatuses(data.roads ?? {});
           setError("");
         }
       } catch (err) {
@@ -57,5 +60,5 @@ export function useLiveVehicles() {
     };
   }, []);
 
-  return { vehicles, error };
+  return { vehicles, roadStatuses, error };
 }
