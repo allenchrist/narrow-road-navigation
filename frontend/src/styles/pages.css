@@ -732,6 +732,25 @@
   cursor: pointer;
 }
 
+.admin-add-bend {
+  margin-bottom: 12px;
+}
+
+.admin-add-bend.is-active {
+  border-color: var(--cv-accent);
+  color: var(--cv-accent);
+}
+
+.admin-notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(67, 209, 122, 0.4);
+  border-radius: 10px;
+  background: rgba(67, 209, 122, 0.1);
+  color: var(--cv-text);
+  font-size: 13px;
+}
+
 .admin-hill-help {
   margin: 0 0 12px;
   color: var(--cv-text-2);

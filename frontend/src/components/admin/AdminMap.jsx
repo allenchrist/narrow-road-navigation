@@ -219,7 +219,7 @@ function AdminMap({
 
       <SearchMatches search={search} />
 
-      {!drawing && (
+      {!drawing && !hill?.adding && (
         <ul className="admin-map-legend" aria-label="Map key">
           {Object.entries(ROAD_STATUS_LABELS).map(([status, label]) => (
             <li key={status}>
@@ -243,6 +243,22 @@ function AdminMap({
             Waiting point
           </li>
         </ul>
+      )}
+
+      {hill?.adding && !drawing && (
+        <div className="admin-drawing-help admin-adding-help">
+          <strong>Adding a hairpin</strong>
+
+          <span>Click on the road where the hairpin is.</span>
+
+          <button
+            type="button"
+            className="admin-edit-button"
+            onClick={hill.stopAdding}
+          >
+            Done
+          </button>
+        </div>
       )}
 
       {drawing && (

@@ -7,6 +7,10 @@
  * from the bottom, and marks where vehicles wait before each one.
  *
  * Usage: npm run roads:hills
+ *        npm run roads:hills -- --fresh   download every road again
+ *
+ * Each road's download is kept in tools/download/hills, so a run that stops
+ * because OpenStreetMap is busy carries on where it left off.
  *
  * The server copies new roads into the database when it starts. Bends
  * changed on the admin page are kept.
@@ -22,6 +26,7 @@ const {
 } = require("../services/hillRoads");
 
 const OUTPUT = path.join(__dirname, "..", "data", "hillRoads.json");
+const DOWNLOADS = path.join(__dirname, "download", "hills");
 
 // Each ghat, from the bottom to the top, with a box around it for the download
 const GHATS = [
@@ -45,6 +50,34 @@ const GHATS = [
     from: [11.7093, 78.1765], // Kondappanaickenpatti, Salem
     to: [11.7852, 78.2075], // Yercaud
     box: [11.69, 78.15, 11.8, 78.23],
+  },
+  {
+    id: "HILL_KALLATTI",
+    name: "Kallatti ghat road",
+    from: [11.5683, 76.639], // Masinagudi
+    to: [11.446, 76.671], // Thalaikundha, where it meets the Ooty road
+    box: [11.42, 76.6, 11.6, 76.72],
+  },
+  {
+    id: "HILL_KOTAGIRI",
+    name: "Kotagiri ghat road",
+    from: [11.3059, 76.9357], // Mettupalayam
+    to: [11.423, 76.8658], // Kotagiri
+    box: [11.28, 76.83, 11.45, 76.97],
+  },
+  {
+    id: "HILL_KODAIKANAL",
+    name: "Kodaikanal ghat road",
+    from: [10.1636, 77.7591], // Batlagundu
+    to: [10.2337, 77.492], // Kodaikanal
+    box: [10.12, 77.45, 10.3, 77.8],
+  },
+  {
+    id: "HILL_ANAIKATTI",
+    name: "Anaikatti ghat road",
+    from: [10.9929, 76.4569], // Mannarkkad
+    to: [11.1161, 76.748], // Anaikatti, through Mukkali
+    box: [10.95, 76.42, 11.15, 76.78],
   },
 ];
 
@@ -71,8 +104,8 @@ const LONE_BEND_M = 5000;
 // A sharp turn this close to where the route changes road is a junction
 const JUNCTION_M = 40;
 
-const ATTEMPTS = 6;
-const RETRY_MS = 30000;
+const ATTEMPTS = 12;
+const RETRY_MS = 60000;
 
 const EARTH_RADIUS_M = 6371000;
 
@@ -82,6 +115,22 @@ function distance([latA, lonA], [latB, lonB]) {
   const y = toRadians(latB - latA);
 
   return Math.hypot(x, y) * EARTH_RADIUS_M;
+}
+
+// A road's download, kept from an earlier run unless --fresh is given
+async function downloadOnce(ghat) {
+  const file = path.join(DOWNLOADS, `${ghat.id}.json`);
+
+  if (!process.argv.includes("--fresh") && fs.existsSync(file)) {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  }
+
+  const ways = await download(ghat.box);
+
+  fs.mkdirSync(DOWNLOADS, { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(ways));
+
+  return ways;
 }
 
 async function download(box) {
@@ -218,7 +267,7 @@ async function main() {
   for (const ghat of GHATS) {
     console.log(`\n${ghat.name}: downloading...`);
 
-    const ways = await download(ghat.box);
+    const ways = await downloadOnce(ghat);
     const { line, junctions, roads: names } = route(ways, ghat.from, ghat.to);
     const metres = measureLine(line);
 

@@ -4,11 +4,16 @@ import { adminFetch } from "../services/adminApi";
 
 /**
  * The ghat roads for Mountain Mode and their hairpin bends, for the admin
- * page, with moving a waiting point and deleting a bend the map got wrong.
+ * page, with moving a waiting point, adding a hairpin the map missed and
+ * deleting one it got wrong.
  */
 export function useHillRoads() {
   const [roads, setRoads] = useState([]);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  // While on, a click on the map adds a hairpin there
+  const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -46,9 +51,40 @@ export function useHillRoads() {
         current.map((road) => (road.id === data.road.id ? data.road : road)),
       );
       setError("");
+
+      return data;
     } catch {
       setError("Can't reach the server. Try again in a moment.");
     }
+  }
+
+  async function addBend(point) {
+    setNotice("");
+
+    const data = await change("/api/hill-roads/bends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ point }),
+    });
+
+    if (data?.bend) {
+      const above = data.road.bends.length - data.bend.number;
+      setNotice(
+        `Hairpin ${data.bend.number} added on the ${data.road.name}.${
+          above > 0 ? " The bends above it are numbered one higher." : ""
+        }`,
+      );
+    }
+  }
+
+  function startAdding() {
+    setNotice("");
+    setError("");
+    setAdding(true);
+  }
+
+  function stopAdding() {
+    setAdding(false);
   }
 
   function moveWaitingPoint(roadId, number, side, point) {
@@ -65,5 +101,15 @@ export function useHillRoads() {
     });
   }
 
-  return { roads, error, moveWaitingPoint, deleteBend };
+  return {
+    roads,
+    error,
+    notice,
+    adding,
+    startAdding,
+    stopAdding,
+    addBend,
+    moveWaitingPoint,
+    deleteBend,
+  };
 }

@@ -2,6 +2,7 @@ const express = require("express");
 
 const { requireAdmin } = require("../middleware/authMiddleware");
 const {
+  addBend,
   deleteBend,
   getHillRoads,
   moveWaitingPoint,
@@ -50,6 +51,30 @@ router.put("/:id/bends/:number/wait", requireAdmin, async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Failed to move the waiting point." });
+  }
+});
+
+// Adds a hairpin the map data missed, where the admin clicked on a ghat road
+router.post("/bends", requireAdmin, async (req, res) => {
+  const { point } = req.body ?? {};
+
+  if (!isPoint(point)) {
+    return res
+      .status(400)
+      .json({ success: false, message: "A point on the road is needed." });
+  }
+
+  try {
+    const { road, bend, error } = await addBend(point);
+
+    if (error) return res.status(400).json({ success: false, message: error });
+
+    res.status(201).json({ success: true, road: forAdmin(road), bend });
+  } catch (error) {
+    console.error("[Mountain] Adding a bend failed:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to add the hairpin." });
   }
 });
 

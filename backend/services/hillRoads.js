@@ -168,6 +168,111 @@ function describeBends(line, hairpins) {
   });
 }
 
+// ── Adding a hairpin by hand ────────────────────────────────────────────
+
+// Looked at either side of the point the admin chose
+const ADD_LOOK_M = 60;
+
+// Less than this much turning, the road there is nearly straight
+const NEARLY_STRAIGHT_DEGREES = 45;
+
+/**
+ * The turning zone of a hairpin at a point the admin chose, a number of
+ * metres along the road: the stretch through that point, within 60 m either
+ * way, where the road turns most sharply. On a nearly straight stretch, 40 m
+ * centred on the point.
+ */
+function zoneAround(line, metres, metre) {
+  const length = metres[metres.length - 1];
+  const from = Math.max(0, metre - ADD_LOOK_M);
+  const to = Math.min(length, metre + ADD_LOOK_M);
+
+  const marks = [];
+  for (let m = from; m <= to; m += SAMPLE_STEP_M) marks.push(m);
+
+  const points = marks.map((m) => pointAt(line, metres, m));
+  const headings = points.slice(1).map((p, i) => bearing(points[i], p));
+
+  // turnBefore[k]: total turning at the points before sample k
+  const turnBefore = [0, 0];
+  for (let i = 1; i < headings.length; i++) {
+    turnBefore.push(turnBefore[i] + signedTurn(headings[i - 1], headings[i]));
+  }
+
+  let best = null;
+
+  for (let i = 0; i < marks.length; i++) {
+    for (let j = i + 1; j < marks.length; j++) {
+      const startM = marks[i];
+      const endM = marks[j];
+
+      if (endM - startM < MIN_ZONE_M || endM - startM > HAIRPIN_MAX_LENGTH_M) {
+        continue;
+      }
+      if (metre < startM || metre > endM) continue;
+
+      // The turning at the points between i and j
+      const turn = Math.abs(turnBefore[j] - turnBefore[i + 1]);
+
+      if (
+        !best ||
+        turn > best.turn + 1 ||
+        (Math.abs(turn - best.turn) <= 1 &&
+          endM - startM < best.endM - best.startM)
+      ) {
+        best = { startM, endM, turn };
+      }
+    }
+  }
+
+  if (!best || best.turn < NEARLY_STRAIGHT_DEGREES) {
+    const startM = Math.max(
+      0,
+      Math.min(metre - MIN_ZONE_M / 2, length - MIN_ZONE_M),
+    );
+    return { startM, endM: Math.min(length, startM + MIN_ZONE_M) };
+  }
+
+  return { startM: best.startM, endM: best.endM };
+}
+
+/**
+ * The road's bends with a new one added at a point along the road, numbered
+ * again from the bottom, or an error if a hairpin is already there.
+ */
+function addBendAt(line, bends, metre) {
+  const metres = measureLine(line);
+
+  const already = bends.find(
+    (bend) => metre >= bend.startM && metre <= bend.endM,
+  );
+  if (already) {
+    return {
+      error: `There's already a hairpin here (Hairpin ${already.number}).`,
+    };
+  }
+
+  const zone = zoneAround(line, metres, metre);
+  const overlapping = bends.find(
+    (bend) => zone.startM < bend.endM && zone.endM > bend.startM,
+  );
+  if (overlapping) {
+    return {
+      error: `That's too close to Hairpin ${overlapping.number} to be another hairpin.`,
+    };
+  }
+
+  const [added] = describeBends(line, [zone]);
+  const all = [...bends, { ...added, addedByAdmin: true }]
+    .sort((a, b) => a.startM - b.startM)
+    .map((bend, index) => ({ ...bend, number: index + 1 }));
+
+  return {
+    bends: all,
+    added: all.find((bend) => bend.startM === added.startM),
+  };
+}
+
 // ── Where a vehicle is on a road ────────────────────────────────────────
 
 /**
@@ -284,5 +389,7 @@ module.exports = {
   describeBends,
   prepareRoad,
   locateOnRoad,
+  zoneAround,
+  addBendAt,
   WAIT_BEFORE_M,
 };

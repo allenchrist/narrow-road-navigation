@@ -143,6 +143,27 @@ module.exports = async ({
     "viewing one shows its numbered hairpins",
     (await admin.$$(".admin-bend-number")).length > 0,
   );
+
+  // Adding a hairpin: the mode turns on, says what to do, and Esc ends it
+  await admin.click(".admin-add-bend");
+  await sleep(300);
+  check(
+    "Add a hairpin says to click on the road",
+    (
+      await admin.evaluate(
+        () => document.querySelector(".admin-adding-help")?.innerText ?? "",
+      )
+    ).includes("Click on the road where the hairpin is"),
+  );
+  await admin.keyboard.press("Escape");
+  await sleep(300);
+  check(
+    "Esc stops adding",
+    !(await admin.$(".admin-adding-help")) &&
+      (await admin.$eval(".admin-add-bend", (b) => b.innerText)).includes(
+        "Add a hairpin",
+      ),
+  );
   await admin.close();
 
   // Correcting the bends, on the Valparai road so the simulator isn't affected
@@ -204,6 +225,30 @@ module.exports = async ({
       deleted.body.road.bends.length === valparai.bends.length - 1 &&
       deleted.body.road.bends[0].number === 1 &&
       deleted.body.road.bends[0].startM === second.startM,
+  );
+
+  // Adding it back where it was, as if the map data had missed it
+  const readded = await hillApi("POST", "/bends", { point: first.apex });
+  check(
+    "a missing hairpin can be added, in its place, marked as added",
+    readded.status === 201 &&
+      readded.body.bend.number === 1 &&
+      readded.body.bend.addedByAdmin === true &&
+      readded.body.road.bends.length === valparai.bends.length &&
+      readded.body.road.bends[1].startM === second.startM,
+  );
+  check(
+    "a hairpin can't be added where there already is one",
+    (await hillApi("POST", "/bends", { point: second.apex })).status === 400,
+  );
+  check(
+    "a hairpin can't be added away from a ghat road",
+    (await hillApi("POST", "/bends", { point: [11.0, 76.95] })).status === 400,
+  );
+  check(
+    "only the admin can add a hairpin",
+    (await hillApi("POST", "/bends", { point: first.apex }, null)).status ===
+      401,
   );
 
   const code =

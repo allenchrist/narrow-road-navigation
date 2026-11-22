@@ -1,5 +1,6 @@
 import L from "leaflet";
-import { Marker, Polyline, Popup } from "react-leaflet";
+import { useEffect } from "react";
+import { Marker, Polyline, Popup, useMapEvents } from "react-leaflet";
 
 // A bend's number, at its middle
 const bendIcon = (number) =>
@@ -18,13 +19,42 @@ const waitIcon = L.divIcon({
   iconAnchor: [7, 7],
 });
 
+/** While adding, a click on the map adds a hairpin there; Esc stops. */
+function AddBendOnClick({ hill }) {
+  useMapEvents({
+    click: (event) => {
+      if (hill.adding) hill.addBend([event.latlng.lat, event.latlng.lng]);
+    },
+  });
+
+  useEffect(() => {
+    if (!hill.adding) return undefined;
+
+    const onKey = (event) => {
+      if (event.key === "Escape") hill.stopAdding();
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hill]);
+
+  return null;
+}
+
 /**
  * The ghat roads for Mountain Mode on the admin map: each road, its hairpin
  * bends by number, and the waiting points before each bend. A waiting point
  * can be dragged, and a bend deleted from its popup.
  */
 function HillRoadLayer({ hill }) {
-  return hill.roads.flatMap((road) => [
+  return [
+    <AddBendOnClick key="add-bend" hill={hill} />,
+    ...hill.roads.flatMap((road) => roadLayers(road, hill)),
+  ];
+}
+
+function roadLayers(road, hill) {
+  return [
     <Polyline
       key={`hill-${road.id}`}
       positions={road.line}
@@ -42,6 +72,12 @@ function HillRoadLayer({ hill }) {
           <strong>Hairpin {bend.number}</strong>
           <br />
           {road.name}
+          {bend.addedByAdmin && (
+            <>
+              <br />
+              <em>Added by the admin</em>
+            </>
+          )}
           <br />
           <button
             type="button"
@@ -80,7 +116,7 @@ function HillRoadLayer({ hill }) {
         />
       )),
     ]),
-  ]);
+  ];
 }
 
 export default HillRoadLayer;

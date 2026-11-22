@@ -8,10 +8,20 @@ function HillRoadList({ hill, onShow }) {
     <>
       <p className="admin-hill-help">
         Each purple road on the map is a ghat road, with its hairpins numbered
-        from the bottom. Drag a small dot to move a waiting point, or click a
-        number to delete a bend the map got wrong.
+        from the bottom. Drag a small dot to move a waiting point, click a
+        number to delete a bend the map got wrong, or add one it missed.
       </p>
 
+      <button
+        type="button"
+        className={`admin-edit-button admin-add-bend${hill.adding ? " is-active" : ""}`}
+        onClick={hill.adding ? hill.stopAdding : hill.startAdding}
+      >
+        <Icon name={hill.adding ? "check" : "plus"} size={15} />
+        {hill.adding ? "Done adding" : "Add a hairpin"}
+      </button>
+
+      {hill.notice && <div className="admin-notice">{hill.notice}</div>}
       {hill.error && <div className="admin-error">{hill.error}</div>}
 
       {hill.roads.length === 0 ? (

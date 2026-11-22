@@ -8,12 +8,14 @@
 
 const assert = require("assert");
 const {
+  addBendAt,
   describeBends,
   findHairpins,
   locateOnRoad,
   measureLine,
   pointAt,
   prepareRoad,
+  zoneAround,
 } = require("../services/hillRoads");
 const {
   createMountainTracker,
@@ -336,6 +338,60 @@ const tests = {
     assert.ok(Math.abs(info.nextBend.distanceM - 100) <= 1);
     assert.strictEqual(info.heading, "UP");
   },
+  // Adding a hairpin the map data missed
+
+  "a hairpin added at a bend gets that bend's turning zone": () => {
+    const middle = (BEND_1.startM + BEND_1.endM) / 2;
+    const zone = zoneAround(LINE, METRES, middle);
+    assert.ok(zone.startM <= middle && zone.endM >= middle);
+    // Overlaps most of the bend found automatically
+    const shared =
+      Math.min(zone.endM, BEND_1.endM) - Math.max(zone.startM, BEND_1.startM);
+    assert.ok(
+      shared >= 0.6 * (BEND_1.endM - BEND_1.startM),
+      `${zone.startM}-${zone.endM}`,
+    );
+  },
+  "on a nearly straight stretch, the zone is 40 m around the point": () => {
+    const zone = zoneAround(LINE, METRES, 150);
+    assert.deepStrictEqual(zone, { startM: 130, endM: 170 });
+  },
+  "a missing hairpin is added, numbered in its place, and marked as added":
+    () => {
+      // As if the map data had missed the first hairpin
+      const withoutFirst = [{ ...BEND_2, number: 1 }];
+      const middle = (BEND_1.startM + BEND_1.endM) / 2;
+      const { bends, added } = addBendAt(LINE, withoutFirst, middle);
+      assert.strictEqual(bends.length, 2);
+      assert.strictEqual(added.number, 1);
+      assert.strictEqual(added.addedByAdmin, true);
+      assert.strictEqual(bends[1].startM, BEND_2.startM);
+      assert.strictEqual(bends[1].number, 2);
+      assert.strictEqual(added.startM - added.waitBelowM, 30);
+    },
+  "a hairpin can't be added where there already is one": () => {
+    const middle = (BEND_1.startM + BEND_1.endM) / 2;
+    assert.match(
+      addBendAt(LINE, BENDS, middle).error,
+      /already a hairpin here \(Hairpin 1\)/,
+    );
+  },
+  "a hairpin can't overlap one next to it": () => {
+    assert.match(
+      addBendAt(LINE, BENDS, BEND_1.startM - 10).error,
+      /too close to Hairpin 1/,
+    );
+  },
+  "adding between bends moves the ones above up a number": () => {
+    const { bends, added } = addBendAt(LINE, BENDS, 150);
+    assert.deepStrictEqual(
+      bends.map((b) => b.number),
+      [1, 2, 3],
+    );
+    assert.strictEqual(added.number, 1);
+    assert.strictEqual(bends[1].startM, BEND_1.startM);
+  },
+
   "off the ghat road there's no Mountain Mode": () => {
     const [lat, lon] = at(-200, 0);
     assert.strictEqual(updateHillPosition(null, lat, lon, [ROAD], 0), null);

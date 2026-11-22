@@ -111,7 +111,7 @@ The dashboard shows the road ahead in green, amber or red, with a dot at your en
 
 ## Mountain Mode
 
-On the **Ooty, Valparai and Yercaud ghat roads**, the dashboard switches to Mountain Mode by itself. The panel shows the ghat road, which way you're going, and the next hairpin, such as **Hairpin 5 of 18 in 90 m**, and the map highlights that bend.
+On the **Ooty, Valparai, Yercaud, Kallatti, Kotagiri, Kodaikanal and Anaikatti ghat roads**, the dashboard switches to Mountain Mode by itself. The panel shows the ghat road, which way you're going, and the next hairpin, such as **Hairpin 5 of 18 in 90 m**, and the map highlights that bend.
 
 **Where a vehicle is.** Each ghat road is one line from the bottom of the ghat to the top, measured in metres. Each position is placed on it, within 15 m allowing for GPS error. On a hairpin, two arms of the road can be 20 to 30 m apart, so a vehicle stays on the arm it was on unless it clearly moves. Its direction, up or down, comes from its last 3 readings along the road, which follows the road round bends where a compass would spin. Its speed is averaged over the last 3 seconds.
 
@@ -137,6 +137,8 @@ The vehicle that waited is told **Bend clear** once the other has come out of th
 | **Don't overtake** | Yellow |
 
 On the admin page, **Ghat roads** lists the roads. The map shows each road in purple, its hairpins numbered from the bottom, and the waiting points. Drag a waiting point to move it along the road, or click a hairpin's number to delete a bend the map got wrong. The bends above it are numbered one lower.
+
+To **add a hairpin** the map data missed, click **Add a hairpin**, then click on the road at the middle of the bend. The click must be within 30 m of a ghat road. The server finds the turning zone itself: the stretch through that point, within 60 m either way, where the road turns most sharply, at least 40 m long, or 40 m around the point if the road is nearly straight there. It adds waiting points 30 m before it on each side and numbers the bends again from the bottom, so the ones above move up a number. A hairpin can't be added inside or overlapping another. Its popup says **Added by the admin**, it can be deleted like any other, and it's kept when the ghat-road tool is run again. Press **Done** or Esc to stop adding.
 
 ## What's in this repository
 
@@ -305,19 +307,26 @@ It downloads the roads around every narrow road in one request, and tries again 
 
 ### Ghat roads
 
-`backend/data/hillRoads.json` holds the Ooty, Valparai and Yercaud ghat roads and their hairpins. `tools/findHillRoads.js` follows the main road from the bottom of each ghat to the top in OpenStreetMap, measures it, and finds the hairpins from its shape: where the road turns at least 165° within 120 m. A sharp turn at a junction, or one more than 5 km from any other, is a turn in a town and is left out. Each bend's turning zone is at least 40 m long, and its waiting points are 30 m before it on each side.
+`backend/data/hillRoads.json` holds seven ghat roads and their hairpins. `tools/findHillRoads.js` follows the main road from the bottom of each ghat to the top in OpenStreetMap, measures it, and finds the hairpins from its shape: where the road turns at least 165° within 120 m. A sharp turn at a junction, or one more than 5 km from any other, is a turn in a town and is left out. Each bend's turning zone is at least 40 m long, and its waiting points are 30 m before it on each side.
 
 | Ghat road | From, to | Length | Hairpins found | Signposted |
 |---|---|---|---|---|
 | Valparai | Aliyar Dam to Valparai (SH78) | 41.3 km | 42 | 40 |
 | Ooty | Kallar to Ooty, through Coonoor (NH181) | 42.5 km | 13 | 14 between Kallar and Coonoor |
 | Yercaud | Salem to Yercaud (SH188) | 20.3 km | 18 | 20 |
+| Kallatti | Masinagudi to Thalaikundha, near Ooty | 22.8 km | 18 | 36 |
+| Kotagiri | Mettupalayam to Kotagiri (SH15) | 31.3 km | 7 | Not checked |
+| Kodaikanal | Batlagundu to Kodaikanal | 59.9 km | 13 | Not checked |
+| Anaikatti | Mannarkkad, through Attappadi, to Anaikatti | 54.1 km | 17 | Not checked |
 
-The counts are close but not exact, because a few sharp curves look like hairpins on the map and a few gentle hairpins don't. The admin page can delete a wrong one. To find them again:
+The counts are close on most roads but not exact, because a few sharp curves look like hairpins on the map and a few gentle hairpins don't. The Kallatti road is far short, as OpenStreetMap draws it coarsely, with points about 26 m apart, so many of its tight hairpins don't show as hairpins in the data. On the admin page, wrong hairpins can be deleted and missing ones added. To find them again:
 
 ```
 npm run roads:hills
+npm run roads:hills -- --fresh   download every road again
 ```
+
+Each road's download is kept in `tools/download/hills`, so a run that stops because OpenStreetMap is busy carries on where it left off.
 
 The server copies roads into the database when it starts, if they aren't there yet. Roads already there are kept, so changes made on the admin page stay.
 

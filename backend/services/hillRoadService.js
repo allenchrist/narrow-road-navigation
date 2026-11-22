@@ -2,7 +2,12 @@ const fs = require("fs");
 const path = require("path");
 
 const { pool } = require("../config/database");
-const { locateOnRoad, pointAt, prepareRoad } = require("./hillRoads");
+const {
+  addBendAt,
+  locateOnRoad,
+  pointAt,
+  prepareRoad,
+} = require("./hillRoads");
 
 const SAVED_FILE = path.join(__dirname, "..", "data", "hillRoads.json");
 
@@ -117,6 +122,33 @@ async function moveWaitingPoint(roadId, number, side, [lat, lon]) {
 }
 
 /**
+ * Adds a hairpin the map data missed, at a point the admin clicked on a ghat
+ * road. Its turning zone and waiting points are worked out from the road's
+ * shape there, and the bends are numbered again from the bottom. Returns the
+ * road and the new bend, or an error message.
+ */
+async function addBend([lat, lon]) {
+  let nearest = null;
+
+  for (const road of roads) {
+    const place = locateOnRoad(lat, lon, road, SNAP_M);
+
+    if (place && (!nearest || place.distanceM < nearest.place.distanceM)) {
+      nearest = { road, place };
+    }
+  }
+
+  if (!nearest) return { error: "Click on the road itself." };
+
+  const { road, place } = nearest;
+  const result = addBendAt(road.line, road.bends, place.metre);
+
+  if (result.error) return { error: result.error };
+
+  return { road: await saveBends(road, result.bends), bend: result.added };
+}
+
+/**
  * Deletes a bend the map got wrong. The bends above it move down a number,
  * so they stay numbered from the bottom.
  */
@@ -139,5 +171,6 @@ module.exports = {
   getHillRoads,
   getHillRoadById,
   moveWaitingPoint,
+  addBend,
   deleteBend,
 };
