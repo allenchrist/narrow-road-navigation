@@ -5,7 +5,16 @@
   "scripts": {
     "test": "node run.js",
     "format": "prettier --write . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
-    "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore"
+    "format:check": "prettier --check . --ignore-path ../.prettierignore --ignore-path ../.gitignore",
+    "demo:entrance": "node demo.js entrance",
+    "demo:giveway": "node demo.js giveway",
+    "demo:ambulance": "node demo.js ambulance",
+    "demo:mountain": "node demo.js mountain",
+    "demo:buses": "node demo.js buses",
+    "demo:keepleft": "node demo.js keepleft",
+    "demo:inbend": "node demo.js inbend",
+    "demo:ambulance-bend": "node demo.js ambulance-bend",
+    "demo:overtake": "node demo.js overtake"
   },
   "devDependencies": {
     "embedded-postgres": "18.6.0-beta.19",
