@@ -43,3 +43,14 @@ export function travelDirection(vehicle) {
     ? vehicle.bearing
     : vehicle.heading;
 }
+
+// 1st, 2nd, 3rd, 4th…, such as a place in a narrow road's queue
+export function ordinal(number) {
+  const tens = number % 100;
+  const suffix =
+    tens >= 11 && tens <= 13
+      ? "th"
+      : ({ 1: "st", 2: "nd", 3: "rd" }[number % 10] ?? "th");
+
+  return `${number}${suffix}`;
+}

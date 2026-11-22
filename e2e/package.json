@@ -9,6 +9,7 @@
     "demo:entrance": "node demo.js entrance",
     "demo:giveway": "node demo.js giveway",
     "demo:ambulance": "node demo.js ambulance",
+    "demo:queue": "node demo.js queue",
     "demo:mountain": "node demo.js mountain",
     "demo:buses": "node demo.js buses",
     "demo:keepleft": "node demo.js keepleft",

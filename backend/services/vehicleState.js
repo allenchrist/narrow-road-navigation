@@ -437,6 +437,14 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
       }
     : null;
 
+  // The queue for the narrow road this driver is at or in, so the map can
+  // number the vehicles waiting for it
+  const queueRoadId =
+    (own.narrowRoadAlert?.kind?.startsWith("ENTRY_") &&
+      own.narrowRoadAlert.roadId) ||
+    ownRoadIds[0];
+  const queue = queueRoadId ? occupancy.queueOf(queueRoadId) : [];
+
   const others = dashboardVehicles
     .filter(
       (vehicle) =>
@@ -451,6 +459,9 @@ function getVisibleVehicles(dashboardVehicles, ownVehicleId) {
       inSameRoad: (vehicles.get(vehicle.vehicleId)?.insideRoadIds ?? []).some(
         (id) => ownRoadIds.includes(id),
       ),
+      queuePosition: queue.includes(vehicle.vehicleId)
+        ? queue.indexOf(vehicle.vehicleId) + 1
+        : null,
     }));
 
   return [{ ...own, currentRoads, entranceRoad }, ...others];

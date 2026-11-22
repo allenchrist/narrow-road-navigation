@@ -3,6 +3,7 @@ import {
   displayRoadName,
   displayVehicleName,
   isMoving,
+  ordinal,
 } from "../../utils/display";
 import Icon from "../common/Icon";
 
@@ -64,6 +65,8 @@ function LiveVehicleList({ live, onShow }) {
                 style={{ "--alert-tint": ALERT_TINTS[alert.kind] }}
               >
                 {label}
+                {alert.queuePosition > 1 &&
+                  ` · ${ordinal(alert.queuePosition)} in line`}
                 {alert.roadName && ` · ${displayRoadName(alert.roadName)}`}
               </span>
             )}

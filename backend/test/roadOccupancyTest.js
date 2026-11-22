@@ -159,6 +159,8 @@ function vehicle(
     speed = MOVING,
     bearing = EAST,
     type = "car",
+    // Which end: cars heading west come from the other end
+    end = bearing === WEST ? 1 : bearing === NORTH ? 2 : 0,
   } = {},
 ) {
   return {
@@ -171,6 +173,7 @@ function vehicle(
             roadId: "R1",
             roadName: "Test Lane",
             distanceM: entrance,
+            entrance: end,
             point: at(0, 0),
           },
         }
@@ -196,6 +199,32 @@ function actions(tracker, vehicles, now) {
 }
 
 const newTracker = () => createOccupancyTracker(getRelation);
+
+// Cars waiting at the north end (0) or the south end (1), stopped
+const north = (id, extra = {}) =>
+  vehicle(id, { entrance: 20, speed: 0, end: 0, ...extra });
+const south = (id, extra = {}) =>
+  vehicle(id, { entrance: 20, speed: 0, end: 1, ...extra });
+const inRoad = (id, extra = {}) => vehicle(id, { inside: true, ...extra });
+
+// Each car's action and place in the queue, after cars arrive one a second
+function queueAfter(tracker, arrivals, at = 0) {
+  arrivals.forEach((_, i) =>
+    tracker.update(arrivals.slice(0, i + 1), at + i * 1000),
+  );
+  const now = at + arrivals.length * 1000;
+  tracker.update(arrivals, now);
+
+  return Object.fromEntries(
+    arrivals.map((v) => {
+      const entry = tracker.entryFor(
+        v,
+        arrivals.filter((o) => o !== v),
+      );
+      return [v.vehicleId, entry && `${entry.action} ${entry.position}`];
+    }),
+  );
+}
 
 // ── Tests ───────────────────────────────────────────────────────────────
 
@@ -482,6 +511,134 @@ const tests = {
     assert.deepStrictEqual(actions(tracker, [vehicle("A")], 0), { A: null });
     assert.strictEqual(tracker.statusOf("R1"), "AVAILABLE");
   },
+  // The queue
+
+  "each car waiting knows its place in the queue": () => {
+    const tracker = newTracker();
+    // A and B at the north end, C at the south end, arriving A, C, B
+    const result = queueAfter(tracker, [north("A"), south("C"), north("B")]);
+    assert.deepStrictEqual(result, { A: "GO 1", C: "WAIT 3", B: "FOLLOW 2" });
+  },
+  "it says how many are ahead at each end": () => {
+    const tracker = newTracker();
+    const cars = [north("A"), south("C"), north("B")];
+    queueAfter(tracker, cars);
+    const entry = tracker.entryFor(cars[1], [cars[0], cars[2]]);
+    assert.strictEqual(entry.aheadSameEnd, 0);
+    assert.strictEqual(entry.aheadOtherEnd, 2);
+  },
+  "cars at the same end go through together": () => {
+    const tracker = newTracker();
+    queueAfter(tracker, [north("A"), north("B"), south("C")]);
+    // A has gone in; B follows it, C still waits
+    const now = [inRoad("A"), north("B"), south("C")];
+    assert.deepStrictEqual(actions(tracker, now, 10000), {
+      A: null,
+      B: "FOLLOW",
+      C: "WAIT",
+    });
+  },
+  "a group is at most 3 cars, then the other end goes": () => {
+    const tracker = newTracker();
+    const result = queueAfter(tracker, [
+      north("A"),
+      north("B"),
+      north("C"),
+      north("D"),
+      south("E"),
+    ]);
+    assert.deepStrictEqual(result, {
+      A: "GO 1",
+      B: "FOLLOW 2",
+      C: "FOLLOW 3",
+      E: "WAIT 4",
+      D: "WAIT 5",
+    });
+  },
+  "the car left out of the group is told it's the other end's turn": () => {
+    const tracker = newTracker();
+    const cars = [north("A"), north("B"), north("C"), north("D"), south("E")];
+    queueAfter(tracker, cars);
+    const d = tracker.entryFor(
+      cars[3],
+      cars.filter((v) => v !== cars[3]),
+    );
+    assert.strictEqual(d.reason, "TURN");
+  },
+  "after a group, the other end goes, even if the car left out came first":
+    () => {
+      const tracker = newTracker();
+      const d = north("D");
+      const e = south("E");
+      queueAfter(tracker, [north("A"), north("B"), north("C"), d, e]);
+      actions(tracker, [inRoad("A"), inRoad("B"), inRoad("C"), d, e], 10000);
+      assert.deepStrictEqual(actions(tracker, [d, e], 20000), {
+        D: "WAIT",
+        E: "GO",
+      });
+    },
+  "a group stops taking cars after 30 seconds": () => {
+    const tracker = newTracker();
+    actions(tracker, [north("A")], 0);
+    actions(tracker, [inRoad("A")], 1000);
+    const late = north("B");
+    const other = south("C");
+    assert.deepStrictEqual(
+      actions(tracker, [inRoad("A"), late, other], 31000),
+      {
+        A: null,
+        B: "WAIT",
+        C: "WAIT",
+      },
+    );
+    // When A is out, the other end goes first
+    assert.deepStrictEqual(actions(tracker, [late, other], 40000), {
+      B: "WAIT",
+      C: "GO",
+    });
+  },
+  "an ambulance joining goes to the front, and others are told": () => {
+    const tracker = newTracker();
+    const car = north("A");
+    const other = south("C");
+    queueAfter(tracker, [car, other]);
+    const ambulance = south("AMB", { type: "priority" });
+    const vehicles = [car, other, ambulance];
+    tracker.update(vehicles, 10000);
+    const entryOf = (v) =>
+      tracker.entryFor(
+        v,
+        vehicles.filter((o) => o !== v),
+      );
+    assert.strictEqual(entryOf(ambulance).action, "GO");
+    assert.strictEqual(entryOf(car).action, "WAIT");
+    assert.strictEqual(entryOf(car).priorityAhead, true);
+    assert.strictEqual(entryOf(ambulance).position, 1);
+  },
+  "if a car from the other end goes in anyway, the group waits": () => {
+    const tracker = newTracker();
+    queueAfter(tracker, [north("A"), north("B")]);
+    const result = actions(
+      tracker,
+      [inRoad("A"), north("B"), inRoad("X", { bearing: WEST })],
+      10000,
+    );
+    assert.strictEqual(result.B, "WAIT");
+  },
+  "a group member parked at the entrance doesn't block the road": () => {
+    const tracker = newTracker();
+    const parked = north("B");
+    const other = south("C");
+    queueAfter(tracker, [north("A"), parked, other]);
+    actions(tracker, [inRoad("A"), parked, other], 10000);
+    // A has gone; B never moves
+    actions(tracker, [parked, other], 20000);
+    assert.deepStrictEqual(actions(tracker, [parked, other], 36000), {
+      B: "WAIT",
+      C: "GO",
+    });
+  },
+
   "the alert says what to do and why": () => {
     const tracker = newTracker();
     const inside = { ...vehicle("A", { inside: true }), vehicleType: "bus" };

@@ -429,6 +429,31 @@
   color: var(--cv-warn);
 }
 
+/* A vehicle's place in the queue for a narrow road */
+.cv-queue-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  background: #f2b84b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  color: #111820;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cv-queue-badge--own {
+  background: var(--cv-accent);
+}
+
 /* Mountain Mode: the ghat road and the next hairpin */
 .cv-mountain {
   display: flex;
@@ -1082,6 +1107,7 @@
 }
 
 .cv-marker-other {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;

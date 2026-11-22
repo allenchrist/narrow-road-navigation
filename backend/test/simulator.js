@@ -13,6 +13,8 @@
  *               then is told to go once it's clear
  *   ambulance   an ambulance arrives while Car A is in the road: it goes in,
  *               and Car A pulls over and lets it pass
+ *   queue       three cars: Car A and Car C at one end, Car B at the other.
+ *               A and C go through together, then it's B's turn
  *
  * Usage (the backend must be running):
  *   npm run simulate
@@ -41,7 +43,7 @@ const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 const scenarioFlag = process.argv.indexOf("--scenario");
 const SCENARIO = scenarioFlag >= 0 ? process.argv[scenarioFlag + 1] : "full";
 
-const SCENARIOS = ["full", "entrance", "ambulance"];
+const SCENARIOS = ["full", "entrance", "ambulance", "queue"];
 
 if (!SCENARIOS.includes(SCENARIO)) {
   console.error(
@@ -58,7 +60,19 @@ const CAR_A = {
 const CAR_B = {
   username: "sim_car_b",
   deviceId: "simulator-car-b",
-  vehicleType: SCENARIO === "ambulance" ? "priority" : "bus",
+  vehicleType:
+    SCENARIO === "ambulance"
+      ? "priority"
+      : SCENARIO === "queue"
+        ? "car"
+        : "bus",
+};
+
+// Only the queue scenario uses a third car
+const CAR_C = {
+  username: "sim_car_c",
+  deviceId: "simulator-car-c",
+  vehicleType: "car",
 };
 
 // Between rounds both cars jump back to the start, which no real car could
@@ -172,7 +186,12 @@ async function getAlert(token) {
 
   const { vehicle } = await response.json();
 
-  return vehicle?.narrowRoadAlert?.kind ?? "UNKNOWN";
+  const alert = vehicle?.narrowRoadAlert;
+
+  return {
+    kind: alert?.kind ?? "UNKNOWN",
+    place: alert?.queuePosition ?? null,
+  };
 }
 
 // ── Route: a straight line through the road, extended past both ends ──────────
@@ -343,6 +362,7 @@ function sendTelemetry(car, { lat, lon }, speed, bearing, heading = bearing) {
 function buildPhases(L) {
   if (SCENARIO === "entrance") return entrancePhases(L);
   if (SCENARIO === "ambulance") return ambulancePhases(L);
+  if (SCENARIO === "queue") return queuePhases(L);
 
   return [
     {
@@ -483,6 +503,80 @@ function entrancePhases(L) {
   ];
 }
 
+/**
+ * Car A and Car C at the near end, Car B at the far end. An expected value
+ * such as "ENTRY_WAIT 3" also checks the car's place in the queue.
+ */
+function queuePhases(L) {
+  return [
+    {
+      title: "Car A reaches the entrance of an empty road first",
+      expected: "ENTRY_GO 1",
+      seconds: 8,
+      carA: [-45, -10],
+      carB: "away",
+      carC: "away",
+    },
+    {
+      title: "Car B reaches the far end, and Car C pulls up behind Car A",
+      expected: "ENTRY_GO 1",
+      seconds: 8,
+      carA: [-10, -10],
+      carB: [L + 50, L + 12],
+      carC: [-36, -17],
+    },
+    {
+      title:
+        "Car C is 2nd in line and will go with Car A. Car B, at the other end, is 3rd",
+      expected: "ENTRY_GO 1",
+      expectedCarC: "ENTRY_FOLLOW 2",
+      expectedCarB: "ENTRY_WAIT 3",
+      seconds: 3,
+      carA: [-10, -10],
+      carB: [L + 12, L + 12],
+      carC: [-17, -17],
+    },
+    {
+      title: "Car A goes in, and Car C is told to follow it",
+      expected: "VEHICLE_WAITING",
+      expectedCarC: "ENTRY_FOLLOW 1",
+      expectedCarB: "ENTRY_WAIT 2",
+      seconds: 6,
+      carA: [-10, L * 0.25],
+      carB: [L + 12, L + 12],
+      carC: [-17, -17],
+    },
+    {
+      title: "Car C follows Car A through, while Car B waits",
+      expected: "VEHICLE_WAITING",
+      expectedCarC: "VEHICLE_WAITING",
+      expectedCarB: "ENTRY_WAIT 1",
+      seconds: 10,
+      carA: [L * 0.25, L * 0.95],
+      carB: [L + 12, L + 12],
+      carC: [-17, L * 0.6],
+    },
+    {
+      title: "Both are through, so it's Car B's turn",
+      expected: "NONE",
+      expectedCarB: "ENTRY_GO 1",
+      seconds: 8,
+      carA: [L * 0.95, L + 80],
+      carB: [L + 12, L + 12],
+      carC: [L * 0.6, L + 50],
+    },
+    {
+      title: "Car B goes in",
+      expected: "NONE",
+      expectedCarB: "IN_NARROW_ROAD",
+      seconds: 8,
+      carA: [L + 80, L + 180],
+      carB: [L + 12, L * 0.6],
+      carC: "away",
+    },
+  ];
+}
+
 // An ambulance (Car B) arrives while Car A is in the road
 function ambulancePhases(L) {
   return [
@@ -555,13 +649,14 @@ function moveAlongRoute(
   );
 }
 
-async function runPhase(phase, route, carA, carB) {
+async function runPhase(phase, route, carA, carB, carC) {
   const { seconds } = phase;
   const carABearing = route.bearing;
   const carBBearing = (route.bearing + 180) % 360;
 
   // Well clear of the road, on the far side of Car A's lead-in
   const awayPoint = route.pointAt(-5000);
+  const carCAwayPoint = route.pointAt(-5200);
 
   console.log(`\n▶ ${phase.title}`);
 
@@ -576,15 +671,23 @@ async function runPhase(phase, route, carA, carB) {
       moveAlongRoute(carB, route, phase.carB, progress, seconds, carBBearing);
     }
 
+    // Car C, only in the queue scenario, drives the same way as Car A
+    if (carC && phase.carC === "away") {
+      sendTelemetry(carC, carCAwayPoint, 0, null);
+    } else if (carC && phase.carC) {
+      moveAlongRoute(carC, route, phase.carC, progress, seconds, carABearing);
+    }
+
     await delay(TICK_MS);
   }
 
   const checkAlert = async (name, car, expected) => {
-    const alert = await getAlert(car.token);
-    const passed = alert === expected;
+    const { kind, place } = await getAlert(car.token);
+    const shown = expected.includes(" ") ? `${kind} ${place}` : kind;
+    const passed = shown === expected;
 
     console.log(
-      `  ${passed ? "✓" : "✗"} ${name} alert: ${alert}` +
+      `  ${passed ? "✓" : "✗"} ${name} alert: ${shown}` +
         (passed ? "" : ` (expected ${expected})`),
     );
 
@@ -597,14 +700,18 @@ async function runPhase(phase, route, carA, carB) {
     !phase.expectedCarB ||
     (await checkAlert("Car B", carB, phase.expectedCarB));
 
-  return carAPassed && carBPassed;
+  const carCPassed =
+    !phase.expectedCarC ||
+    (await checkAlert("Car C", carC, phase.expectedCarC));
+
+  return carAPassed && carBPassed && carCPassed;
 }
 
-async function runScenario(route, carA, carB) {
+async function runScenario(route, carA, carB, carC) {
   let failed = 0;
 
   for (const phase of buildPhases(route.length)) {
-    if (!(await runPhase(phase, route, carA, carB))) {
+    if (!(await runPhase(phase, route, carA, carB, carC))) {
       failed++;
     }
   }
@@ -633,9 +740,18 @@ async function main() {
   const carB = await connectCar(CAR_B, carBToken);
   carB.token = carBToken;
 
+  let carC = null;
+
+  if (SCENARIO === "queue") {
+    const carCToken = await prepareDemoAccount(CAR_C);
+    carC = await connectCar(CAR_C, carCToken);
+    carC.token = carCToken;
+  }
+
   const stop = () => {
     carA.ws.close();
     carB.ws.close();
+    carC?.ws.close();
     process.exit(0);
   };
 
@@ -652,7 +768,7 @@ async function main() {
   let failed = 0;
 
   for (;;) {
-    failed += await runScenario(route, carA, carB);
+    failed += await runScenario(route, carA, carB, carC);
 
     if (!loop) break;
 
@@ -662,6 +778,7 @@ async function main() {
 
   carA.ws.close();
   carB.ws.close();
+  carC?.ws.close();
 
   console.log(
     failed === 0 ? "\nAll alerts correct." : `\n${failed} alerts were wrong.`,

@@ -16,7 +16,13 @@ import {
 
 const OTHER_VEHICLE_SCALE = 0.85;
 
-function buildIcon(vehicleType, angle, isEgo, faded) {
+// Its place in the queue for a narrow road, as a small numbered badge
+const queueBadge = (number, isEgo) =>
+  number
+    ? `<span class="cv-queue-badge${isEgo ? " cv-queue-badge--own" : ""}">${number}</span>`
+    : "";
+
+function buildIcon(vehicleType, angle, isEgo, faded, queueNumber) {
   const opacity = faded ? 0.45 : 1;
   const image = vehicleImage(vehicleType);
 
@@ -30,6 +36,7 @@ function buildIcon(vehicleType, angle, isEgo, faded) {
         <div class="cv-marker-ego" data-vehicle="${vehicleType}" style="opacity:${opacity}">
           <span class="cv-marker-ring"></span>
           ${imageTag(image.own, 1)}
+          ${queueBadge(queueNumber, true)}
         </div>`,
       iconSize: [84, 84],
       iconAnchor: [42, 42],
@@ -42,6 +49,7 @@ function buildIcon(vehicleType, angle, isEgo, faded) {
     html: `
       <div class="cv-marker-other" data-vehicle="${vehicleType}" style="opacity:${opacity}">
         ${imageTag(image.other, OTHER_VEHICLE_SCALE)}
+        ${queueBadge(queueNumber, false)}
       </div>`,
     iconSize: [72, 72],
     iconAnchor: [36, 36],
@@ -57,6 +65,11 @@ function buildIcon(vehicleType, angle, isEgo, faded) {
 function VehicleMarker({ vehicleData, isEgo, position }) {
   const { vehicleType, lat, lon, active, accuracy } = vehicleData;
 
+  // The driver's own place comes with its alert; others' with the vehicle
+  const queueNumber = isEgo
+    ? (vehicleData.narrowRoadAlert?.queuePosition ?? null)
+    : (vehicleData.queuePosition ?? null);
+
   const target = useSteadyTarget(lat, lon, isMoving(vehicleData), accuracy);
   const ownPosition = useSmoothPosition(target);
   const shownPosition = position ?? ownPosition;
@@ -68,9 +81,9 @@ function VehicleMarker({ vehicleData, isEgo, position }) {
   // Rebuilt only when the vehicle's look changes. Turning is applied to the
   // image below, so it animates instead of the image being replaced.
   const icon = useMemo(
-    () => buildIcon(vehicleType, angle, isEgo, !active),
+    () => buildIcon(vehicleType, angle, isEgo, !active, queueNumber),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vehicleType, isEgo, active],
+    [vehicleType, isEgo, active, queueNumber],
   );
 
   useEffect(() => {

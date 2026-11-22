@@ -1,4 +1,9 @@
-import { hasRoadName, isMoving, VEHICLE_LABELS } from "../../utils/display";
+import {
+  hasRoadName,
+  isMoving,
+  ordinal,
+  VEHICLE_LABELS,
+} from "../../utils/display";
 import { vehicleImage } from "../../utils/vehicleImages";
 import Icon from "../common/Icon";
 
@@ -78,17 +83,22 @@ const MESSAGES = {
     title: "Go ahead",
     detail: (other) =>
       `Follow ${other === "the other vehicle" ? "the vehicle" : other} ahead`,
-    reason: () => "Going the same way",
+    reason: (other, alert) =>
+      alert.queuePosition
+        ? `You're ${ordinal(alert.queuePosition)} in line · going through together`
+        : "Going the same way",
   },
   ENTRY_WAIT: {
     icon: "yield",
     tone: "stop",
     title: "Wait at the entrance",
     detail: (other, alert) =>
-      alert.reason === "OCCUPIED"
-        ? `${capitalize(other)} ${alert.otherCount > 1 ? "are" : "is"} in the narrow road`
-        : `${capitalize(other)} is about to enter from the other end`,
-    reason: () => "You'll be told when it's clear",
+      alert.reason === "TURN"
+        ? "Cars from the other end have been waiting, so they go next"
+        : alert.reason === "OCCUPIED"
+          ? `${capitalize(other)} ${alert.otherCount > 1 ? "are" : "is"} in the narrow road`
+          : `${capitalize(other)} is about to enter from the other end`,
+    reason: (other, alert) => queueLine(alert),
   },
   // Mountain Mode, at a hairpin bend
   BEND_STOP: {
@@ -159,9 +169,38 @@ const PRIORITY_MESSAGES = {
     scene: { other: "Giving way", own: "Goes first", goes: "own" },
   },
   ENTRY_WAIT: {
-    reason: (other) => `${capitalize(other)} goes first`,
+    reason: (other, alert) =>
+      `${capitalize(other)} goes first · ${queueLine(alert)}`,
   },
 };
+
+const carsAhead = (count) => (count === 1 ? "1 car" : `${count} cars`);
+
+/**
+ * A waiting car's place in the queue and who is ahead of it, such as
+ * "You're 3rd in line · 2 cars ahead of you, at the other end".
+ */
+function queueLine(alert) {
+  if (!alert.queuePosition) return "You'll be told when it's clear";
+
+  const { aheadSameEnd: same, aheadOtherEnd: other } = alert;
+  const where =
+    same && other
+      ? `${carsAhead(same)} ahead at your end, ${other} at the other end`
+      : other
+        ? `${carsAhead(other)} ahead of you, at the other end`
+        : same
+          ? `${carsAhead(same)} ahead of you, at your end`
+          : null;
+
+  return [
+    alert.priorityAhead && "An emergency vehicle is ahead of you",
+    `You're ${ordinal(alert.queuePosition)} in line`,
+    where,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 // Shorter names for the road picture, where space is tight
 const SCENE_NAMES = { priority: "Priority" };

@@ -203,9 +203,17 @@ function entryAlert(entry) {
     otherCount: entry.conflicts.length,
     byPriority: entry.byPriority ?? false,
 
-    // Why to wait: OCCUPIED, someone's in the road, or RESERVED, someone at
-    // another entrance goes first
+    // Why to wait: OCCUPIED, someone's in the road, RESERVED, someone at
+    // another entrance goes first, or TURN, this end has had its group and
+    // the other end goes next
     reason: entry.reason ?? null,
+
+    // Its place in the queue: 1 goes first. How many are ahead of it at
+    // its own end and at others, and whether a priority vehicle is.
+    queuePosition: entry.position ?? null,
+    aheadSameEnd: entry.aheadSameEnd ?? 0,
+    aheadOtherEnd: entry.aheadOtherEnd ?? 0,
+    priorityAhead: entry.priorityAhead ?? false,
   };
 }
 

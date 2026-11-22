@@ -106,6 +106,17 @@ const DEMOS = {
     left: "Ambulance",
     right: "Bus",
   },
+  queue: {
+    title: "Narrow road: the queue, with cars going through together",
+    simulator: NARROW,
+    scenario: "queue",
+    // Car C is shown between Car A, which it follows, and Car B
+    screens: [
+      ["sim_car_a", "Car A"],
+      ["sim_car_c", "Car C"],
+      ["sim_car_b", "Car B"],
+    ],
+  },
   overtake: {
     title: "Mountain Mode: don't overtake",
     simulator: MOUNTAIN,
@@ -167,20 +178,22 @@ async function login(username) {
 
 /**
  * Opens a driver's car screen in its own Chrome window, already logged in,
- * on the left or right half of the screen.
+ * next to the others.
  */
-async function openCarScreen(browser, username, side) {
+async function openCarScreen(browser, username, index, count) {
   const context = await browser.createBrowserContext();
   const page = await context.newPage();
 
+  // Side by side across a 1920-pixel-wide screen
+  const width = Math.floor(1920 / count);
   const session = await page.target().createCDPSession();
   const { windowId } = await session.send("Browser.getWindowForTarget");
   await session.send("Browser.setWindowBounds", {
     windowId,
     bounds: {
-      left: side === "left" ? 0 : 960,
+      left: index * width,
       top: 0,
-      width: 960,
+      width,
       height: 900,
       windowState: "normal",
     },
@@ -210,6 +223,12 @@ async function main() {
     : (process.argv.slice(2).find((arg) => !arg.startsWith("--")) ??
       "mountain");
   const demo = DEMOS[name];
+
+  // The vehicles' screens, from left to right
+  const screens = demo?.screens ?? [
+    ["sim_car_a", demo?.left],
+    ["sim_car_b", demo?.right],
+  ];
 
   if (!demo) {
     console.error(`Unknown demo "${name}". Choose from:`);
@@ -354,9 +373,10 @@ async function main() {
   ${demo.title}
   The demo is running. Press Ctrl+C to stop.
 
-  ${`${demo.left}:`.padEnd(15)} ${SITE}/sim_car_a
-  ${`${demo.right}:`.padEnd(15)} ${SITE}/sim_car_b
-  Password for both: ${DEMO_PASSWORD}
+${screens
+  .map(([username, label]) => `  ${`${label}:`.padEnd(15)} ${SITE}/${username}`)
+  .join("\n")}
+  Password for all: ${DEMO_PASSWORD}
 
   Admin page: ${SITE}/admin   (password: ${ADMIN_PASSWORD})
 ────────────────────────────────────────────────────────────`);
@@ -369,8 +389,9 @@ async function main() {
         args: ["--no-first-run", "--no-default-browser-check"],
       });
 
-      await openCarScreen(browser, "sim_car_a", "left");
-      await openCarScreen(browser, "sim_car_b", "right");
+      for (const [index, [username]] of screens.entries()) {
+        await openCarScreen(browser, username, index, screens.length);
+      }
 
       // The first, empty window isn't needed
       const [blank] = await browser.pages();

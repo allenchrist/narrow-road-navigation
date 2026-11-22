@@ -95,6 +95,8 @@ jobs:
         run: npm run simulate -- --scenario entrance
       - name: Two-car simulator, an ambulance
         run: npm run simulate -- --scenario ambulance
+      - name: Three-car simulator, the queue
+        run: npm run simulate -- --scenario queue
       - name: Mountain Mode simulator, every scenario
         run: |
           for scenario in car-bus buses keep-left in-bend ambulance no-overtake; do

@@ -97,6 +97,16 @@ Every narrow road is **available**, **reserved** or **occupied**, worked out fro
 - A car behind one that's clearly going the same way is told to follow it. If the one ahead is stopped, it waits.
 - When the last car leaves, the road goes to the next car waiting, who is told to go.
 
+**The queue.** Every car waiting for a road has a place in line, shown on its card, such as **You're 3rd in line · 2 cars ahead of you, at the other end**, and as numbered badges on the map, with your own in blue. Cars waiting at the same end as the car given the road go through after it as a group, each told **Go ahead, follow the car ahead**, so the road doesn't switch direction for every car.
+
+- A group is at most **3 cars**, and stops taking more after **30 seconds**. A car left out is told the other end goes next.
+- After one end's group, the **other end goes next**, even if a car left out at the first end arrived earlier, so one busy end can't keep the other waiting.
+- A priority vehicle goes to the front, and those behind it are told an emergency vehicle is ahead of them.
+- If a car from the other end goes in anyway, the rest of the group waits.
+- If the road stands empty for 15 seconds while group members don't go in, such as a car parked at the entrance, the group ends and they go to the back of the line.
+
+The admin's live list shows each waiting car's place in line.
+
 The dashboard shows the road ahead in green, amber or red, with a dot at your entrance. The admin's live map colours every road by its status and shows each entrance and its approach lanes.
 
 ## Mountain Mode
@@ -225,6 +235,7 @@ The simulator's password is written in its code. If your database is one other p
 | `npm run demo:entrance` | Narrow road: Car B waits at the entrance while Car A is inside, then is told to go |
 | `npm run demo:giveway` | Narrow road: every alert, including a car that goes in anyway and has to give way |
 | `npm run demo:ambulance` | Narrow road: an ambulance goes in, and the car inside pulls over |
+| `npm run demo:queue` | Narrow road: three cars queue. The two at one end go through together, then it's the other end's turn. Opens three screens |
 | `npm run demo:mountain` | Mountain Mode: a car waits before the bend while a bus turns |
 | `npm run demo:buses` | Mountain Mode: of two buses, the uphill one goes first |
 | `npm run demo:keepleft` | Mountain Mode: two cars both keep left, and nobody stops |
@@ -364,7 +375,7 @@ These go in `backend/.env`, or in the host's environment settings.
 | `npm run test:geofence` | `backend` | Road checks, which only look at roads near a vehicle, give the same answers as checking every road, and are faster | Nothing else |
 | `npm run test:cleanup` | `backend` | Expired email codes and old rejected suggestions are deleted, and nothing else is | A test database in `DATABASE_URL`. It adds and deletes test rows |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
-| `npm run simulate` | `backend` | Every alert, using two simulated cars. Add `-- --scenario entrance` or `-- --scenario ambulance` for those alone | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
+| `npm run simulate` | `backend` | Every alert, using two simulated cars. Add `-- --scenario` and `entrance`, `ambulance` or `queue` (three cars) for those alone | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
 | `npm run simulate:mountain` | `backend` | Mountain Mode, using two simulated vehicles at a Yercaud hairpin. Add `-- --scenario` and `buses`, `keep-left`, `in-bend`, `ambulance` or `no-overtake` for the others | The server running |
 | `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |
 | `npm run format:check` | `backend`, `frontend` or `e2e` | That the code follows the shared style. `npm run format` fixes it | Nothing else |
