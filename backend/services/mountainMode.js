@@ -37,6 +37,10 @@ const DIRECTION_MIN_M = 2;
 // Slower than this along the road counts as stopped
 const MOVING_MPS = 1;
 
+// Further than this from where it was expected, the vehicle has jumped, such
+// as after a gap in GPS, so it's placed afresh and its old readings dropped
+const JUMP_M = 100;
+
 // A stopped vehicle is still facing the way it was going, for this long
 const DIRECTION_MEMORY_MS = 2 * 60 * 1000;
 
@@ -82,27 +86,44 @@ function updateHillPosition(previous, lat, lon, roads, now) {
       ? previous.metre + previous.speed * elapsedS
       : null;
 
-  let found = null;
+  const locate = (useExpected) => {
+    let found = null;
 
-  for (const road of roads) {
-    const staying = previous?.roadId === road.id;
-    const place = locateOnRoad(
-      lat,
-      lon,
-      road,
-      staying ? STAY_ON_M : ON_ROAD_M,
-      staying ? expected : null,
-    );
+    for (const road of roads) {
+      const staying = previous?.roadId === road.id;
+      const place = locateOnRoad(
+        lat,
+        lon,
+        road,
+        staying ? STAY_ON_M : ON_ROAD_M,
+        staying && useExpected ? expected : null,
+      );
 
-    if (place && (!found || place.distanceM < found.place.distanceM)) {
-      found = { road, place };
+      if (place && (!found || place.distanceM < found.place.distanceM)) {
+        found = { road, place };
+      }
     }
+
+    return found;
+  };
+
+  let found = locate(expected !== null);
+  let jumped = false;
+
+  if (
+    found &&
+    expected !== null &&
+    found.road.id === previous.roadId &&
+    Math.abs(found.place.metre - expected) > JUMP_M
+  ) {
+    found = locate(false);
+    jumped = true;
   }
 
   if (!found) return null;
 
   const { road, place } = found;
-  const sameRoad = previous?.roadId === road.id;
+  const sameRoad = previous?.roadId === road.id && !jumped;
 
   const readings = [
     ...(sameRoad ? previous.readings : []).filter(

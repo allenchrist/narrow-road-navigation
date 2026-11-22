@@ -1,25 +1,38 @@
 /**
- * MOUNTAIN MODE SIMULATOR — a bus and a car meeting at a real hairpin
+ * MOUNTAIN MODE SIMULATOR — two vehicles at a real hairpin
  *
- * Connects to the backend like the phone app does, and drives a car up the
- * Yercaud ghat road and a bus down it, to the same hairpin bend. It checks
- * both vehicles' alerts after each phase and exits with an error if one is
- * wrong.
+ * Connects to the backend like the phone app does, and drives two vehicles
+ * on the Yercaud ghat road to the same hairpin bend. It checks both
+ * vehicles' alerts after each phase and exits with an error if one is wrong.
  *
- * Watch it on the dashboard as the car: /sim_car_a, or the bus: /sim_car_b
+ * Scenarios, chosen with --scenario:
+ *   car-bus         a car going up meets a bus coming down: the car waits,
+ *                   as the bus needs the whole road to turn (the default)
+ *   buses           two buses: the one going uphill goes first
+ *   keep-left       two cars: both keep left, and nobody stops
+ *   in-bend         the car is already in the bend when a bus arrives, so
+ *                   the bus waits
+ *   ambulance       an ambulance going up meets a bus coming down: the
+ *                   ambulance goes first
+ *   no-overtake     a car behind a bus near a bend is told not to overtake
+ *
+ * Watch the first vehicle on /sim_car_a and the second on /sim_car_b.
  *
  * Usage (the backend must be running):
  *   npm run simulate:mountain
+ *   npm run simulate:mountain -- --scenario buses
+ *   npm run simulate:mountain -- --loop    repeat until stopped with Ctrl+C
  *
  * Environment:
  *   BACKEND_URL         default http://127.0.0.1:5000
  *   SIMULATOR_PASSWORD  set this when using any database other people can reach
  *
- * Uses the demo accounts sim_car_a (a car) and sim_car_b (a bus), creating
- * them on first run.
+ * Uses the demo accounts sim_car_a and sim_car_b, creating them on first run
+ * and setting their vehicle types for the scenario.
  */
 
 const WebSocket = require("ws");
+const { bearingBetween } = require("../utils/geo");
 const { measureLine, pointAt } = require("../services/hillRoads");
 const hillRoads = require("../data/hillRoads.json");
 
@@ -31,16 +44,15 @@ const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 // These accounts can only see their own demo dashboards
 const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 
-const CAR = { username: "sim_car_a", deviceId: "simulator-car-a" };
-const BUS = {
-  username: "sim_car_b",
-  deviceId: "simulator-car-b",
-  vehicleType: "bus",
-};
-
 const ROAD_ID = "HILL_YERCAUD";
 const TICK_MS = 1000;
-const START_DELAY_MS = 3000;
+// Between rounds, and from one run to the next, the vehicles jump back to
+// the start, which no real vehicle could do. The server forgets their last
+// few readings after 6 seconds, so waiting longer than that lets it place
+// them afresh. Otherwise it could put one on the other arm of the hairpin,
+// near where it was.
+const START_DELAY_MS = 8000;
+const BETWEEN_ROUNDS_MS = 8000;
 
 // A bend with this much road clear of other bends on each side, so the
 // vehicles only meet at this one
@@ -90,12 +102,7 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
   const { token } = login.body;
 
   await sendJson("POST", "/api/auth/device", { deviceId }, token);
-  await sendJson(
-    "PUT",
-    "/api/auth/vehicle-type",
-    { vehicleType: vehicleType ?? "car" },
-    token,
-  );
+  await sendJson("PUT", "/api/auth/vehicle-type", { vehicleType }, token);
 
   return token;
 }
@@ -143,14 +150,32 @@ const bend = road.bends.find((candidate, i) => {
 
 if (!bend) throw new Error("No hairpin is clear enough of the others");
 
-function send(vehicle, metre, speed) {
+/**
+ * The compass direction of travel at a point on the road, going up the road
+ * or down it.
+ */
+function facing(metre, up) {
+  const [lat, lon] = pointAt(road.line, metres, metre - 2);
+  const [aheadLat, aheadLon] = pointAt(road.line, metres, metre + 2);
+  const upTheRoad = bearingBetween(lat, lon, aheadLat, aheadLon);
+
+  return up ? upTheRoad : (upTheRoad + 180) % 360;
+}
+
+/**
+ * One position, as a phone sends it. The compass heading always points the
+ * way the vehicle faces, so it still faces forward while it waits. The GPS
+ * direction of travel is only sent while moving, as on a phone.
+ */
+function send(vehicle, metre, speed, up) {
   const [lat, lon] = pointAt(road.line, metres, metre);
+  const direction = facing(metre, up);
 
   vehicle.ws.send(
     JSON.stringify({
       lat,
       lon,
-      heading: 0,
+      heading: direction,
       accelX: 0,
       accelY: 0,
       accelZ: 9.8,
@@ -159,73 +184,255 @@ function send(vehicle, metre, speed) {
       gyroZ: 0,
       speed,
       accuracy: 5,
+      ...(speed > 0 && { bearing: direction }),
     }),
   );
 }
 
-// ── Scenario ──────────────────────────────────────────────────────────────────
+// ── Scenarios ─────────────────────────────────────────────────────────────────
 
 /**
- * Positions are metres along the road. The car drives up (metres rising),
- * the bus down. Each phase moves them from the first position to the second.
+ * Each scenario has two vehicles, a and b, with their types, names and
+ * whether they drive up the road (metres rising) or down it. Each phase
+ * moves them from the first position to the second, in metres along the
+ * road, and says what each should then be told.
  */
-function buildPhases() {
-  const { startM, endM, waitBelowM } = bend;
+const { startM, endM, waitBelowM, waitAboveM } = bend;
+
+const SCENARIOS = {
+  "car-bus": {
+    a: { type: "car", name: "car", up: true },
+    b: { type: "bus", name: "bus", up: false },
+    phases: [
+      {
+        title:
+          "The car and the bus head for the same hairpin from opposite directions",
+        seconds: 8,
+        a: [startM - 180, startM - 100],
+        b: [endM + 150, endM + 102],
+        expected: { a: "BEND_STOP", b: "BEND_GO" },
+      },
+      {
+        title: "The car stops at the waiting point",
+        seconds: 6,
+        a: [startM - 100, waitBelowM],
+        b: [endM + 102, endM + 66],
+        expected: { a: "BEND_STOP", b: "BEND_GO" },
+      },
+      {
+        title: "The bus takes the bend while the car waits",
+        seconds: 10,
+        a: [waitBelowM, waitBelowM],
+        b: [endM + 66, startM + 6],
+        expected: { a: "BEND_STOP", b: "BEND_GO" },
+      },
+      {
+        title: "The bus is out of the bend, so the car is told it's clear",
+        seconds: 8,
+        a: [waitBelowM, waitBelowM],
+        b: [startM + 6, startM - 60],
+        expected: { a: "BEND_CLEAR" },
+      },
+      {
+        title: "The car takes the bend",
+        seconds: 12,
+        a: [waitBelowM, endM + 60],
+        b: [startM - 60, startM - 180],
+        expected: { a: "NONE" },
+      },
+    ],
+  },
+
+  buses: {
+    a: { type: "bus", name: "uphill bus", up: true },
+    b: { type: "bus", name: "downhill bus", up: false },
+    phases: uphillGoesFirst("uphill bus", "downhill bus", "Two buses"),
+  },
+
+  ambulance: {
+    a: { type: "priority", name: "ambulance", up: true },
+    b: { type: "bus", name: "bus", up: false },
+    phases: uphillGoesFirst("ambulance", "bus", "An ambulance and a bus"),
+  },
+
+  "keep-left": {
+    a: { type: "car", name: "uphill car", up: true },
+    b: { type: "car", name: "downhill car", up: false },
+    phases: [
+      {
+        title:
+          "Two cars head for the same hairpin, so both are told to keep left",
+        seconds: 8,
+        a: [startM - 180, startM - 100],
+        b: [endM + 150, endM + 102],
+        expected: { a: "BEND_KEEP_LEFT", b: "BEND_KEEP_LEFT" },
+      },
+      {
+        title: "Both drive round the bend, keeping left, without stopping",
+        seconds: 12,
+        a: [startM - 100, endM + 60],
+        b: [endM + 102, startM - 60],
+        expected: { a: "NONE", b: "NONE" },
+      },
+    ],
+  },
+
+  "in-bend": {
+    a: { type: "car", name: "car", up: true },
+    b: { type: "bus", name: "bus", up: false },
+    phases: [
+      {
+        title: "The car drives into the hairpin",
+        seconds: 8,
+        a: [startM - 60, startM + 10],
+        b: [endM + 250, endM + 200],
+        expected: { a: "NONE", b: "NONE" },
+      },
+      {
+        title:
+          "A bus arrives while the car is still in the bend, so the bus waits",
+        seconds: 8,
+        a: [startM + 10, startM + 25],
+        b: [endM + 200, endM + 90],
+        expected: { a: "BEND_GO", b: "BEND_STOP" },
+      },
+      {
+        title: "The car finishes the bend, so the bus is told it's clear",
+        seconds: 8,
+        a: [startM + 25, endM + 60],
+        b: [endM + 90, waitAboveM],
+        expected: { b: "BEND_CLEAR" },
+      },
+      {
+        title: "The bus takes the bend",
+        seconds: 12,
+        a: [endM + 60, endM + 180],
+        b: [waitAboveM, startM - 60],
+        expected: { b: "NONE" },
+      },
+    ],
+  },
+
+  "no-overtake": {
+    a: { type: "car", name: "car", up: true },
+    b: { type: "bus", name: "bus ahead", up: true },
+    phases: [
+      {
+        title: "A car follows a bus up towards a hairpin",
+        seconds: 8,
+        a: [startM - 260, startM - 180],
+        b: [startM - 160, startM - 80],
+        expected: { a: "BEND_NO_OVERTAKE", b: "NONE" },
+      },
+      {
+        title: "The bus turns at the bend, so the car mustn't overtake",
+        seconds: 8,
+        a: [startM - 180, startM - 80],
+        b: [startM - 80, startM + 20],
+        expected: { a: "BEND_NO_OVERTAKE", b: "NONE" },
+      },
+      {
+        title: "The bus is round the bend and away, so the warning ends",
+        seconds: 12,
+        a: [startM - 80, startM - 40],
+        b: [startM + 20, endM + 200],
+        expected: { a: "NONE" },
+      },
+    ],
+  },
+};
+
+/**
+ * The vehicle going uphill takes the bend first, and the one coming down
+ * waits above it.
+ */
+function uphillGoesFirst(upName, downName, both) {
+  const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
   return [
     {
-      title:
-        "The car and the bus head for the same hairpin from opposite directions",
+      title: `${both} head for the same hairpin, one uphill and one downhill`,
       seconds: 8,
-      car: [startM - 180, startM - 100],
-      bus: [endM + 150, endM + 102],
-      expected: { car: "BEND_STOP", bus: "BEND_GO" },
+      a: [startM - 180, startM - 100],
+      b: [endM + 150, endM + 102],
+      expected: { a: "BEND_GO", b: "BEND_STOP" },
     },
     {
-      title: "The car stops at the waiting point",
+      title: `The ${downName} stops at the waiting point above the bend`,
       seconds: 6,
-      car: [startM - 100, waitBelowM],
-      bus: [endM + 102, endM + 66],
-      expected: { car: "BEND_STOP", bus: "BEND_GO" },
+      a: [startM - 100, startM - 50],
+      b: [endM + 102, waitAboveM],
+      expected: { a: "BEND_GO", b: "BEND_STOP" },
     },
     {
-      title: "The bus takes the bend while the car waits",
+      title: `The ${upName} takes the bend while the ${downName} waits`,
       seconds: 10,
-      car: [waitBelowM, waitBelowM],
-      bus: [endM + 66, startM + 6],
-      expected: { car: "BEND_STOP", bus: "BEND_GO" },
+      a: [startM - 50, endM - 6],
+      b: [waitAboveM, waitAboveM],
+      expected: { a: "BEND_GO", b: "BEND_STOP" },
     },
     {
-      title: "The bus is out of the bend, so the car is told it's clear",
+      title: `${cap(upName)} is out of the bend, so the ${downName} is told it's clear`,
       seconds: 8,
-      car: [waitBelowM, waitBelowM],
-      bus: [startM + 6, startM - 60],
-      expected: { car: "BEND_CLEAR" },
+      a: [endM - 6, endM + 70],
+      b: [waitAboveM, waitAboveM],
+      expected: { b: "BEND_CLEAR" },
     },
     {
-      title: "The car takes the bend",
+      title: `The ${downName} takes the bend`,
       seconds: 12,
-      car: [waitBelowM, endM + 60],
-      bus: [startM - 60, startM - 180],
-      expected: { car: "NONE" },
+      a: [endM + 70, endM + 190],
+      b: [waitAboveM, startM - 60],
+      expected: { b: "NONE" },
     },
   ];
 }
 
-async function runPhase(phase, car, bus) {
+// ── Running a scenario ────────────────────────────────────────────────────────
+
+// --buses is kept as a short way of asking for two buses
+const scenarioFlag = process.argv.indexOf("--scenario");
+const scenarioName = process.argv.includes("--buses")
+  ? "buses"
+  : scenarioFlag >= 0
+    ? process.argv[scenarioFlag + 1]
+    : "car-bus";
+
+const scenario = SCENARIOS[scenarioName];
+
+if (!scenario) {
+  console.error(
+    `Unknown scenario "${scenarioName}". Choose from: ${Object.keys(SCENARIOS).join(", ")}`,
+  );
+  process.exit(1);
+}
+
+const A = {
+  username: "sim_car_a",
+  deviceId: "simulator-car-a",
+  vehicleType: scenario.a.type,
+};
+const B = {
+  username: "sim_car_b",
+  deviceId: "simulator-car-b",
+  vehicleType: scenario.b.type,
+};
+
+async function runPhase(phase, a, b) {
   console.log(`\n▶ ${phase.title}`);
 
   for (let tick = 1; tick <= phase.seconds; tick++) {
     const progress = tick / phase.seconds;
 
-    for (const [vehicle, [from, to]] of [
-      [car, phase.car],
-      [bus, phase.bus],
+    for (const [vehicle, [from, to], up] of [
+      [a, phase.a, scenario.a.up],
+      [b, phase.b, scenario.b.up],
     ]) {
       send(
         vehicle,
         from + (to - from) * progress,
         Math.abs(to - from) / phase.seconds,
+        up,
       );
     }
 
@@ -234,11 +441,11 @@ async function runPhase(phase, car, bus) {
 
   let passed = true;
 
-  for (const [name, vehicle] of [
-    ["car", car],
-    ["bus", bus],
+  for (const [key, vehicle] of [
+    ["a", a],
+    ["b", b],
   ]) {
-    const expected = phase.expected[name];
+    const expected = phase.expected[key];
 
     if (!expected) continue;
 
@@ -250,7 +457,7 @@ async function runPhase(phase, car, bus) {
       : "";
 
     console.log(
-      `  ${ok ? "✓" : "✗"} ${name}: ${kind}${counter}${ok ? "" : ` (expected ${expected})`}`,
+      `  ${ok ? "✓" : "✗"} ${scenario[key].name}: ${kind}${counter}${ok ? "" : ` (expected ${expected})`}`,
     );
 
     passed &&= ok;
@@ -263,24 +470,32 @@ async function main() {
   console.log(`Backend: ${BACKEND_URL}`);
   console.log(`${road.name}, hairpin ${bend.number} of ${road.bends.length}`);
 
-  const car = await connect(CAR, await prepareDemoAccount(CAR));
-  const bus = await connect(BUS, await prepareDemoAccount(BUS));
+  const a = await connect(A, await prepareDemoAccount(A));
+  const b = await connect(B, await prepareDemoAccount(B));
 
   console.log(
-    `\nWatch the car on /${CAR.username} or the bus on /${BUS.username}`,
+    `\nWatch the ${scenario.a.name} on /${A.username} or the ${scenario.b.name} on /${B.username}`,
   );
   console.log(`Starting in ${START_DELAY_MS / 1000}s...`);
 
   await delay(START_DELAY_MS);
 
+  const loop = process.argv.includes("--loop");
   let failed = 0;
 
-  for (const phase of buildPhases()) {
-    if (!(await runPhase(phase, car, bus))) failed++;
+  for (;;) {
+    for (const phase of scenario.phases) {
+      if (!(await runPhase(phase, a, b))) failed++;
+    }
+
+    if (!loop) break;
+
+    console.log(`\nStarting again in ${BETWEEN_ROUNDS_MS / 1000}s...`);
+    await delay(BETWEEN_ROUNDS_MS);
   }
 
-  car.ws.close();
-  bus.ws.close();
+  a.ws.close();
+  b.ws.close();
 
   console.log(
     failed === 0 ? "\nAll alerts correct." : `\n${failed} phases were wrong.`,

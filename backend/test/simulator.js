@@ -7,8 +7,16 @@
  *
  * Watch it on the dashboard as Car A: /sim_car_a
  *
+ * Scenarios, chosen with --scenario:
+ *   full        every narrow road alert, one after another (the default)
+ *   entrance    Car B waits at the entrance while Car A is in the road,
+ *               then is told to go once it's clear
+ *   ambulance   an ambulance arrives while Car A is in the road: it goes in,
+ *               and Car A pulls over and lets it pass
+ *
  * Usage (the backend must be running):
  *   npm run simulate
+ *   npm run simulate -- --scenario entrance
  *   npm run simulate -- --loop      repeat until stopped with Ctrl+C
  *
  * Environment:
@@ -30,12 +38,32 @@ const VEHICLE_WS_URL = `${BACKEND_URL.replace(/^http/, "ws")}/vehicle`;
 // This account can only see its own demo dashboard, so a fixed password is fine
 const DEMO_PASSWORD = process.env.SIMULATOR_PASSWORD || "simulator-demo-only";
 
-const CAR_A = { username: "sim_car_a", deviceId: "simulator-car-a" };
+const scenarioFlag = process.argv.indexOf("--scenario");
+const SCENARIO = scenarioFlag >= 0 ? process.argv[scenarioFlag + 1] : "full";
+
+const SCENARIOS = ["full", "entrance", "ambulance"];
+
+if (!SCENARIOS.includes(SCENARIO)) {
+  console.error(
+    `Unknown scenario "${SCENARIO}". Choose from: ${SCENARIOS.join(", ")}`,
+  );
+  process.exit(1);
+}
+
+const CAR_A = {
+  username: "sim_car_a",
+  deviceId: "simulator-car-a",
+  vehicleType: "car",
+};
 const CAR_B = {
   username: "sim_car_b",
   deviceId: "simulator-car-b",
-  vehicleType: "bus",
+  vehicleType: SCENARIO === "ambulance" ? "priority" : "bus",
 };
+
+// Between rounds both cars jump back to the start, which no real car could
+// do, so the server is given time to forget where they were
+const BETWEEN_ROUNDS_MS = 8000;
 
 const TICK_MS = 1000;
 const START_DELAY_MS = 5000;
@@ -109,6 +137,16 @@ async function prepareDemoAccount({ username, deviceId, vehicleType }) {
   if (device.status !== 200) {
     throw new Error(`Could not link the demo device: ${device.body.message}`);
   }
+
+  // The type this scenario needs, whatever it was left as last time
+  await fetch(`${BACKEND_URL}/api/auth/vehicle-type`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${login.body.token}`,
+    },
+    body: JSON.stringify({ vehicleType }),
+  });
 
   return login.body.token;
 }
@@ -273,12 +311,14 @@ function connectCar({ deviceId }, token) {
   });
 }
 
-function sendTelemetry(car, { lat, lon }, speed, bearing) {
+// The compass heading is the way the car faces, even when stopped. The GPS
+// direction of travel is only sent while moving, as on a phone.
+function sendTelemetry(car, { lat, lon }, speed, bearing, heading = bearing) {
   car.ws.send(
     JSON.stringify({
       lat,
       lon,
-      heading: bearing ?? 0,
+      heading: heading ?? 0,
       accelX: 0,
       accelY: 0,
       accelZ: 9.8,
@@ -301,6 +341,9 @@ function sendTelemetry(car, { lat, lon }, speed, bearing) {
  * sending nothing) or moving between two positions.
  */
 function buildPhases(L) {
+  if (SCENARIO === "entrance") return entrancePhases(L);
+  if (SCENARIO === "ambulance") return ambulancePhases(L);
+
   return [
     {
       title: "Car A drives towards the road (no alert yet)",
@@ -388,6 +431,110 @@ function buildPhases(L) {
   ];
 }
 
+// Car B waits at the entrance while Car A is in the road
+function entrancePhases(L) {
+  return [
+    {
+      title: "Car A reaches the entrance of an empty road, so it can go",
+      expected: "ENTRY_GO",
+      seconds: 8,
+      carA: [-45, -12],
+      carB: "away",
+    },
+    {
+      title: "Car A enters the narrow road",
+      expected: "IN_NARROW_ROAD",
+      seconds: 8,
+      carA: [-12, L * 0.3],
+      carB: "away",
+    },
+    {
+      title: "Car B reaches the far entrance, and is told to wait",
+      expected: "VEHICLE_WAITING",
+      expectedCarB: "ENTRY_WAIT",
+      seconds: 10,
+      carA: [L * 0.3, L * 0.45],
+      carB: [L + 50, L + 12],
+    },
+    {
+      title: "Car B waits while Car A drives through",
+      expected: "VEHICLE_WAITING",
+      expectedCarB: "ENTRY_WAIT",
+      seconds: 10,
+      carA: [L * 0.45, L * 0.95],
+      carB: [L + 12, L + 12],
+    },
+    {
+      title: "Car A leaves the road, so Car B is told to go",
+      expected: "NONE",
+      expectedCarB: "ENTRY_GO",
+      seconds: 8,
+      carA: [L * 0.95, L + 60],
+      carB: [L + 12, L + 12],
+    },
+    {
+      title: "Car B enters the narrow road",
+      expected: "NONE",
+      expectedCarB: "IN_NARROW_ROAD",
+      seconds: 8,
+      carA: [L + 60, L + 160],
+      carB: [L + 12, L * 0.6],
+    },
+  ];
+}
+
+// An ambulance (Car B) arrives while Car A is in the road
+function ambulancePhases(L) {
+  return [
+    {
+      title: "Car A reaches the entrance of an empty road, so it can go",
+      expected: "ENTRY_GO",
+      seconds: 8,
+      carA: [-45, -12],
+      carB: "away",
+    },
+    {
+      title: "Car A enters the narrow road",
+      expected: "IN_NARROW_ROAD",
+      seconds: 8,
+      carA: [-12, L * 0.2],
+      carB: "away",
+    },
+    {
+      title:
+        "An ambulance reaches the far entrance. It isn't told to wait, and Car A is warned",
+      expected: "VEHICLE_ENTERING",
+      expectedCarB: "ENTRY_PRIORITY",
+      seconds: 10,
+      carA: [L * 0.2, L * 0.3],
+      carB: [L + 50, L + 12],
+    },
+    {
+      title: "The ambulance goes in, and Car A is told to pull over",
+      expected: "GIVE_WAY",
+      expectedCarB: "RIGHT_OF_WAY",
+      seconds: 8,
+      carA: [L * 0.3, L * 0.35],
+      carB: [L + 12, L * 0.75],
+    },
+    {
+      title: "Car A pulls over and stops",
+      expected: "GIVE_WAY",
+      expectedCarB: "RIGHT_OF_WAY",
+      seconds: 6,
+      carA: [L * 0.35, L * 0.35],
+      carB: [L * 0.75, L * 0.5],
+    },
+    {
+      title: "The ambulance passes Car A, so Car A is told the road is clear",
+      expected: "ROAD_CLEAR",
+      seconds: 10,
+      carA: [L * 0.35, L * 0.35],
+      carB: [L * 0.5, L * 0.05],
+    },
+  ];
+}
+
 function moveAlongRoute(
   car,
   route,
@@ -404,6 +551,7 @@ function moveAlongRoute(
     route.pointAt(distance),
     speed,
     speed > 0 ? forwardBearing : null,
+    forwardBearing,
   );
 }
 
@@ -503,9 +651,14 @@ async function main() {
 
   let failed = 0;
 
-  do {
+  for (;;) {
     failed += await runScenario(route, carA, carB);
-  } while (loop);
+
+    if (!loop) break;
+
+    console.log(`\nStarting again in ${BETWEEN_ROUNDS_MS / 1000}s...`);
+    await delay(BETWEEN_ROUNDS_MS);
+  }
 
   carA.ws.close();
   carB.ws.close();

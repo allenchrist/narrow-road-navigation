@@ -218,6 +218,20 @@ The simulator's password is written in its code. If your database is one other p
 | Car A passes Car B | Narrow road | Road clear |
 | Car A leaves | Nothing | |
 
+**To watch a demo with one command**, without setting anything up, run one of these in `e2e` after `npm install` in `backend`, `frontend` and `e2e`. Each starts a temporary database, the server and the website on this computer, and opens Chrome with the two vehicles' car screens side by side, already logged in, repeating until you press Ctrl+C or close Chrome. The temporary database is then deleted, and nothing touches the real server or database. Add `-- --no-browser` to only print the links and the password.
+
+| Command | What it shows |
+|---|---|
+| `npm run demo:entrance` | Narrow road: Car B waits at the entrance while Car A is inside, then is told to go |
+| `npm run demo:giveway` | Narrow road: every alert, including a car that goes in anyway and has to give way |
+| `npm run demo:ambulance` | Narrow road: an ambulance goes in, and the car inside pulls over |
+| `npm run demo:mountain` | Mountain Mode: a car waits before the bend while a bus turns |
+| `npm run demo:buses` | Mountain Mode: of two buses, the uphill one goes first |
+| `npm run demo:keepleft` | Mountain Mode: two cars both keep left, and nobody stops |
+| `npm run demo:inbend` | Mountain Mode: a car already in the bend finishes it, and the bus waits |
+| `npm run demo:ambulance-bend` | Mountain Mode: an ambulance goes before a bus |
+| `npm run demo:overtake` | Mountain Mode: a car behind a bus at a bend is told not to overtake |
+
 **Mountain Mode** has its own simulator. It drives `sim_car_a` up the Yercaud ghat road as a car and `sim_car_b` down it as a bus, to the same hairpin. It works with either database, as the ghat roads are added when the server starts:
 
 ```
@@ -350,8 +364,8 @@ These go in `backend/.env`, or in the host's environment settings.
 | `npm run test:geofence` | `backend` | Road checks, which only look at roads near a vehicle, give the same answers as checking every road, and are faster | Nothing else |
 | `npm run test:cleanup` | `backend` | Expired email codes and old rejected suggestions are deleted, and nothing else is | A test database in `DATABASE_URL`. It adds and deletes test rows |
 | `npm test` | `backend` | Phone connections and server behaviour | The server running, `ADMIN_PASSWORD` set, and `REQUIRE_VEHICLE_TOKEN` off |
-| `npm run simulate` | `backend` | Every alert, using two simulated cars | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
-| `npm run simulate:mountain` | `backend` | Mountain Mode, using a simulated car and bus at a Yercaud hairpin | The server running |
+| `npm run simulate` | `backend` | Every alert, using two simulated cars. Add `-- --scenario entrance` or `-- --scenario ambulance` for those alone | The server running, and `REQUIRE_VEHICLE_TOKEN` off or on |
+| `npm run simulate:mountain` | `backend` | Mountain Mode, using two simulated vehicles at a Yercaud hairpin. Add `-- --scenario` and `buses`, `keep-left`, `in-bend`, `ambulance` or `no-overtake` for the others | The server running |
 | `npm run lint` | `backend` or `frontend` | Common code mistakes | Nothing else |
 | `npm run format:check` | `backend`, `frontend` or `e2e` | That the code follows the shared style. `npm run format` fixes it | Nothing else |
 | `npm run build` | `frontend` | That the website builds | Nothing else |

@@ -189,6 +189,19 @@ const tests = {
     assert.ok(Math.abs(hill.metre - 132) < 2, `${hill.metre}`);
     assert.strictEqual(hill.heading, 1);
   },
+  "after a jump far along the road, the vehicle is placed afresh": () => {
+    // Driving up the third arm, then suddenly far back on the first, as
+    // after a gap in GPS
+    let hill = driven("A", "car", path(BEND_2.endM + 150, 8)).hill;
+    hill = updateHillPosition(
+      hill,
+      ...pointAt(LINE, METRES, 150),
+      [ROAD],
+      101000,
+    );
+    assert.ok(Math.abs(hill.metre - 150) < 2, `${hill.metre}`);
+    assert.strictEqual(hill.readings.length, 1);
+  },
   "one reading isn't enough to know the direction": () => {
     assert.strictEqual(driven("A", "car", [150]).hill.heading, 0);
   },
