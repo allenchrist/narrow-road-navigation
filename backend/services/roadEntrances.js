@@ -506,9 +506,74 @@ async function downloadFromOverpass(query, timeoutMs = 30000) {
   throw new Error(`OpenStreetMap couldn't be reached: ${problems.join("; ")}`);
 }
 
-/** The roads around a shape. */
-function downloadWays(polygon, options) {
-  return downloadWaysAround([polygon], options);
+// OpenStreetMap's own API, which answers small areas quickly even when the
+// Overpass servers are busy
+const OSM_API_URL = "https://api.openstreetmap.org/api/0.6/map.json";
+
+/**
+ * The roads in a small box, from OpenStreetMap's main API, in the same form
+ * as Overpass gives them: each way with its node IDs and their positions.
+ */
+async function downloadFromOsmApi([south, west, north, east], timeoutMs) {
+  const bbox = [west, south, east, north].map((v) => v.toFixed(6)).join(",");
+
+  const response = await fetch(`${OSM_API_URL}?bbox=${bbox}`, {
+    headers: {
+      "User-Agent":
+        "ConnectedVehicle/1.0 (+https://narrow-road-navigation.vercel.app)",
+    },
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+
+  if (!response.ok) throw new Error(`answered ${response.status}`);
+
+  const { elements } = await response.json();
+
+  if (!Array.isArray(elements)) throw new Error("sent no roads");
+
+  return waysFromOsmApi(elements);
+}
+
+/**
+ * Turns the main API's nodes and ways into ways with their positions, as
+ * Overpass gives them. Only roads are kept.
+ */
+function waysFromOsmApi(elements) {
+  const nodes = new Map(
+    elements
+      .filter((element) => element.type === "node")
+      .map((node) => [node.id, { lat: node.lat, lon: node.lon }]),
+  );
+
+  // Ways that run out of the box list nodes it doesn't include; those
+  // points are left as gaps, as Overpass does
+  return elements
+    .filter((element) => element.type === "way" && element.tags?.highway)
+    .map((way) => ({
+      type: "way",
+      id: way.id,
+      tags: way.tags,
+      nodes: way.nodes,
+      geometry: way.nodes.map((id) => nodes.get(id) ?? null),
+    }));
+}
+
+/**
+ * The roads around a shape: from OpenStreetMap's main API, or if that
+ * fails, from the Overpass servers.
+ */
+async function downloadWays(polygon, { timeoutMs = 30000 } = {}) {
+  try {
+    return await downloadFromOsmApi(boxAround(polygon), timeoutMs);
+  } catch (error) {
+    try {
+      return await downloadWaysAround([polygon], { timeoutMs });
+    } catch (overpassError) {
+      throw new Error(
+        `api.openstreetmap.org ${error.message}; ${overpassError.message}`,
+      );
+    }
+  }
 }
 
 module.exports = {
@@ -517,6 +582,7 @@ module.exports = {
   downloadWays,
   downloadWaysAround,
   downloadFromOverpass,
+  waysFromOsmApi,
   waysNear,
   LANE_LENGTH_M,
 };

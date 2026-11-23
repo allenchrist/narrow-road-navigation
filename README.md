@@ -303,7 +303,7 @@ Restart the server afterwards, as it keeps the roads in memory.
 npm run roads:entrances
 ```
 
-It downloads the roads around every narrow road in one request, and tries again for a few minutes if OpenStreetMap is busy. When the server starts, any road without entrances gets them from this file if its shape matches, so the imported roads never need OpenStreetMap. Roads added or changed on the admin page are looked up on OpenStreetMap in the background, one at a time. Until then, and if OpenStreetMap can't be reached, the ends of the shape are used, and it tries again every 30 minutes.
+It downloads the roads around every narrow road in one request, and tries again for a few minutes if OpenStreetMap is busy. When the server starts, any road without entrances gets them from this file if its shape matches, so the imported roads never need OpenStreetMap. Roads added or changed on the admin page are looked up on OpenStreetMap in the background, one at a time: first from its main API, which answers small areas quickly, and if that fails, from the Overpass servers. Until then, and if OpenStreetMap can't be reached, the ends of the shape are used, and it tries again every 30 minutes.
 
 ### Ghat roads
 

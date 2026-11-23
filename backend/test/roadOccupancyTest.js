@@ -7,7 +7,7 @@
  */
 
 const assert = require("assert");
-const { findEntrances } = require("../services/roadEntrances");
+const { findEntrances, waysFromOsmApi } = require("../services/roadEntrances");
 const { computeGeofenceState } = require("../services/geofenceService");
 const { updateEntrances } = require("../services/entranceWatch");
 const {
@@ -273,6 +273,34 @@ const tests = {
       ]),
     ];
     assert.strictEqual(findEntrances(POLYGON, wobbly).length, 2);
+  },
+  "roads from OpenStreetMap's main API give the same entrances": () => {
+    // The made-up map, as the main API sends it: nodes, then ways by node ID
+    const nodes = new Map();
+    for (const w of WAYS) {
+      w.nodes.forEach((id, i) => nodes.set(id, w.geometry[i]));
+    }
+    const elements = [
+      ...[...nodes].map(([id, { lat, lon }]) => ({
+        type: "node",
+        id,
+        lat,
+        lon,
+      })),
+      ...WAYS.map((w, i) => ({
+        type: "way",
+        id: i + 1,
+        tags: w.tags,
+        nodes: w.nodes,
+      })),
+      { type: "way", id: 99, tags: { building: "yes" }, nodes: [1, 2] },
+    ];
+    const ways = waysFromOsmApi(elements);
+    assert.strictEqual(ways.length, WAYS.length, "buildings are left out");
+    assert.deepStrictEqual(
+      findEntrances(POLYGON, ways).map((e) => e.point),
+      ENTRANCES.map((e) => e.point),
+    );
   },
   "with no roads known, the middles of the shape's ends are used": () => {
     const ends = findEntrances(POLYGON, []);
